@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./identity";
 import { todayISO, XP_REWARDS } from "./data";
 import { grantXp } from "./stats";
+import { progressQuests, settleQuests } from "./quests";
 
 /** All timetable entries for the signed-in user, newest date first. */
 export const list = query({
@@ -87,6 +88,7 @@ export const toggleComplete = mutation({
     }
 
     let result = null;
+    let settledQuests: Array<{ title: string; xp: number; difficulty: string }> = [];
     if (!entry.completed) {
       await ctx.db.patch(args.entryId, { completed: true });
       result = await grantXp(
@@ -96,6 +98,8 @@ export const toggleComplete = mutation({
         XP_REWARDS.TIMETABLE_TASK,
         "Completed a timetable task",
       );
+      await progressQuests(ctx, userId, "task_completed", 1);
+      settledQuests = await settleQuests(ctx, userId);
       const stats = await ctx.db
         .query("stats")
         .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -122,6 +126,7 @@ export const toggleComplete = mutation({
       completed: !entry.completed,
       today: todayISO(),
       xp: result,
+      settledQuests,
     };
   },
 });

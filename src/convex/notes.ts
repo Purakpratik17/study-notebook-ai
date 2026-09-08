@@ -157,6 +157,7 @@ export const logStudySession = mutation({
       ref,
       XP_REWARDS.STUDY_SESSION,
       `Studied for ${minutes} minutes`,
+      minutes,
     );
 
     return { xp, settledQuests: settled, minutes };

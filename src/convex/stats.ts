@@ -65,6 +65,7 @@ export async function grantXp(
   ref: string,
   amount: number,
   reason: string,
+  minutesEarned = 0,
 ): Promise<XpResult> {
   const dup = await ctx.db
     .query("xpEvents")
@@ -101,12 +102,19 @@ export async function grantXp(
   const newLevel = levelForXp(newXp).level;
   const leveledUp = newLevel > beforeLevel;
 
+  // Track studied minutes per calendar day for the daily goal.
+  const minutesStudiedToday =
+    stats.minutesDay === today ? (stats.minutesStudiedToday ?? 0) : 0;
+  const minutesDay = today;
+
   await ctx.db.patch(stats._id, {
     xp: newXp,
     level: newLevel,
     streak,
     bestStreak: Math.max(stats.bestStreak, streak),
     lastStudyDate: today,
+    minutesDay,
+    minutesStudiedToday: minutesStudiedToday + minutesEarned,
     updatedAt: Date.now(),
   });
   await ctx.db.insert("xpEvents", {
@@ -214,18 +222,27 @@ export const getDashboardSummary = query({
       .collect();
     const active = activeQuests.filter((q) => q.status === "active");
 
+    const stats = await ctx.db
+      .query("stats")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    const studiedMinutesToday =
+      stats?.minutesDay === today ? (stats.minutesStudiedToday ?? 0) : 0;
+
     return {
       today,
       tasksTotal: entries.length,
       tasksCompleted: completed,
       plannedMinutes,
       doneMinutes,
+      studiedMinutesToday,
       dailyGoalMinutes: DAILY_GOAL_MINUTES,
       completionPercent:
         entries.length === 0
           ? 0
           : Math.round((completed / entries.length) * 100),
-      dailyGoalBonusReady: doneMinutes >= DAILY_GOAL_MINUTES,
+      dailyGoalBonusReady:
+        Math.max(doneMinutes, studiedMinutesToday) >= DAILY_GOAL_MINUTES,
       activeQuests: active.slice(0, 4).map((q) => ({
         _id: q._id,
         title: q.title,

@@ -1,20 +1,35 @@
-import { api } from "@/convex/_generated/api";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useUser, useClerk } from "@clerk/react-router";
+import { useConvexAuth } from "convex/react";
 
+/**
+ * Auth is Clerk-issued. Convex functions key all study data on the Clerk
+ * identity's `sub` claim; this hook exposes display data for the UI.
+ */
 export function useAuth() {
-  const { isLoading: isAuthLoading, isAuthenticated } = useConvexAuth();
-  const user = useQuery(api.users.currentUser);
-  const { signIn, signOut } = useAuthActions();
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
 
-  // Derive isLoading directly from the dependencies instead of managing separate state
-  const isLoading = isAuthLoading || user === undefined;
+  const name =
+    user?.firstName ??
+    user?.fullName ??
+    user?.username ??
+    user?.primaryEmailAddress?.emailAddress?.split("@")[0] ??
+    "Student";
 
   return {
-    isLoading,
-    isAuthenticated,
-    user,
-    signIn,
-    signOut,
+    isLoading: !isLoaded,
+    isAuthenticated: Boolean(isSignedIn && isAuthenticated),
+    clerkUser: user,
+    name,
+    imageUrl: user?.imageUrl,
+    email:
+      user?.primaryEmailAddress?.emailAddress ??
+      user?.emailAddresses?.[0]?.emailAddress ??
+      null,
   };
+}
+
+export function useClerkSignOut() {
+  const clerk = useClerk();
+  return () => clerk.signOut({ redirectUrl: "/" });
 }

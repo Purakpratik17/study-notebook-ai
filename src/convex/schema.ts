@@ -24,6 +24,8 @@ const schema = defineSchema(
       level: v.number(),
       streak: v.number(),
       lastStudyDate: v.optional(v.string()), // YYYY-MM-DD of the last XP earning day
+      minutesStudiedToday: v.optional(v.number()),
+      minutesDay: v.optional(v.string()), // YYYY-MM-DD the minute counter belongs to
       bestStreak: v.number(),
       totalTasksCompleted: v.number(),
       totalQuizzesCompleted: v.number(),

@@ -10,6 +10,15 @@ const freebuffIssuer =
 
 export default {
   providers: [
+    // Clerk (https://clerk.com) — validates the JWTs minted by
+    // ConvexProviderWithClerk using Clerk's built-in "convex" token template.
+    // The domain below is this app's Clerk Frontend API URL (public, not a
+    // secret). See: https://docs.convex.dev/auth/clerk
+    {
+      domain: "https://awake-marmoset-1455.clerk.accounts.dev",
+      applicationID: "convex",
+    },
+
     // Standard Convex Auth provider for this project's own sign-in ("Get
     // Started" email/guest, see src/convex/auth.ts). The deployment
     // self-issues JWTs (iss = CONVEX_SITE_URL, no `kid` header) validated

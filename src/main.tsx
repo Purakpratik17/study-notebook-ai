@@ -91,8 +91,7 @@ const clerkAppearance = {
   variables: {
     colorPrimary: "var(--primary)",
     colorBackground: "var(--card)",
-    colorText: "var(--foreground)",
-    colorTextSecondary: "var(--muted-foreground)",
+    colorTextForeground: "var(--foreground)",
     colorInputBackground: "var(--paper)",
     colorInputBorder: "var(--border)",
     colorDanger: "var(--destructive)",

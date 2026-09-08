@@ -9,12 +9,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/logo.svg";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, useClerkSignOut } from "@/hooks/use-auth";
 import { Home, LogOut } from "lucide-react";
 import { useNavigate } from "react-router";
 
 export function LogoDropdown() {
-  const { isAuthenticated, signOut } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const signOut = useClerkSignOut();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
