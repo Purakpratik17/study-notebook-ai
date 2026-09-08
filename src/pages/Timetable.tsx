@@ -262,7 +262,7 @@ function TaskRow({
       <button
         onClick={onDelete}
         aria-label={`Delete ${entry.subject}`}
-        className="shrink-0 rounded p-1.5 text-muted-foreground/50 opacity-0 transition group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100"
+        className="shrink-0 rounded p-1.5 text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive md:opacity-0 md:transition md:group-hover:opacity-100"
       >
         <Trash2 className="size-4" />
       </button>

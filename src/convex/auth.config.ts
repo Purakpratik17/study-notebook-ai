@@ -14,6 +14,12 @@ export default {
     // ConvexProviderWithClerk using Clerk's built-in "convex" token template.
     // The domain below is this app's Clerk Frontend API URL (public, not a
     // secret). See: https://docs.convex.dev/auth/clerk
+    //
+    // PRODUCTION (Google Play release): after claiming the Clerk app and
+    // creating a production instance, hardcode your production Frontend API
+    // URL here (e.g. https://clerk.yourapp.com) and redeploy Convex. Convex
+    // auth configs cannot use optional env fallbacks — every referenced var
+    // must be set — so the value is a literal. See ENVIRONMENT.md.
     {
       domain: "https://awake-marmoset-1455.clerk.accounts.dev",
       applicationID: "convex",

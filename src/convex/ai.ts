@@ -1,3 +1,8 @@
+"use node";
+
+// This module runs in Node (Convex action runtime). The AI gateway SDK and its
+// credentials (VLY_INTEGRATION_KEY) are server-side only — the key is never
+// bundled into the web/Android client.
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { vly } from "../lib/vly-integrations";
