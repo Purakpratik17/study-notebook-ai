@@ -1,5 +1,45 @@
-.env.local
+# Dependencies
 node_modules
+
+# Build output
 dist
+dist-ssr
+
+# Convex generated code (regenerated via `bunx convex dev --once`)
 src/convex/_generated
+
+# Environment files — NEVER commit real keys
+.env
+.env.*
+!.env.example
+
+# Clerk local dev files
 .clerk/
+
+# Capacitor / Android build artifacts
+android/.gradle
+android/build
+android/app/build
+android/local.properties
+android/capacitor-cordova-android-plugins
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/keystore.properties
+*.keystore
+*.jks
+*.keystore.id
+android/app/upload-keystore.jks
+
+# Generated icon assets (regenerate with `bunx capacitor-assets generate --android`)
+assets/
+
+# Logs & OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea

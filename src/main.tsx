@@ -1,6 +1,7 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { RequireAuth } from "@/components/RequireAuth";
+import { NativeAuthBridge, SsoCallback } from "@/components/NativeAuthBridge";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
 import { ClerkProvider, useAuth as useClerkAuth } from "@clerk/react-router";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
@@ -138,6 +139,7 @@ createRoot(document.getElementById("root")!).render(
         appearance={clerkAppearance}
       >
         <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
+          <NativeAuthBridge />
           <BrowserRouter>
             <RouteSyncer />
             <Suspense fallback={<RouteLoading />}>
@@ -147,6 +149,7 @@ createRoot(document.getElementById("root")!).render(
                   path="/auth"
                   element={<AuthPage redirectAfterAuth="/dashboard" />}
                 />
+                <Route path="/sso-callback" element={<SsoCallback />} />
                 <Route
                   path="/dashboard"
                   element={

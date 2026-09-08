@@ -1,0 +1,104 @@
+import { useClerk } from "@clerk/react-router";
+import { useEffect } from "react";
+import { isNative } from "@/lib/native";
+
+/**
+ * Mounted once inside <ClerkProvider> (web + native). On Android it:
+ *
+ * 1. Completes Clerk OAuth (Google) / email-verification redirects that
+ *    return from the system browser via the `studynotebook://sso-callback`
+ *    deep link. Capacitor fires `appUrlOpen`; the query params are handed to
+ *    Clerk's `handleRedirectCallback()`, which validates the `transfer`
+ *    value and activates the session in the WebView. No token exchange
+ *    happens in the WebView — this is Clerk's documented native pattern
+ *    (https://clerk.com/docs/guides/development/native-apps/overview).
+ * 2. Maps the hardware/gesture back button to browser history, exiting the
+ *    app only at the root.
+ */
+export function NativeAuthBridge() {
+  const clerk = useClerk();
+
+  useEffect(() => {
+    if (!isNative()) return;
+
+    let cleanupFns: Array<() => void> = [];
+    let cancelled = false;
+
+    (async () => {
+      const { App } = await import("@capacitor/app");
+      if (cancelled) return;
+
+      const urlOpen = await App.addListener("appUrlOpen", (event) => {
+        const url = new URL(event.url);
+        const isAuthCallback =
+          url.searchParams.has("transfer") ||
+          url.searchParams.has("verified") ||
+          url.searchParams.has("error_code") ||
+          url.searchParams.has("error_description");
+        if (!isAuthCallback) return;
+        void clerk
+          .handleRedirectCallback({
+            signInForceRedirectUrl: "/dashboard",
+            signUpForceRedirectUrl: "/dashboard",
+          })
+          .catch((err: unknown) => {
+            console.error("[native-auth] redirect callback failed:", err);
+          });
+      });
+
+      const backButton = await App.addListener("backButton", () => {
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          void App.exitApp();
+        }
+      });
+
+      if (cancelled) {
+        void urlOpen.remove();
+        void backButton.remove();
+        return;
+      }
+      cleanupFns = [
+        () => void urlOpen.remove(),
+        () => void backButton.remove(),
+      ];
+    })();
+
+    return () => {
+      cancelled = true;
+      cleanupFns.forEach((fn) => fn());
+    };
+  }, [clerk]);
+
+  return null;
+}
+
+/**
+ * Route component for /sso-callback — finishes any OAuth/transfer flow that
+ * Clerk redirected inside the WebView itself (e.g. email verification).
+ */
+export function SsoCallback() {
+  const clerk = useClerk();
+
+  useEffect(() => {
+    void clerk
+      .handleRedirectCallback({
+        signInForceRedirectUrl: "/dashboard",
+        signUpForceRedirectUrl: "/dashboard",
+      })
+      .catch((err: unknown) => {
+        console.error("[auth] callback failed:", err);
+        window.location.replace("/auth");
+      });
+  }, [clerk]);
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-3">
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="annotation text-sm">finishing sign-in…</p>
+      </div>
+    </main>
+  );
+}
