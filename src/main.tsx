@@ -134,13 +134,13 @@ createRoot(document.getElementById("root")!).render(
       <ToolbarErrorBoundary>
         <VlyToolbar />
       </ToolbarErrorBoundary>
-      <ClerkProvider
-        publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}
-        appearance={clerkAppearance}
-      >
-        <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
-          <NativeAuthBridge />
-          <BrowserRouter>
+      <BrowserRouter>
+        <ClerkProvider
+          publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}
+          appearance={clerkAppearance}
+        >
+          <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
+            <NativeAuthBridge />
             <RouteSyncer />
             <Suspense fallback={<RouteLoading />}>
               <Routes>
@@ -193,10 +193,10 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-          </BrowserRouter>
-          <Toaster />
-        </ConvexProviderWithClerk>
-      </ClerkProvider>
+            <Toaster />
+          </ConvexProviderWithClerk>
+        </ClerkProvider>
+      </BrowserRouter>
     </RootErrorBoundary>
   </StrictMode>,
 );
