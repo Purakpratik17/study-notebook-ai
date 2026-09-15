@@ -146,11 +146,14 @@ createRoot(document.getElementById("root")!).render(
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Landing />} />
+                {/* Wildcard so Clerk's multi-step child paths
+                    (/auth/factor-one, /auth/verify, /sign-up/verify-email-address, …)
+                    render the same Clerk component instead of hitting NotFound. */}
                 <Route
-                  path="/auth"
+                  path="/auth/*"
                   element={<AuthPage redirectAfterAuth="/dashboard" />}
                 />
-                <Route path="/sign-up" element={<SignUpPage />} />
+                <Route path="/sign-up/*" element={<SignUpPage />} />
                 <Route path="/sso-callback" element={<SsoCallback />} />
                 <Route
                   path="/dashboard"
