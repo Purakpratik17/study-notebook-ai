@@ -38,8 +38,8 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
 
   // If Convex never validates the Clerk JWT (e.g. the Clerk instance is
   // missing the built-in "convex" JWT template, which ConvexProviderWithClerk
-  // requests with getToken({ template: "convex" })), the previous code spun
-  // forever. Surface the failure after a grace period with a retry.
+  // requests with getToken({ template: "convex" })), surface the failure
+  // after a grace period instead of spinning forever.
   const [convexStalled, setConvexStalled] = useState(false);
   const startedAt = useRef<number>(0);
   useEffect(() => {
@@ -96,7 +96,9 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     </p>
                   </>
                 ) : (
-                  <p className="annotation mt-1 text-sm">opening your notebook…</p>
+                  <p className="annotation mt-1 text-sm">
+                    opening your notebook…
+                  </p>
                 )}
               </div>
               {convexStalled ? (
