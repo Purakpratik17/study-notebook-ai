@@ -21,7 +21,9 @@ export default {
     // auth configs cannot use optional env fallbacks — every referenced var
     // must be set — so the value is a literal. See ENVIRONMENT.md.
     {
-      domain: "https://awake-marmoset-1455.clerk.accounts.dev",
+      // Must match the Clerk instance of VITE_CLERK_PUBLISHABLE_KEY
+      // (pk_test_c2hh… = sharing-mastodon-1734.clerk.accounts.dev).
+      domain: "https://sharing-mastodon-1734.clerk.accounts.dev",
       applicationID: "convex",
     },
 
