@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth, useClerkSignOut } from "@/hooks/use-auth";
 import { ClerkSignInCard } from "@/components/ClerkSignInCard";
 import { NotebookPen } from "lucide-react";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
 interface AuthProps {
@@ -36,6 +36,25 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   // state right after returning from Google/email before the app takes over.
   const completingSignIn = !isLoading && clerkSignedIn && !isAuthenticated;
 
+  // If Convex never validates the Clerk JWT (e.g. the Clerk instance is
+  // missing the built-in "convex" JWT template, which ConvexProviderWithClerk
+  // requests with getToken({ template: "convex" })), the previous code spun
+  // forever. Surface the failure after a grace period with a retry.
+  const [convexStalled, setConvexStalled] = useState(false);
+  const startedAt = useRef<number>(0);
+  useEffect(() => {
+    if (!completingSignIn) {
+      setConvexStalled(false);
+      return;
+    }
+    startedAt.current = Date.now();
+    const t = setTimeout(() => {
+      // Only flag a stall if still not authenticated after the grace period.
+      setConvexStalled(Date.now() - startedAt.current >= 12000);
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [completingSignIn]);
+
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       navigate(redirect, { replace: true });
@@ -67,10 +86,24 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <div>
                 <p className="text-sm font-semibold">Signed in as {name}</p>
-                <p className="annotation mt-1 text-sm">
-                  opening your notebook…
-                </p>
+                {convexStalled ? (
+                  <>
+                    <p className="mt-1 text-sm font-medium text-destructive">
+                      Couldn't connect to your notebook's backend.
+                    </p>
+                    <p className="annotation mt-1 text-xs">
+                      check your connection and retry — or try again later
+                    </p>
+                  </>
+                ) : (
+                  <p className="annotation mt-1 text-sm">opening your notebook…</p>
+                )}
               </div>
+              {convexStalled ? (
+                <Button size="sm" onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              ) : null}
               <Button
                 variant="ghost"
                 size="sm"
