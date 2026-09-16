@@ -9,6 +9,7 @@ import {
   NotebookPen,
   Sparkles,
   Swords,
+  Trophy,
   User,
 } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router";
@@ -18,6 +19,7 @@ const TABS = [
   { to: "/ai-study", label: "AI Study", icon: Sparkles },
   { to: "/timetable", label: "Timetable", icon: CalendarDays },
   { to: "/quests", label: "Quests", icon: Swords },
+  { to: "/leaderboard", label: "Ranks", icon: Trophy },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
 

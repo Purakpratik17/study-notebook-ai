@@ -138,6 +138,61 @@ export async function grantXp(
   };
 }
 
+/**
+ * Weekly/global XP leaderboard computed live from the stats table.
+ * Returns display names + level info only — never emails or other private data.
+ * Reactive: recomputes on every XP change because it's a Convex query.
+ */
+export const getLeaderboard = query({
+  args: {},
+  handler: async (ctx) => {
+    const meId = await requireUserId(ctx);
+    const all = await ctx.db.query("stats").collect();
+
+    const rows = [] as Array<{
+      userId: string;
+      rank: number;
+      name: string;
+      imageUrl?: string;
+      xp: number;
+      level: number;
+      levelName: string;
+      isMe: boolean;
+    }>;
+
+    for (const s of all) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_id", (q) => q.eq("_id", s.userId as never))
+        .unique();
+      if (user?.isAnonymous) continue;
+      const lvl = levelForXp(s.xp);
+      rows.push({
+        userId: s.userId,
+        rank: 0,
+        name: user?.name ?? "Student",
+        imageUrl: user?.image ?? undefined,
+        xp: s.xp,
+        level: lvl.level,
+        levelName: lvl.name,
+        isMe: s.userId === meId,
+      });
+    }
+
+    rows.sort((a, b) => b.xp - a.xp);
+    const top = rows.slice(0, 50).map((r, i) => ({ ...r, rank: i + 1 }));
+
+    // Ensure the current user's row is always present even outside top 50.
+    if (!top.some((r) => r.isMe)) {
+      const me = rows.find((r) => r.isMe);
+      if (me) {
+        top.push({ ...me, rank: rows.findIndex((r) => r.isMe) + 1 });
+      }
+    }
+    return top;
+  },
+});
+
 /** Whether the user's last XP-earning day was today (a "study day"). */
 export async function studiedToday(ctx: QueryCtx | MutationCtx, userId: string): Promise<boolean> {
   const stats = await ctx.db

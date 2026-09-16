@@ -21,10 +21,10 @@ export const DAILY_GOAL_MINUTES = 60;
 export type LevelDef = { level: number; xp: number; name: string };
 export const LEVELS: LevelDef[] = [
   { level: 1, xp: 0, name: "Beginner" },
-  { level: 2, xp: 100, name: "Learner" },
-  { level: 3, xp: 300, name: "Scholar" },
-  { level: 4, xp: 650, name: "Achiever" },
-  { level: 5, xp: 1200, name: "Expert" },
+  { level: 2, xp: 400, name: "Learner" },
+  { level: 3, xp: 1000, name: "Scholar" },
+  { level: 4, xp: 2000, name: "Achiever" },
+  { level: 5, xp: 3500, name: "Expert" },
 ];
 
 /** Today's date as YYYY-MM-DD in UTC. */

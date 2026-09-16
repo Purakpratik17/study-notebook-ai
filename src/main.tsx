@@ -20,6 +20,7 @@ const AiStudy = lazy(() => import("./pages/AiStudy.tsx"));
 const Timetable = lazy(() => import("./pages/Timetable.tsx"));
 const Quests = lazy(() => import("./pages/Quests.tsx"));
 const Profile = lazy(() => import("./pages/Profile.tsx"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 // Simple loading fallback for route transitions
@@ -184,6 +185,14 @@ createRoot(document.getElementById("root")!).render(
                   element={
                     <RequireAuth>
                       <Quests />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/leaderboard"
+                  element={
+                    <RequireAuth>
+                      <Leaderboard />
                     </RequireAuth>
                   }
                 />
