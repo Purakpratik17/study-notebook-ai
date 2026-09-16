@@ -37,6 +37,13 @@ async function chatCompletion(
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(
+        "AI provider rejected the API key (HTTP " +
+          res.status +
+          "). Check that NVIDIA_API_KEY in the Convex environment is a valid, non-revoked key.",
+      );
+    }
     throw new Error(
       `AI provider error (${res.status}): ${body.slice(0, 200) || res.statusText}`,
     );
