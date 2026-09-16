@@ -6,7 +6,7 @@
 
 // NVIDIA NIM gateway — OpenAI-compatible chat completions endpoint.
 const AI_BASE_URL = "https://integrate.api.nvidia.com/v1";
-const AI_MODEL = "z-ai/glm-5.3";
+const AI_MODEL = "deepseek-ai/deepseek-v4-flash-0731";
 
 async function chatCompletion(
   messages: Array<{ role: string; content: string }>,
