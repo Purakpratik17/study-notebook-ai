@@ -1,11 +1,50 @@
 "use node";
 
-// This module runs in Node (Convex action runtime). The AI gateway SDK and its
-// credentials (VLY_INTEGRATION_KEY) are server-side only — the key is never
+// This module runs in Node (Convex action runtime). The OpenAI API key lives
+// only in the Convex deployment environment (OPENAI_API_KEY) and is never
 // bundled into the web/Android client.
+
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+
+async function chatCompletion(
+  model: string,
+  messages: Array<{ role: string; content: string }>,
+  temperature: number,
+  maxTokens: number,
+): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "AI is not configured: OPENAI_API_KEY is missing from the backend environment.",
+    );
+  }
+  const res = await fetch(OPENAI_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature,
+      max_tokens: maxTokens,
+      response_format: { type: "json_object" },
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `AI provider error (${res.status}): ${body.slice(0, 200) || res.statusText}`,
+    );
+  }
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  return data.choices?.[0]?.message?.content ?? "";
+}
 import { v } from "convex/values";
 import { action } from "./_generated/server";
-import { vly } from "../lib/vly-integrations";
 import { requireUserId } from "./identity";
 import { api } from "./_generated/api";
 
@@ -125,27 +164,20 @@ export const generate = action({
     const topic = args.topic.trim().slice(0, 120);
     if (topic.length < 2) throw new Error("Please enter a topic to study");
 
-    const completion = await vly.ai.completion({
-      model: "gpt-4o-mini",
-      messages: [
+    const content = await chatCompletion(
+      "gpt-4o-mini",
+      [
         {
           role: "system",
           content:
-            "You are Study Notebook AI, an expert exam tutor that outputs strict JSON only.",
+            'You are Study Notebook AI, an expert exam tutor. Always respond with a single JSON object matching the requested schema. Use the key "quiz" at the top level.',
         },
         { role: "user", content: buildPrompt(topic) },
       ],
-      temperature: 0.4,
-      maxTokens: 3000,
-    });
+      0.4,
+      3000,
+    );
 
-    if (!completion.success || !completion.data) {
-      throw new Error(
-        completion.error ?? "AI generation failed. Please try again.",
-      );
-    }
-
-    const content = completion.data.choices?.[0]?.message?.content ?? "";
     const parsed = extractJson(content) as Partial<StudyNotes> & {
       quiz?: unknown;
     };

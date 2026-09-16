@@ -43,7 +43,24 @@ const SUGGESTIONS = [
   "World War 2",
   "Newton's Laws",
   "Supply and Demand",
+  "Algebraic expressions",
+  "The Water Cycle",
 ];
+
+const MOTIVATION = [
+  "Small progress is still progress. Keep going. ✨",
+  "One topic at a time. One step closer to mastering it. 🌱",
+  "Every expert was once a beginner. 📖",
+  "Notes today, confidence tomorrow. 💪",
+];
+
+const SUCCESS_NOTES = [
+  "Nice! Your notes are ready. Time to learn. ✨",
+  "Fresh notes, fresh start — go get it. 🌟",
+  "Your curated notes just landed. Happy studying! 📚",
+];
+
+const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
 export default function AiStudy() {
   const [topic, setTopic] = useState("");
@@ -67,6 +84,7 @@ export default function AiStudy() {
       const result = await generate({ topic: t });
       setActiveNoteId(result.noteId);
       showXpToasts(result.xp, result.settledQuests);
+      toast.success(pick(SUCCESS_NOTES));
     } catch (e) {
       setError(
         e instanceof Error
@@ -80,12 +98,15 @@ export default function AiStudy() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-          <Sparkles className="size-6 text-primary" /> AI Study
+      <header className="flex flex-col gap-2">
+        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
+          <Sparkles className="size-7 text-primary" /> Curated Notes
         </h1>
         <p className="annotation text-sm">
-          type any topic — instant notes + a quiz
+          type any topic — personalized notes + a quiz, written just for you
+        </p>
+        <p className="mt-1 w-fit -rotate-1 rounded-md border border-dashed border-highlight/60 bg-highlight-soft/50 px-3 py-1.5 text-sm text-foreground/80">
+          {MOTIVATION[0]}
         </p>
       </header>
 
@@ -97,47 +118,54 @@ export default function AiStudy() {
           handleGenerate(topic);
         }}
       >
-        <label htmlFor="topic" className="text-sm font-semibold">
+        <label
+          htmlFor="topic"
+          className="text-base font-semibold"
+        >
           What are we studying today?
         </label>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <input
             id="topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder='e.g. "Photosynthesis" or "Binomial Distribution"'
-            className="h-11 flex-1 rounded-md border bg-background/60 px-3 text-sm outline-none ring-ring/40 transition focus:ring-2"
+            className="h-14 flex-1 rounded-lg border bg-background/60 px-4 text-base outline-none ring-ring/40 transition focus:ring-2"
             disabled={loading}
             maxLength={120}
           />
           <button
             type="submit"
             disabled={loading || topic.trim().length < 2}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:opacity-50"
+            className="inline-flex h-14 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 sm:px-8"
           >
             {loading ? (
-              <Loader2 className="size-4 animate-spin" />
+              <Loader2 className="size-5 animate-spin" />
             ) : (
-              <GraduationCap className="size-4" />
+              <GraduationCap className="size-5" />
             )}
-            {loading ? "Writing your notes…" : "Generate study pack"}
+            {loading ? "Writing your notes…" : "Generate Curated Notes"}
           </button>
         </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setTopic(s);
-                handleGenerate(s);
-              }}
-              disabled={loading}
-              className="rounded-full border bg-highlight-soft/60 px-2.5 py-1 text-xs font-medium text-foreground/80 transition hover:bg-highlight/70 disabled:opacity-50"
-            >
-              {s}
-            </button>
-          ))}
+        <div className="mt-5">
+          <p className="annotation mb-2 text-xs">or try one of these:</p>
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  setTopic(s);
+                  handleGenerate(s);
+                }}
+                disabled={loading}
+                className="flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-highlight-soft/60 px-4 py-2.5 text-sm font-semibold text-foreground/80 shadow-sm transition hover:bg-highlight/70 hover:shadow active:scale-[0.98] disabled:opacity-50"
+              >
+                <BookOpenCheck className="size-4 shrink-0 text-marker" />
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
         {error && (
           <p className="mt-3 flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
