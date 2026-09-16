@@ -1,35 +1,38 @@
 "use node";
 
-// This module runs in Node (Convex action runtime). The OpenAI API key lives
-// only in the Convex deployment environment (OPENAI_API_KEY) and is never
+// This module runs in Node (Convex action runtime). The AI provider key lives
+// only in the Convex deployment environment (NVIDIA_API_KEY) and is never
 // bundled into the web/Android client.
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+// NVIDIA NIM gateway — OpenAI-compatible chat completions endpoint.
+const AI_BASE_URL = "https://integrate.api.nvidia.com/v1";
+const AI_MODEL = "z-ai/glm-5.3";
 
 async function chatCompletion(
-  model: string,
   messages: Array<{ role: string; content: string }>,
   temperature: number,
   maxTokens: number,
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "AI is not configured: OPENAI_API_KEY is missing from the backend environment.",
+      "AI is not configured: NVIDIA_API_KEY is missing from the backend environment.",
     );
   }
-  const res = await fetch(OPENAI_URL, {
+  const res = await fetch(`${AI_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      Accept: "application/json",
     },
     body: JSON.stringify({
-      model,
+      model: AI_MODEL,
       messages,
       temperature,
+      top_p: 1,
       max_tokens: maxTokens,
-      response_format: { type: "json_object" },
+      stream: false,
     }),
   });
   if (!res.ok) {
@@ -165,12 +168,11 @@ export const generate = action({
     if (topic.length < 2) throw new Error("Please enter a topic to study");
 
     const content = await chatCompletion(
-      "gpt-4o-mini",
       [
         {
           role: "system",
           content:
-            'You are Study Notebook AI, an expert exam tutor. Always respond with a single JSON object matching the requested schema. Use the key "quiz" at the top level.',
+            "You are Study Notebook AI, an expert exam tutor. Respond with a single valid JSON object only — no markdown fences, no commentary. Put the quiz under the top-level key \"quiz\".",
         },
         { role: "user", content: buildPrompt(topic) },
       ],
