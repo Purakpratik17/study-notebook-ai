@@ -493,6 +493,7 @@ export default function Profile() {
             )}
           </section>
 
+
           {/* Level ladder */}
           {levelList.length > 0 && (
             <section className="paper-sheet px-5 py-5 md:px-7">

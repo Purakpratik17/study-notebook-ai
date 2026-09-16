@@ -17,14 +17,19 @@ export const XP_REWARDS = {
 
 export const DAILY_GOAL_MINUTES = 60;
 
-/** Level thresholds: cumulative XP required to *reach* each level. */
+/** Rank thresholds: cumulative XP required to *reach* each rank. */
 export type LevelDef = { level: number; xp: number; name: string };
 export const LEVELS: LevelDef[] = [
-  { level: 1, xp: 0, name: "Beginner" },
-  { level: 2, xp: 400, name: "Learner" },
-  { level: 3, xp: 1000, name: "Scholar" },
-  { level: 4, xp: 2000, name: "Achiever" },
-  { level: 5, xp: 3500, name: "Expert" },
+  { level: 1, xp: 0, name: "Novice" },
+  { level: 2, xp: 500, name: "Learner" },
+  { level: 3, xp: 1200, name: "Explorer" },
+  { level: 4, xp: 2000, name: "Thinker" },
+  { level: 5, xp: 3200, name: "Scholar" },
+  { level: 6, xp: 4800, name: "Achiever" },
+  { level: 7, xp: 7000, name: "Mastermind" },
+  { level: 8, xp: 10000, name: "Sage" },
+  { level: 9, xp: 14000, name: "Virtuoso" },
+  { level: 10, xp: 20000, name: "Learnova Legend" },
 ];
 
 /** Today's date as YYYY-MM-DD in UTC. */

@@ -140,6 +140,9 @@ export const ACHIEVEMENTS = [
   { id: "xp_500", name: "Rising Star", desc: "Earn 500 XP" },
   { id: "xp_1500", name: "XP Collector", desc: "Earn 1,500 XP" },
   { id: "xp_3500", name: "Expert Mind", desc: "Earn 3,500 XP" },
+  { id: "xp_7000", name: "Mastermind", desc: "Earn 7,000 XP" },
+  { id: "xp_14000", name: "Virtuoso", desc: "Earn 14,000 XP" },
+  { id: "xp_20000", name: "Learnova Legend", desc: "Earn 20,000 XP" },
   { id: "streak_7", name: "Week Warrior", desc: "Reach a 7-day streak" },
   { id: "streak_30", name: "Month Master", desc: "Reach a 30-day streak" },
   { id: "tetris_unlocked", name: "Arcade Night Owl", desc: "Unlock the 4-hour focus game" },
@@ -188,6 +191,9 @@ export const checkAchievements = internalMutation({
       ["xp_500", stats.xp >= 500],
       ["xp_1500", stats.xp >= 1500],
       ["xp_3500", stats.xp >= 3500],
+      ["xp_7000", stats.xp >= 7000],
+      ["xp_14000", stats.xp >= 14000],
+      ["xp_20000", stats.xp >= 20000],
       ["streak_7", stats.bestStreak >= 7],
       ["streak_30", stats.bestStreak >= 30],
       ["tetris_unlocked", (stats.totalMinutesStudied ?? 0) >= 240],
@@ -288,6 +294,9 @@ export const listAchievements = query({
         case "xp_500": progress = Math.min(stats.xp / 500, 1); break;
         case "xp_1500": progress = Math.min(stats.xp / 1500, 1); break;
         case "xp_3500": progress = Math.min(stats.xp / 3500, 1); break;
+        case "xp_7000": progress = Math.min(stats.xp / 7000, 1); break;
+        case "xp_14000": progress = Math.min(stats.xp / 14000, 1); break;
+        case "xp_20000": progress = Math.min(stats.xp / 20000, 1); break;
         case "streak_7": progress = Math.min(stats.bestStreak / 7, 1); break;
         case "streak_30": progress = Math.min(stats.bestStreak / 30, 1); break;
         case "tetris_unlocked": progress = (stats.totalMinutesStudied ?? 0) >= 240 ? 1 : Math.min((stats.totalMinutesStudied ?? 0) / 240, 1); break;

@@ -35,7 +35,7 @@ const FEATURES = [
   {
     icon: Trophy,
     title: "Levels & streaks",
-    body: "Climb from Beginner to Expert, keep your streak alive, and track every stat on your profile.",
+    body: "Climb from Novice to Learnova Legend, keep your streak alive, and track every stat on your profile.",
     accent: "bg-highlight text-foreground",
   },
 ] as const;
@@ -48,12 +48,17 @@ const STEPS = [
   { n: "05", text: "Earn XP — level up" },
 ] as const;
 
-const LEVELS = [
-  { lvl: 1, name: "Beginner", xp: "0 XP" },
-  { lvl: 2, name: "Learner", xp: "100 XP" },
-  { lvl: 3, name: "Scholar", xp: "300 XP" },
-  { lvl: 4, name: "Achiever", xp: "650 XP" },
-  { lvl: 5, name: "Expert", xp: "1200 XP" },
+const RANKS = [
+  { lvl: 1, name: "Novice", xp: "0 XP" },
+  { lvl: 2, name: "Learner", xp: "500 XP" },
+  { lvl: 3, name: "Explorer", xp: "1,200 XP" },
+  { lvl: 4, name: "Thinker", xp: "2,000 XP" },
+  { lvl: 5, name: "Scholar", xp: "3,200 XP" },
+  { lvl: 6, name: "Achiever", xp: "4,800 XP" },
+  { lvl: 7, name: "Mastermind", xp: "7,000 XP" },
+  { lvl: 8, name: "Sage", xp: "10,000 XP" },
+  { lvl: 9, name: "Virtuoso", xp: "14,000 XP" },
+  { lvl: 10, name: "Learnova Legend", xp: "20,000 XP" },
 ] as const;
 
 export default function Landing() {
@@ -174,7 +179,7 @@ export default function Landing() {
             Climb the level ladder
           </h2>
           <ul className="mt-5 flex flex-wrap gap-3">
-            {LEVELS.map((l) => (
+            {RANKS.map((l) => (
               <li
                 key={l.lvl}
                 className="flex items-center gap-2.5 rounded-lg border bg-card px-3.5 py-2.5"
