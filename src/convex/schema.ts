@@ -31,8 +31,60 @@ const schema = defineSchema(
       totalQuizzesCompleted: v.number(),
       totalQuizPoints: v.number(),
       totalQuizQuestions: v.number(),
+      totalMinutesStudied: v.optional(v.number()), // lifetime focused-study minutes
       updatedAt: v.number(),
     }).index("by_user", ["userId"]),
+
+    // Editable public profile (never contains email or private ids).
+    profiles: defineTable({
+      userId: v.string(), // Clerk user id — one profile per identity
+      displayName: v.optional(v.string()),
+      username: v.optional(v.string()),
+      bio: v.optional(v.string()),
+      avatar: v.optional(v.string()), // data URL, small (≤ ~200KB)
+      school: v.optional(v.string()),
+      course: v.optional(v.string()),
+      interests: v.optional(v.string()),
+      tetrisHighScore: v.optional(v.number()),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    }).index("by_user", ["userId"]),
+
+    // Unlocked achievements, one row per (user, achievementId).
+    achievements: defineTable({
+      userId: v.string(),
+      achievementId: v.string(),
+      unlockedAt: v.number(),
+    }).index("by_user", ["userId"]),
+
+    // AI essays.
+    essays: defineTable({
+      userId: v.string(),
+      title: v.string(),
+      topic: v.string(),
+      subject: v.optional(v.string()),
+      content: v.string(),
+      wordCount: v.number(),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    }).index("by_user_created", ["userId", "createdAt"]),
+
+    // AI school/college projects, stored section-by-section for editing.
+    projects: defineTable({
+      userId: v.string(),
+      title: v.string(),
+      meta: v.any(), // form inputs (topic, subject, pages, names, …)
+      sections: v.array(
+        v.object({
+          id: v.string(),
+          kind: v.string(),
+          heading: v.string(),
+          body: v.string(),
+        }),
+      ),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    }).index("by_user_created", ["userId", "createdAt"]),
 
     // Every XP grant is journaled here so rewards can never be duplicated.
     xpEvents: defineTable({

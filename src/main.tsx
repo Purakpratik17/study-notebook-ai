@@ -21,6 +21,9 @@ const Timetable = lazy(() => import("./pages/Timetable.tsx"));
 const Quests = lazy(() => import("./pages/Quests.tsx"));
 const Profile = lazy(() => import("./pages/Profile.tsx"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard.tsx"));
+const EssayWriter = lazy(() => import("./pages/EssayWriter.tsx"));
+const ProjectCreator = lazy(() => import("./pages/ProjectCreator.tsx"));
+const Arcade = lazy(() => import("./pages/Arcade.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 // Simple loading fallback for route transitions
@@ -193,6 +196,30 @@ createRoot(document.getElementById("root")!).render(
                   element={
                     <RequireAuth>
                       <Leaderboard />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/essay"
+                  element={
+                    <RequireAuth>
+                      <EssayWriter />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/projects"
+                  element={
+                    <RequireAuth>
+                      <ProjectCreator />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/arcade"
+                  element={
+                    <RequireAuth>
+                      <Arcade />
                     </RequireAuth>
                   }
                 />

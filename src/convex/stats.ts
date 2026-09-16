@@ -25,6 +25,7 @@ function emptyStats(userId: string): Omit<StatsDoc, "_id" | "_creationTime"> {
     totalQuizzesCompleted: 0,
     totalQuizPoints: 0,
     totalQuizQuestions: 0,
+    totalMinutesStudied: 0,
     updatedAt: now,
   };
 }
@@ -115,6 +116,7 @@ export async function grantXp(
     lastStudyDate: today,
     minutesDay,
     minutesStudiedToday: minutesStudiedToday + minutesEarned,
+    totalMinutesStudied: (stats.totalMinutesStudied ?? 0) + minutesEarned,
     updatedAt: Date.now(),
   });
   await ctx.db.insert("xpEvents", {
@@ -153,6 +155,7 @@ export const getLeaderboard = query({
       userId: string;
       rank: number;
       name: string;
+      username?: string;
       imageUrl?: string;
       xp: number;
       level: number;
@@ -166,12 +169,17 @@ export const getLeaderboard = query({
         .withIndex("by_id", (q) => q.eq("_id", s.userId as never))
         .unique();
       if (user?.isAnonymous) continue;
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", s.userId))
+        .first();
       const lvl = levelForXp(s.xp);
       rows.push({
         userId: s.userId,
         rank: 0,
-        name: user?.name ?? "Student",
-        imageUrl: user?.image ?? undefined,
+        name: profile?.displayName ?? user?.name ?? "Student",
+        username: profile?.username ?? undefined,
+        imageUrl: profile?.avatar ?? user?.image ?? undefined,
         xp: s.xp,
         level: lvl.level,
         levelName: lvl.name,
@@ -230,6 +238,9 @@ export const getStats = query({
       bestStreak: stats.bestStreak,
       totalTasksCompleted: stats.totalTasksCompleted,
       totalQuizzesCompleted: stats.totalQuizzesCompleted,
+      totalMinutesStudied: stats.totalMinutesStudied ?? 0,
+      minutesStudiedToday:
+        stats.minutesDay === todayISO() ? (stats.minutesStudiedToday ?? 0) : 0,
       quizAverage:
         stats.totalQuizQuestions > 0
           ? Math.round((stats.totalQuizPoints / stats.totalQuizQuestions) * 100)

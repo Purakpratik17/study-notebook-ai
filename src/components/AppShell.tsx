@@ -4,22 +4,45 @@ import { useAuth, useClerkSignOut } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import {
   CalendarDays,
+  FileStack,
+  Gamepad2,
   Home,
   LogOut,
+  MoreHorizontal,
   NotebookPen,
+  PenLine,
   Sparkles,
   Swords,
   Trophy,
   User,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 
 const TABS = [
   { to: "/dashboard", label: "Home", icon: Home },
   { to: "/ai-study", label: "AI Study", icon: Sparkles },
+  { to: "/essay", label: "Essay Writer", icon: PenLine },
+  { to: "/projects", label: "Projects", icon: FileStack },
   { to: "/timetable", label: "Timetable", icon: CalendarDays },
   { to: "/quests", label: "Quests", icon: Swords },
+  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { to: "/profile", label: "Profile", icon: User },
+] as const;
+
+/** Mobile bottom bar keeps the 4 highest-traffic destinations; the rest
+ *  live in a compact "More" sheet so nothing feels overcrowded. */
+const MOBILE_TABS = [
+  { to: "/dashboard", label: "Home", icon: Home },
+  { to: "/ai-study", label: "AI Study", icon: Sparkles },
+  { to: "/quests", label: "Quests", icon: Swords },
   { to: "/leaderboard", label: "Ranks", icon: Trophy },
+] as const;
+
+const MORE_TABS = [
+  { to: "/essay", label: "Essay Writer", icon: PenLine },
+  { to: "/projects", label: "Projects", icon: FileStack },
+  { to: "/timetable", label: "Timetable", icon: CalendarDays },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
 
@@ -27,6 +50,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { name, imageUrl } = useAuth();
   const signOut = useClerkSignOut();
   const location = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const inMore = MORE_TABS.some((t) => location.pathname === t.to);
+
+  // Close the "More" sheet whenever the route changes.
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen">
@@ -64,6 +94,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </NavLink>
             );
           })}
+          <NavLink
+            to="/arcade"
+            className={cn(
+              "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              location.pathname === "/arcade" &&
+                "bg-primary/10 font-semibold text-primary",
+            )}
+          >
+            <Gamepad2 className="size-4" />
+            Arcade
+          </NavLink>
         </nav>
 
         <div className="mt-auto flex flex-col gap-3 px-4 pb-5">
@@ -133,10 +174,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
 
-      {/* Mobile bottom navigation */}
+      {/* Mobile bottom navigation: 4 primary tabs + More sheet */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 backdrop-blur md:hidden">
         <div className="grid grid-cols-5">
-          {TABS.map((tab) => {
+          {MOBILE_TABS.map((tab) => {
             const active = location.pathname === tab.to;
             return (
               <NavLink
@@ -152,7 +193,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </NavLink>
             );
           })}
+          <button
+            onClick={() => setMoreOpen((v) => !v)}
+            aria-expanded={moreOpen}
+            className={cn(
+              "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors",
+              (moreOpen || inMore) && "text-primary",
+            )}
+          >
+            <MoreHorizontal className="size-5" />
+            More
+          </button>
         </div>
+        {moreOpen && (
+          <div className="grid grid-cols-4 gap-1 border-t bg-card px-2 py-3">
+            {MORE_TABS.map((tab) => {
+              const active = location.pathname === tab.to;
+              return (
+                <Link
+                  key={tab.to}
+                  to={tab.to}
+                  className={cn(
+                    "flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-medium text-muted-foreground",
+                    active ? "bg-primary/10 text-primary" : "hover:bg-accent",
+                  )}
+                >
+                  <tab.icon className="size-5" />
+                  {tab.label}
+                </Link>
+              );
+            })}
+            <Link
+              to="/arcade"
+              className={cn(
+                "flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-medium text-muted-foreground",
+                location.pathname === "/arcade"
+                  ? "bg-primary/10 text-primary"
+                  : "hover:bg-accent",
+              )}
+            >
+              <Gamepad2 className="size-5" />
+              Arcade
+            </Link>
+          </div>
+        )}
       </nav>
     </div>
   );
