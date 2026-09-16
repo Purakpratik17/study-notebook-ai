@@ -143,6 +143,10 @@ export const ACHIEVEMENTS = [
   { id: "streak_7", name: "Week Warrior", desc: "Reach a 7-day streak" },
   { id: "streak_30", name: "Month Master", desc: "Reach a 30-day streak" },
   { id: "tetris_unlocked", name: "Arcade Night Owl", desc: "Unlock the 4-hour focus game" },
+  { id: "arcade_rookie", name: "Arcade Rookie", desc: "Unlock your first arcade game" },
+  { id: "arcade_explorer", name: "Arcade Explorer", desc: "Unlock every arcade game" },
+  { id: "block_master", name: "Block Master", desc: "Score 1,000 in Study Blocks" },
+  { id: "bee_keeper", name: "Bee Keeper", desc: "Score 15 in Study Bee" },
 ] as const;
 
 /** Internal: called from grantXp flows via ctx.runMutation. */
@@ -163,6 +167,13 @@ export const checkAchievements = internalMutation({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
     const hours = (stats.totalMinutesStudied ?? 0) / 60;
+    const profileRow = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+    const arcadeUnlocksCount =
+      (profileRow?.arcadeUnlocks?.blocks ? 1 : 0) +
+      (profileRow?.arcadeUnlocks?.bee ? 1 : 0);
     const newlyUnlocked: string[] = [];
 
     const want: Array<[string, boolean]> = [
@@ -180,6 +191,10 @@ export const checkAchievements = internalMutation({
       ["streak_7", stats.bestStreak >= 7],
       ["streak_30", stats.bestStreak >= 30],
       ["tetris_unlocked", (stats.totalMinutesStudied ?? 0) >= 240],
+      ["arcade_rookie", arcadeUnlocksCount >= 1],
+      ["arcade_explorer", arcadeUnlocksCount >= 2],
+      ["block_master", (profileRow?.tetrisHighScore ?? 0) >= 1000],
+      ["bee_keeper", (profileRow?.beeHighScore ?? 0) >= 15],
     ];
 
     for (const [id, earned] of want) {
@@ -245,6 +260,13 @@ export const listAchievements = query({
       .query("achievements")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
+    const myProfile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    const arcadeUnlocksCount =
+      (myProfile?.arcadeUnlocks?.blocks ? 1 : 0) +
+      (myProfile?.arcadeUnlocks?.bee ? 1 : 0);
     const unlockedMap = new Map(unlocked.map((a) => [a.achievementId, a.unlockedAt]));
     const hours = (stats.totalMinutesStudied ?? 0) / 60;
     const questsDone = await ctx.db
@@ -269,6 +291,10 @@ export const listAchievements = query({
         case "streak_7": progress = Math.min(stats.bestStreak / 7, 1); break;
         case "streak_30": progress = Math.min(stats.bestStreak / 30, 1); break;
         case "tetris_unlocked": progress = (stats.totalMinutesStudied ?? 0) >= 240 ? 1 : Math.min((stats.totalMinutesStudied ?? 0) / 240, 1); break;
+        case "arcade_rookie": progress = Math.min(arcadeUnlocksCount / 1, 1); break;
+        case "arcade_explorer": progress = Math.min(arcadeUnlocksCount / 2, 1); break;
+        case "block_master": progress = Math.min((myProfile?.tetrisHighScore ?? 0) / 1000, 1); break;
+        case "bee_keeper": progress = Math.min((myProfile?.beeHighScore ?? 0) / 15, 1); break;
       }
       return {
         ...a,
@@ -398,6 +424,18 @@ export const getTetrisHighScore = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
     return profile?.tetrisHighScore ?? 0;
+  },
+});
+
+export const getBeeHighScore = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    return profile?.beeHighScore ?? 0;
   },
 });
 

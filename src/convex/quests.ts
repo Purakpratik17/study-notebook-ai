@@ -266,6 +266,32 @@ export async function settleQuests(
     });
     finished.push({ title: q.title, xp: q.xp, difficulty: q.difficulty });
   }
+  // Arcade hook: Study Bee unlocks permanently at 25 completed quests.
+  if (finished.length > 0) {
+    const done = await ctx.db
+      .query("questCompletions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    if (done.length >= 25) {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first();
+      if (profile && !profile.arcadeUnlocks?.bee) {
+        await ctx.db.patch(profile._id, {
+          arcadeUnlocks: { ...profile.arcadeUnlocks, bee: true },
+          updatedAt: Date.now(),
+        });
+      } else if (!profile) {
+        await ctx.db.insert("profiles", {
+          userId,
+          arcadeUnlocks: { bee: true },
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      }
+    }
+  }
   return finished;
 }
 

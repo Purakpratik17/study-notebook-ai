@@ -46,6 +46,12 @@ const schema = defineSchema(
       course: v.optional(v.string()),
       interests: v.optional(v.string()),
       tetrisHighScore: v.optional(v.number()),
+      beeHighScore: v.optional(v.number()),
+      // Permanent arcade unlocks, e.g. { blocks: true, bee: true }
+      arcadeUnlocks: v.optional(v.object({
+        blocks: v.optional(v.boolean()),
+        bee: v.optional(v.boolean()),
+      })),
       createdAt: v.number(),
       updatedAt: v.number(),
     }).index("by_user", ["userId"]),
