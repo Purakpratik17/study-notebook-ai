@@ -1,23 +1,30 @@
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   BookOpenCheck,
   CalendarCheck2,
+  Check,
   Flame,
-  ListChecks,
+  Lock,
+  Loader2,
+  Pencil,
   Sigma,
   Star,
   Swords,
   Target,
   Trophy,
+  X,
 } from "lucide-react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 type Stats = {
   xp: number;
@@ -35,35 +42,163 @@ type Stats = {
   totalTasksCompleted: number;
   totalQuizzesCompleted: number;
   quizAverage: number | null;
+  totalMinutesStudied: number;
+};
+
+type ProfileData = {
+  displayName?: string;
+  username?: string;
+  bio?: string;
+  avatar?: string;
+  school?: string;
+  course?: string;
+  interests?: string;
+  createdAt?: number;
+};
+
+type Achievement = {
+  id: string;
+  name: string;
+  desc: string;
+  unlocked: boolean;
+  unlockedAt: number | null;
+  progress: number;
 };
 
 type LevelDef = { level: number; xp: number; name: string };
 
+const MAX_BIO = 280;
+const MAX_AVATAR_BYTES = 200 * 1024;
+
+function fmtHours(mins: number) {
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 export default function Profile() {
-  const { name, imageUrl, email } = useAuth();
+  const { name, imageUrl } = useAuth();
+  const data = useQuery(api.profiles.getMyProfile) as
+    | { profile: ProfileData | null; unlocked: string[] }
+    | undefined;
+  const achievements = useQuery(api.profiles.listAchievements) as
+    | Achievement[]
+    | undefined;
   const stats = useQuery(api.stats.getStats) as Stats | null | undefined;
   const questsDone = useQuery(api.quests.completedCount);
   const notes = useQuery(api.notes.list);
   const levels = useQuery(api.config.get);
+  const saveProfile = useMutation(api.profiles.saveProfile);
+
+  const profile = data?.profile ?? null;
+  const avatarSrc = profile?.avatar ?? imageUrl;
+  const displayName = profile?.displayName ?? name;
+
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    displayName: "",
+    username: "",
+    bio: "",
+    school: "",
+    course: "",
+    interests: "",
+  });
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = () => {
+    setForm({
+      displayName: profile?.displayName ?? "",
+      username: profile?.username ?? "",
+      bio: profile?.bio ?? "",
+      school: profile?.school ?? "",
+      course: profile?.course ?? "",
+      interests: profile?.interests ?? "",
+    });
+    setAvatarPreview(profile?.avatar ?? null);
+    setEditing(true);
+  };
+
+  const handleFile = (f: File | undefined) => {
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (f.size > MAX_AVATAR_BYTES) {
+      toast.error("Image too large — pick one under 200KB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setAvatarPreview(reader.result as string);
+    reader.readAsDataURL(f);
+  };
+
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await saveProfile({
+        displayName: form.displayName || undefined,
+        username: form.username || undefined,
+        bio: form.bio || undefined,
+        school: form.school || undefined,
+        course: form.course || undefined,
+        interests: form.interests || undefined,
+        avatar: avatarPreview ?? undefined,
+      });
+      toast.success("Profile saved ✨");
+      setEditing(false);
+      setAvatarPreview(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const joined = profile?.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString(undefined, {
+        month: "long",
+        year: "numeric",
+      })
+    : null;
 
   const levelList: LevelDef[] = levels?.levels ?? [];
+  const unlockedCount = (achievements ?? []).filter((a) => a.unlocked).length;
 
   return (
     <div className="flex flex-col gap-6">
       {/* Identity card */}
       <section className="paper-sheet paper-margin flex flex-col items-center gap-4 px-6 py-6 text-center sm:flex-row sm:text-left md:pl-20">
         <Avatar className="size-20 border-2 border-primary/30 shadow-md">
-          <AvatarImage src={imageUrl} alt={name} />
+          {avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
           <AvatarFallback className="bg-highlight-soft text-2xl font-bold">
-            {name.slice(0, 1).toUpperCase()}
+            {displayName.slice(0, 1).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
           <p className="annotation text-sm">student profile</p>
-          <h1 className="truncate text-2xl font-bold tracking-tight">{name}</h1>
-          {email && (
-            <p className="truncate text-sm text-muted-foreground">{email}</p>
+          <h1 className="truncate text-2xl font-bold tracking-tight">
+            {displayName}
+          </h1>
+          {profile?.username && (
+            <p className="truncate text-sm text-muted-foreground">
+              @{profile.username}
+            </p>
           )}
+          {profile?.bio && (
+            <p className="mt-1 line-clamp-2 text-sm text-foreground/75">
+              {profile.bio}
+            </p>
+          )}
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+            {profile?.school && <span>🏫 {profile.school}</span>}
+            {profile?.course && <span>📚 {profile.course}</span>}
+            {joined && <span>joined {joined}</span>}
+          </p>
         </div>
         {stats && (
           <div className="level-chip flex flex-col items-center rounded-xl bg-card px-5 py-3">
@@ -78,7 +213,135 @@ export default function Profile() {
             </span>
           </div>
         )}
+        {!editing && (
+          <Button
+            onClick={startEdit}
+            size="sm"
+            className="gap-1.5 self-center sm:self-start"
+          >
+            <Pencil className="size-3.5" /> Edit profile
+          </Button>
+        )}
       </section>
+
+      {/* Edit form */}
+      {editing && (
+        <section className="paper-sheet spiral-edge px-5 py-5 md:px-7">
+          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+            <Pencil className="size-4" /> Edit profile
+          </h2>
+
+          <div className="mt-4 flex items-center gap-4">
+            <Avatar className="size-16 border-2 border-primary/30">
+              {avatarPreview && (
+                <AvatarImage src={avatarPreview} alt="Avatar preview" />
+              )}
+              <AvatarFallback className="bg-highlight-soft text-xl font-bold">
+                {(form.displayName || displayName).slice(0, 1).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files?.[0])}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileRef.current?.click()}
+              >
+                Upload picture
+              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                PNG/JPG/WebP, under 200KB
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Field label="Display name">
+              <input
+                value={form.displayName}
+                maxLength={60}
+                onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+                className="h-10 w-full rounded-lg border bg-background/60 px-3 text-sm outline-none ring-ring/40 focus:ring-2"
+                placeholder="How should we call you?"
+              />
+            </Field>
+            <Field label="Username">
+              <input
+                value={form.username}
+                maxLength={20}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                className="h-10 w-full rounded-lg border bg-background/60 px-3 text-sm outline-none ring-ring/40 focus:ring-2"
+                placeholder="unique handle, 3–20 chars"
+              />
+            </Field>
+            <Field label={`Bio (${form.bio.length}/${MAX_BIO})`}>
+              <textarea
+                value={form.bio}
+                maxLength={MAX_BIO}
+                rows={3}
+                onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                className="w-full rounded-lg border bg-background/60 p-3 text-sm outline-none ring-ring/40 focus:ring-2"
+                placeholder="A line or two about you…"
+              />
+            </Field>
+            <div className="grid gap-3">
+              <Field label="School / college (optional)">
+                <input
+                  value={form.school}
+                  maxLength={80}
+                  onChange={(e) => setForm({ ...form, school: e.target.value })}
+                  className="h-10 w-full rounded-lg border bg-background/60 px-3 text-sm outline-none ring-ring/40 focus:ring-2"
+                />
+              </Field>
+              <Field label="Course / class (optional)">
+                <input
+                  value={form.course}
+                  maxLength={80}
+                  onChange={(e) => setForm({ ...form, course: e.target.value })}
+                  className="h-10 w-full rounded-lg border bg-background/60 px-3 text-sm outline-none ring-ring/40 focus:ring-2"
+                />
+              </Field>
+            </div>
+            <Field label="Interests (optional)">
+              <input
+                value={form.interests}
+                maxLength={120}
+                onChange={(e) => setForm({ ...form, interests: e.target.value })}
+                className="h-10 w-full rounded-lg border bg-background/60 px-3 text-sm outline-none ring-ring/40 focus:ring-2"
+                placeholder="physics, chess, guitar…"
+              />
+            </Field>
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            <Button onClick={handleSave} disabled={saving} className="gap-1.5">
+              {saving ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Check className="size-4" />
+              )}
+              Save profile
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditing(false);
+                setAvatarPreview(null);
+              }}
+              className="gap-1.5"
+            >
+              <X className="size-4" /> Cancel
+            </Button>
+          </div>
+        </section>
+      )}
 
       {stats === undefined ? (
         <div className="paper-sheet h-40 animate-pulse" />
@@ -168,11 +431,67 @@ export default function Profile() {
             />
             <StatCard
               icon={<Target className="size-4" />}
-              label="Topics studied"
-              value={String(notes?.length ?? 0)}
-              sub="saved notes"
+              label="Total study time"
+              value={fmtHours(stats.totalMinutesStudied ?? 0)}
+              sub={`${notes?.length ?? 0} saved notes`}
             />
           </div>
+
+          {/* Achievements */}
+          <section className="paper-sheet px-5 py-5 md:px-7">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+                <Trophy className="size-4" /> Achievements
+              </h2>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {unlockedCount}/{achievements?.length ?? 0} unlocked
+              </span>
+            </div>
+            {achievements === undefined ? (
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {achievements.map((a) => (
+                  <div
+                    key={a.id}
+                    title={a.desc}
+                    className={cn(
+                      "relative flex flex-col gap-1 rounded-lg border px-3 py-3 transition",
+                      a.unlocked
+                        ? "border-highlight/60 bg-highlight-soft/30 shadow-sm"
+                        : "border-border bg-card/50",
+                    )}
+                  >
+                    <span className="flex items-center gap-1.5 text-sm font-bold">
+                      {a.unlocked ? (
+                        <>🏆 {a.name}</>
+                      ) : (
+                        <>
+                          <Lock className="size-3.5 text-ink-faint" />
+                          <span className="text-muted-foreground">{a.name}</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="line-clamp-2 text-[11px] text-muted-foreground">
+                      {a.desc}
+                    </span>
+                    {!a.unlocked && a.progress > 0 && (
+                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-paper-deep">
+                        <div
+                          className="h-full rounded-full bg-primary/60 transition-all"
+                          style={{ width: `${Math.round(a.progress * 100)}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
           {/* Level ladder */}
           {levelList.length > 0 && (
@@ -223,25 +542,24 @@ export default function Profile() {
               </ul>
             </section>
           )}
-
-          {/* Recent quest completions summary */}
-          <section className="flex flex-wrap gap-3">
-            <SummaryChip
-              icon={<ListChecks className="size-3.5" />}
-              text={`${stats.totalTasksCompleted} tasks checked off`}
-            />
-            <SummaryChip
-              icon={<Trophy className="size-3.5" />}
-              text={`${questsDone?.total ?? 0} quests conquered`}
-            />
-            <SummaryChip
-              icon={<Flame className="size-3.5" />}
-              text={`${stats.bestStreak}-day best streak`}
-            />
-          </section>
         </>
       )}
     </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5 text-sm">
+      <span className="font-semibold">{label}</span>
+      {children}
+    </label>
   );
 }
 
@@ -265,20 +583,5 @@ function StatCard({
       <span className="text-2xl font-black leading-tight">{value}</span>
       <span className="text-[11px] text-muted-foreground">{sub}</span>
     </div>
-  );
-}
-
-function SummaryChip({
-  icon,
-  text,
-}: {
-  icon: React.ReactNode;
-  text: string;
-}) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-foreground/80">
-      <span className="text-marker">{icon}</span>
-      {text}
-    </span>
   );
 }

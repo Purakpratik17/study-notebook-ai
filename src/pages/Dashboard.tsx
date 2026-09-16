@@ -7,15 +7,24 @@ import {
   CalendarCheck2,
   Check,
   Clock,
+  FileStack,
   Flame,
+  Gamepad2,
   Loader2,
   NotebookPen,
+  Pause,
+  PenLine,
+  Play,
   Sparkles,
+  StopCircle,
   Swords,
   Target,
+  Timer,
+  Trophy,
+  User,
   Zap,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
@@ -31,6 +40,9 @@ type Stats = {
   progress: number;
   maxLevel: boolean;
   streak: number;
+  bestStreak?: number;
+  totalMinutesStudied?: number;
+  minutesStudiedToday?: number;
 };
 
 type Summary = {
@@ -51,6 +63,7 @@ type Summary = {
     xp: number;
     progress: number;
     target: number;
+    metric: string;
   }>;
   studiedToday: boolean;
 };
@@ -72,12 +85,20 @@ type XpEvent = {
   createdAt: number;
 };
 
+const FOCUS_EGG_MINUTES = 240;
+
 function greeting() {
   const h = new Date().getHours();
   if (h < 5) return "Burning the midnight oil";
   if (h < 12) return "Good morning";
   if (h < 17) return "Good afternoon";
   return "Good evening";
+}
+
+function fmtHm(mins: number) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
 export default function Dashboard() {
@@ -87,19 +108,80 @@ export default function Dashboard() {
     | Summary
     | undefined;
   const todaysTasks = useQuery(api.timetable.list) as Entry[] | undefined;
-  const recent = useQuery(api.stats.getRecentActivity) as
-    | XpEvent[]
+  const recent = useQuery(api.stats.getRecentActivity) as XpEvent[] | undefined;
+  const notes = useQuery(api.notes.list) as
+    | Array<{ _id: string; topic: string; quizCount: number; createdAt: number }>
     | undefined;
+  const arcadeUnlocked = useQuery(api.profiles.hasArcade);
   const logSession = useMutation(api.notes.logStudySession);
   const claimGoal = useMutation(api.notes.claimDailyGoal);
   const toggle = useMutation(api.timetable.toggleComplete);
+  const recordFocus = useMutation(api.profiles.recordFocusSession);
 
   const today = new Date().toISOString().slice(0, 10);
   const todayTasks = (todaysTasks ?? []).filter((t) => t.date === today);
+  const upcoming = todayTasks.filter((t) => !t.completed).slice(0, 4);
   const [pendingTask, setPendingTask] = useState<string | null>(null);
   const [logging, setLogging] = useState(false);
   const [claiming, setClaiming] = useState(false);
 
+  // ── Focus session timer (real tracked time → 4h easter egg) ──────────────
+  const [focusRunning, setFocusRunning] = useState(false);
+  const [focusSeconds, setFocusSeconds] = useState(0);
+  const startedAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!focusRunning) return;
+    const id = setInterval(() => {
+      if (startedAtRef.current !== null) {
+        setFocusSeconds(Math.floor((Date.now() - startedAtRef.current) / 1000));
+      }
+    }, 1000);
+    const onVisibility = () => {
+      // Page hidden — pause so time is only counted while actually focused here.
+      if (document.hidden) setFocusRunning(false);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [focusRunning]);
+
+  const startFocus = () => {
+    startedAtRef.current = Date.now() - focusSeconds * 1000;
+    setFocusRunning(true);
+  };
+  const pauseFocus = () => setFocusRunning(false);
+  const stopFocus = async () => {
+    setFocusRunning(false);
+    const minutes = Math.floor(focusSeconds / 60);
+    if (minutes < 1) {
+      setFocusSeconds(0);
+      startedAtRef.current = null;
+      return;
+    }
+    const unlocked = await recordFocus({
+      sessionId: crypto.randomUUID(),
+      minutes,
+    });
+    if (unlocked.eggUnlocked) {
+      toast.success("🎮 Secret unlocked! Check the Arcade…", {
+        description: "4 hours of pure focus deserves a reward.",
+        duration: 8000,
+      });
+    } else if (unlocked.newlyUnlocked.length > 0) {
+      toast.success("🏆 New achievement unlocked!");
+    }
+    toast.success(`+${unlocked.xp.amount} XP — ${fmtHm(minutes)} focused`);
+    setFocusSeconds(0);
+    startedAtRef.current = null;
+  };
+
+  const focusMinutes = Math.floor(focusSeconds / 60);
+  const focusPct = Math.min((focusSeconds / (FOCUS_EGG_MINUTES * 60)) * 100, 100);
+
+  // ── Existing handlers (preserved) ────────────────────────────────────────
   const handleLogSession = async () => {
     if (logging) return;
     setLogging(true);
@@ -157,6 +239,12 @@ export default function Dashboard() {
     }
   };
 
+  const xpToday = summary?.studiedMinutesToday ?? 0;
+  const todayMinutes = Math.max(
+    summary?.doneMinutes ?? 0,
+    summary?.studiedMinutesToday ?? 0,
+  );
+
   return (
     <div className="flex flex-col gap-6">
       {/* Hero: greeting + level */}
@@ -208,47 +296,219 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {/* Stat widgets */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <MiniStat
+          icon={<Zap className="size-4" />}
+          label="Study time today"
+          value={fmtHm(todayMinutes)}
+          sub={`goal ${summary?.dailyGoalMinutes ?? 60}m`}
+        />
+        <MiniStat
+          icon={<Flame className="size-4" />}
+          label="Streak"
+          value={`${stats?.streak ?? 0}d`}
+          sub={`best ${stats?.bestStreak ?? 0}d`}
+        />
+        <MiniStat
+          icon={<Check className="size-4" />}
+          label="Tasks today"
+          value={`${summary?.tasksCompleted ?? 0}/${summary?.tasksTotal ?? 0}`}
+          sub={`${summary?.completionPercent ?? 0}% done`}
+        />
+        <MiniStat
+          icon={<Trophy className="size-4" />}
+          label="Total XP"
+          value={(stats?.xp ?? 0).toLocaleString()}
+          sub={stats ? `Lv ${stats.level} ${stats.levelName}` : ""}
+        />
+      </div>
+
       {/* Quick actions */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Link
           to="/ai-study"
-          className="paper-sheet spiral-edge group flex items-center gap-4 px-5 py-4 transition-transform hover:-translate-y-0.5"
+          className="paper-sheet spiral-edge group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+          <span className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <Sparkles className="size-5" />
           </span>
-          <span className="flex-1">
-            <span className="block font-bold">AI Study</span>
-            <span className="block text-sm text-muted-foreground">
-              Notes + quiz on any topic
-            </span>
+          <span className="block font-bold">AI Study</span>
+          <span className="block text-xs text-muted-foreground">
+            Notes + quiz on any topic
           </span>
-          <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
         </Link>
 
-        <button
-          onClick={handleLogSession}
-          disabled={logging}
-          className="paper-sheet spiral-edge group flex items-center gap-4 px-5 py-4 text-left transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+        <Link
+          to="/essay"
+          className="paper-sheet group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-xp text-white shadow-sm">
-            {logging ? (
-              <Loader2 className="size-5 animate-spin" />
-            ) : (
-              <Zap className="size-5" />
-            )}
+          <span className="flex size-10 items-center justify-center rounded-lg bg-marker text-white shadow-sm">
+            <PenLine className="size-5" />
           </span>
-          <span className="flex-1">
-            <span className="block font-bold">Log a study session</span>
-            <span className="block text-sm text-muted-foreground">
-              30 focused minutes · +XP
+          <span className="block font-bold">Essay Writer</span>
+          <span className="block text-xs text-muted-foreground">
+            Structured essays, instantly
+          </span>
+        </Link>
+
+        <Link
+          to="/projects"
+          className="paper-sheet group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
+        >
+          <span className="flex size-10 items-center justify-center rounded-lg bg-highlight text-foreground shadow-sm">
+            <FileStack className="size-5" />
+          </span>
+          <span className="block font-bold">Project Creator</span>
+          <span className="block text-xs text-muted-foreground">
+            Full assignment projects
+          </span>
+        </Link>
+
+        {arcadeUnlocked ? (
+          <Link
+            to="/arcade"
+            className="paper-sheet group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
+          >
+            <span className="flex size-10 items-center justify-center rounded-lg bg-xp text-white shadow-sm">
+              <Gamepad2 className="size-5" />
             </span>
-          </span>
-        </button>
+            <span className="block font-bold">Arcade</span>
+            <span className="block text-xs text-muted-foreground">
+              Your focus reward 🎮
+            </span>
+          </Link>
+        ) : (
+          <Link
+            to="/leaderboard"
+            className="paper-sheet group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
+          >
+            <span className="flex size-10 items-center justify-center rounded-lg bg-xp text-white shadow-sm">
+              <Trophy className="size-5" />
+            </span>
+            <span className="block font-bold">Leaderboard</span>
+            <span className="block text-xs text-muted-foreground">
+              Climb the ranks
+            </span>
+          </Link>
+        )}
+      </div>
+
+      {/* Focus timer + log session */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="paper-sheet spiral-edge px-5 py-5 md:px-7">
+          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+            <Timer className="size-4" /> Focus session
+          </h2>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-4xl font-black tabular-nums leading-none">
+              {String(Math.floor(focusSeconds / 3600)).padStart(2, "0")}:
+              {String(Math.floor((focusSeconds % 3600) / 60)).padStart(2, "0")}:
+              {String(focusSeconds % 60).padStart(2, "0")}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              tracked while this tab stays open
+            </span>
+          </div>
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-paper-deep">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary transition-all duration-1000"
+              style={{ width: `${focusPct}%` }}
+            />
+          </div>
+          <p className="annotation mt-2 text-xs">
+            hit {fmtHm(FOCUS_EGG_MINUTES)} in one session and something fun
+            unlocks…
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {!focusRunning ? (
+              <button
+                onClick={startFocus}
+                disabled={focusSeconds === 0 && false}
+                className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
+              >
+                <Play className="size-4" />
+                {focusSeconds > 0 ? "Resume" : "Start focus"}
+              </button>
+            ) : (
+              <button
+                onClick={pauseFocus}
+                className="inline-flex h-11 items-center gap-2 rounded-lg border bg-card px-5 text-sm font-bold transition hover:bg-accent active:scale-[0.98]"
+              >
+                <Pause className="size-4" /> Pause
+              </button>
+            )}
+            {focusSeconds > 0 && (
+              <button
+                onClick={stopFocus}
+                className="inline-flex h-11 items-center gap-2 rounded-lg bg-xp px-5 text-sm font-bold text-white shadow-sm transition hover:bg-xp/90 active:scale-[0.98]"
+              >
+                <StopCircle className="size-4" /> Finish & bank{" "}
+                {fmtHm(Math.max(focusMinutes, 0))}
+              </button>
+            )}
+          </div>
+        </section>
+
+        <section className="paper-sheet px-5 py-5 md:px-7">
+          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+            <Target className="size-4" /> Today's progress
+          </h2>
+          {summary === undefined ? (
+            <div className="mt-3 h-16 animate-pulse rounded bg-muted" />
+          ) : (
+            <div className="mt-3 flex flex-col gap-4">
+              <div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-3xl font-black leading-none">
+                    {summary.completionPercent}%
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    of today's tasks
+                  </span>
+                </div>
+                <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-paper-deep">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-700"
+                    style={{ width: `${summary.completionPercent}%` }}
+                  />
+                </div>
+              </div>
+
+              {summary.dailyGoalBonusReady ? (
+                <button
+                  onClick={handleClaimGoal}
+                  disabled={claiming}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-highlight px-4 text-sm font-bold text-foreground shadow-sm transition hover:bg-highlight/80 disabled:opacity-60"
+                >
+                  {claiming && <Loader2 className="size-4 animate-spin" />}
+                  🎉 Claim daily goal bonus
+                </button>
+              ) : (
+                <p className="annotation text-xs">
+                  reach {summary.dailyGoalMinutes} min to unlock the daily bonus
+                </p>
+              )}
+
+              <button
+                onClick={handleLogSession}
+                disabled={logging}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border bg-card px-4 text-sm font-bold transition hover:bg-accent disabled:opacity-60"
+              >
+                {logging ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Zap className="size-4 text-xp" />
+                )}
+                Log a 30-min study session
+              </button>
+            </div>
+          )}
+        </section>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Today's timetable */}
+        {/* Upcoming timetable */}
         <section className="paper-sheet paper-margin px-5 py-5 pl-14 md:pl-18">
           <div className="flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
@@ -283,9 +543,13 @@ export default function Dashboard() {
                 Open timetable <ArrowRight className="size-3.5" />
               </Link>
             </div>
+          ) : upcoming.length === 0 ? (
+            <p className="py-6 text-center text-sm font-semibold text-xp">
+              All done for today — brilliant! ✨
+            </p>
           ) : (
             <ul className="ruled-list mt-2 flex flex-col">
-              {todayTasks.slice(0, 5).map((t) => (
+              {upcoming.map((t) => (
                 <li key={t._id} className="flex items-center gap-2.5 py-2">
                   <button
                     role="checkbox"
@@ -307,27 +571,20 @@ export default function Dashboard() {
                     )}
                   </button>
                   <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        "truncate text-sm font-medium",
-                        t.completed && "text-muted-foreground line-through",
-                      )}
-                    >
-                      {t.subject}
-                    </p>
+                    <p className="truncate text-sm font-medium">{t.subject}</p>
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
                     <Clock className="size-3" /> {t.startTime}
                   </span>
                 </li>
               ))}
-              {todayTasks.length > 5 && (
+              {todayTasks.length > 4 && (
                 <li className="pt-1.5 text-center">
                   <Link
                     to="/timetable"
                     className="text-xs font-semibold text-primary hover:underline"
                   >
-                    +{todayTasks.length - 5} more — view all
+                    View all {todayTasks.length} tasks
                   </Link>
                 </li>
               )}
@@ -335,74 +592,6 @@ export default function Dashboard() {
           )}
         </section>
 
-        {/* Daily progress */}
-        <section className="paper-sheet spiral-edge px-5 py-5 md:px-7">
-          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
-            <Target className="size-4" /> Today's progress
-          </h2>
-
-          {summary === undefined ? (
-            <div className="mt-3 h-16 animate-pulse rounded bg-muted" />
-          ) : (
-            <div className="mt-3 flex flex-col gap-4">
-              <div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-3xl font-black leading-none">
-                    {summary.completionPercent}%
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    of today's tasks
-                  </span>
-                </div>
-                <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-paper-deep">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-700"
-                    style={{ width: `${summary.completionPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg border bg-card/70 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">
-                    Minutes studied
-                  </p>
-                  <p className="text-lg font-bold">
-                    {Math.max(summary.doneMinutes, summary.studiedMinutesToday)}
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {" "}/ {Math.max(summary.plannedMinutes, summary.dailyGoalMinutes)}
-                    </span>
-                  </p>
-                </div>
-                <div className="rounded-lg border bg-card/70 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Streak</p>
-                  <p className="flex items-center gap-1 text-lg font-bold">
-                    <Flame className="size-4 text-marker" />
-                    {stats?.streak ?? 0}
-                  </p>
-                </div>
-              </div>
-
-              {summary.dailyGoalBonusReady ? (
-                <button
-                  onClick={handleClaimGoal}
-                  disabled={claiming}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-highlight px-4 text-sm font-bold text-foreground shadow-sm transition hover:bg-highlight/80 disabled:opacity-60"
-                >
-                  {claiming && <Loader2 className="size-4 animate-spin" />}
-                  🎉 Claim daily goal bonus
-                </button>
-              ) : (
-                <p className="annotation text-xs">
-                  reach {summary.dailyGoalMinutes} min to unlock the daily bonus
-                </p>
-              )}
-            </div>
-          )}
-        </section>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
         {/* Active quests */}
         <section className="paper-sheet px-5 py-5 md:px-7">
           <div className="flex items-center justify-between">
@@ -453,12 +642,62 @@ export default function Dashboard() {
             </ul>
           )}
         </section>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent notes */}
+        <section className="paper-sheet spiral-edge px-5 py-5 md:px-7">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+              <NotebookPen className="size-4" /> Recent notes
+            </h2>
+            <Link
+              to="/ai-study"
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              New notes
+            </Link>
+          </div>
+          {notes === undefined ? (
+            <div className="mt-3 flex flex-col gap-2">
+              {[0, 1].map((i) => (
+                <div key={i} className="h-8 animate-pulse rounded bg-muted" />
+              ))}
+            </div>
+          ) : notes.length === 0 ? (
+            <p className="py-5 text-center text-sm text-muted-foreground">
+              No notes yet — generate your first study pack!
+            </p>
+          ) : (
+            <ul className="ruled-list mt-2 flex flex-col">
+              {notes.slice(0, 5).map((n) => (
+                <li key={n._id} className="flex items-center gap-2 py-2 text-sm">
+                  <NotebookPen className="size-3.5 shrink-0 text-primary" />
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {n.topic}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {n.quizCount} questions
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         {/* Recent activity */}
         <section className="paper-sheet spiral-edge px-5 py-5 md:px-7">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-ink-soft">
-            Recent study activity
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+              <Zap className="size-4" /> Recent activity
+            </h2>
+            <Link
+              to="/profile"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              <User className="size-3" /> Profile
+            </Link>
+          </div>
           {recent === undefined ? (
             <div className="mt-3 flex flex-col gap-2">
               {[0, 1, 2].map((i) => (
@@ -484,6 +723,35 @@ export default function Dashboard() {
           )}
         </section>
       </div>
+
+      {xpToday === 0 && (
+        <p className="annotation text-center text-sm">
+          Small progress is still progress. Start with one task. ✨
+        </p>
+      )}
+    </div>
+  );
+}
+
+function MiniStat({
+  icon,
+  label,
+  value,
+  sub,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="paper-sheet spiral-edge flex flex-col gap-0.5 px-4 py-3">
+      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
+        {icon}
+        {label}
+      </span>
+      <span className="text-xl font-black leading-tight">{value}</span>
+      {sub && <span className="text-[10px] text-muted-foreground">{sub}</span>}
     </div>
   );
 }

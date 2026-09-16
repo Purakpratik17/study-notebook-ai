@@ -2,11 +2,13 @@ import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { Crown, Medal, Sparkles, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type Row = {
   userId: string;
   rank: number;
   name: string;
+  username?: string;
   imageUrl?: string;
   xp: number;
   level: number;
@@ -72,6 +74,12 @@ export default function Leaderboard() {
                       r.rank
                     )}
                   </span>
+                  <Avatar className="size-9 shrink-0 border">
+                    <AvatarImage src={r.imageUrl} alt={r.name} />
+                    <AvatarFallback className="bg-highlight-soft text-xs font-bold">
+                      {r.name.slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0 flex-1">
                     <p
                       className={cn(
@@ -80,6 +88,11 @@ export default function Leaderboard() {
                       )}
                     >
                       {r.name}
+                      {r.username && (
+                        <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                          @{r.username}
+                        </span>
+                      )}
                       {r.isMe && (
                         <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
                           you
