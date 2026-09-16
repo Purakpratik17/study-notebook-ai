@@ -13,6 +13,7 @@ import {
   PenLine,
   Sparkles,
   Swords,
+  Target,
   Trophy,
   User,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import { Link, NavLink, useLocation } from "react-router";
 const TABS = [
   { to: "/dashboard", label: "Home", icon: Home },
   { to: "/ai-study", label: "AI Study", icon: Sparkles },
+  { to: "/practice", label: "Practice", icon: Target },
   { to: "/essay", label: "Essay Writer", icon: PenLine },
   { to: "/projects", label: "Projects", icon: FileStack },
   { to: "/timetable", label: "Timetable", icon: CalendarDays },
@@ -42,6 +44,7 @@ const MOBILE_TABS = [
 const MORE_TABS = [
   { to: "/essay", label: "Essay Writer", icon: PenLine },
   { to: "/projects", label: "Projects", icon: FileStack },
+  { to: "/practice", label: "Practice", icon: Target },
   { to: "/timetable", label: "Timetable", icon: CalendarDays },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
@@ -206,7 +209,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
         {moreOpen && (
-          <div className="grid grid-cols-4 gap-1 border-t bg-card px-2 py-3">
+          <div className="grid grid-cols-3 gap-1 border-t bg-card px-2 py-3">
             {MORE_TABS.map((tab) => {
               const active = location.pathname === tab.to;
               return (
