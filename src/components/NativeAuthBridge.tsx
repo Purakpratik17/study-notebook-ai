@@ -7,6 +7,7 @@ import { isNative } from "@/lib/native";
  *
  * 1. Completes Clerk OAuth (Google) / email-verification redirects that
  *    return from the system browser via the `studynotebook://sso-callback`
+ *    scheme (legacy scheme kept so existing Clerk OAuth redirects keep working)
  *    deep link. Capacitor fires `appUrlOpen`; the query params are handed to
  *    Clerk's `handleRedirectCallback()`, which validates the `transfer`
  *    value and activates the session in the WebView. No token exchange

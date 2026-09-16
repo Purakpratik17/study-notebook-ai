@@ -179,7 +179,7 @@ export const generate = action({
         {
           role: "system",
           content:
-            "You are Study Notebook AI, an expert exam tutor. Respond with a single valid JSON object only — no markdown fences, no commentary. Put the quiz under the top-level key \"quiz\".",
+            "You are Learnova, an expert exam tutor. Respond with a single valid JSON object only — no markdown fences, no commentary. Put the quiz under the top-level key \"quiz\".",
         },
         { role: "user", content: buildPrompt(topic) },
       ],

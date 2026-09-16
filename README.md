@@ -1,4 +1,4 @@
-# Study Notebook AI
+# Learnova
 
 A modern, gamified AI study app: type any academic topic and get structured
 notes plus a multiple-choice quiz, plan study sessions in a timetable, complete

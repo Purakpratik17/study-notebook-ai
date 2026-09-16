@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Capacitor configuration — Android wrapper for Study Notebook AI.
+ * Capacitor configuration — Android wrapper for Learnova.
  *
  * The web bundle (vite build -> dist/) is served from https://local.app/
  * inside the native WebView, so Clerk and Convex treat it as a normal
@@ -9,7 +9,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "com.studynotebook.ai",
-  appName: "Study Notebook AI",
+  appName: "Learnova",
   webDir: "dist",
   android: {
     // Required for Google sign-in popups and Clerk's Account Portal to work

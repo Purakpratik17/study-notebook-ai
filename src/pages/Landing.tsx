@@ -71,7 +71,7 @@ export default function Landing() {
             <NotebookPen className="size-5" />
           </span>
           <span className="text-base font-bold tracking-tight">
-            Study Notebook
+            Learnova
             <span className="annotation ml-1.5 text-xs font-normal">ai</span>
           </span>
         </div>
@@ -213,7 +213,7 @@ export default function Landing() {
       </main>
 
       <footer className="border-t bg-card/60 py-6 text-center text-xs text-muted-foreground">
-        Study Notebook AI — study smart, level up daily.
+        Learnova — study smart, level up daily.
       </footer>
     </motion.div>
   );

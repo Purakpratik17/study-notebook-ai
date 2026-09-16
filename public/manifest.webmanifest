@@ -1,7 +1,7 @@
 {
-  "name": "Study Notebook AI",
-  "short_name": "Study Notebook",
-  "description": "AI-powered study notebook — notes, quizzes, timetable, quests and XP.",
+  "name": "Learnova",
+  "short_name": "Learnova",
+  "description": "Learnova — AI-powered study companion: notes, quizzes, timetable, quests and XP.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf7ef",

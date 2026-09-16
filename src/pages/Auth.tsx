@@ -74,7 +74,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               <NotebookPen className="size-6" />
             </button>
             <h1 className="text-xl font-bold tracking-tight">
-              Welcome to Study Notebook AI
+              Welcome to Learnova
             </h1>
             <p className="annotation text-sm">
               sign in — your XP is waiting

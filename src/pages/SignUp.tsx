@@ -25,7 +25,7 @@ function SignUpInner() {
               <NotebookPen className="size-6" />
             </button>
             <h1 className="text-xl font-bold tracking-tight">
-              Create your Study Notebook
+              Create your Learnova
             </h1>
             <p className="annotation text-sm">
               sign up — start earning XP today
