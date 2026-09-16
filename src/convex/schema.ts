@@ -180,6 +180,32 @@ const schema = defineSchema(
       .index("by_user_topic", ["userId", "topic"])
       .index("by_user_created", ["userId", "createdAt"]),
 
+    // One row per AI practice session (MCQ drill on a topic).
+    practiceSessions: defineTable({
+      userId: v.string(),
+      subject: v.string(),
+      topic: v.string(),
+      difficulty: v.union(
+        v.literal("easy"),
+        v.literal("medium"),
+        v.literal("hard"),
+      ),
+      questions: v.array(
+        v.object({
+          question: v.string(),
+          options: v.array(v.string()),
+          correctIndex: v.number(),
+          explanation: v.string(),
+        }),
+      ),
+      answers: v.optional(v.array(v.number())), // index-aligned; -1 = unanswered
+      score: v.optional(v.number()),
+      total: v.number(),
+      status: v.union(v.literal("in_progress"), v.literal("completed")),
+      createdAt: v.number(),
+      completedAt: v.optional(v.number()),
+    }).index("by_user_created", ["userId", "createdAt"]),
+
     // One row per quiz attempt.
     quizAttempts: defineTable({
       userId: v.string(),

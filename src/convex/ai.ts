@@ -131,7 +131,7 @@ Content must be accurate, curriculum-appropriate, and easy for a student to unde
 }
 
 /** Extract the first balanced JSON object from a model response. */
-function extractJson(text: string): unknown {
+export function extractJson(text: string): unknown {
   const cleaned = text
     .replace(/^\s*```(?:json)?/i, "")
     .replace(/```\s*$/, "")
