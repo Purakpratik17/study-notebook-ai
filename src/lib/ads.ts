@@ -50,14 +50,14 @@ const TEST_IDS = {
    ═══════════════════════════════════════════════════════════════════════ */
 
 /**
- * REAL Learnova AdMob IDs — DORMANT placeholders.
- * NOT used while ADS_USE_TEST_ADS is true. Paste your real IDs here when
- * going live (they'll come from your AdMob console: 1 banner + 1
- * interstitial ad unit). They must NOT be touched for dev/test builds.
+ * REAL Learnova AdMob ad-unit IDs (production, from the AdMob console).
+ * These are used ONLY when ADS_USE_TEST_ADS is flipped to false below —
+ * while the master switch is true (development/testing), Google's official
+ * TEST ad unit IDs are served in every placement instead.
  */
 const PRODUCTION_IDS = {
-  banner: "ca-app-pub-XXXXXXXXXXXXXXXX/BBBBBBBBBB", // TODO: real BANNER ad unit ID
-  interstitial: "ca-app-pub-XXXXXXXXXXXXXXXX/IIIIIIIIII", // TODO: real INTERSTITIAL ad unit ID
+  banner: "ca-app-pub-8054008558761017/1828502190",
+  interstitial: "ca-app-pub-8054008558761017/9515420526",
 } as const;
 
 /**
