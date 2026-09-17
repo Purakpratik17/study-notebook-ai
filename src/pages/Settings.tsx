@@ -104,6 +104,9 @@ export default function Settings() {
         </p>
       </SettingsCard>
 
+      {/* ── Language ───────────────────────────────────────────── */}
+      <LanguageSection />
+
       {/* ── Sound ──────────────────────────────────────────────── */}
       <SettingsCard
         icon={settings.soundEffects ? Volume2 : VolumeX}

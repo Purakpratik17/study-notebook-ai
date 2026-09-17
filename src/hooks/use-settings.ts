@@ -8,6 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { DEFAULT_LANGUAGE, type LanguageCode } from "@/lib/languages";
+import { tFor } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -35,6 +37,7 @@ export type LearnovaSettings = {
   xpAnimations: boolean;
   arcadeSounds: boolean;
   adsEnabled: boolean;
+  language: LanguageCode;
 };
 
 export const DEFAULT_SETTINGS: LearnovaSettings = {
@@ -48,6 +51,7 @@ export const DEFAULT_SETTINGS: LearnovaSettings = {
   xpAnimations: true,
   arcadeSounds: true,
   adsEnabled: true,
+  language: DEFAULT_LANGUAGE,
 };
 
 const KEY_PREFIX = "learnova:settings:";
@@ -76,6 +80,8 @@ type SettingsContextValue = {
     value: LearnovaSettings[K],
   ) => void;
   resetAll: () => void;
+  /** UI string lookup for the selected language (English fallback). */
+  t: ReturnType<typeof tFor>;
 };
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -267,9 +273,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings(DEFAULT_SETTINGS);
   }, []);
 
+  const t = useMemo(() => tFor(settings.language), [settings.language]);
   const value = useMemo(
-    () => ({ settings, update, resetAll }),
-    [settings, update, resetAll],
+    () => ({ settings, update, resetAll, t }),
+    [settings, update, resetAll, t],
   );
 
   // createElement avoids JSX in a .ts file (JSX is only parsed in .tsx).
