@@ -28,25 +28,36 @@ const TEST_IDS = {
 } as const;
 
 /* ═══════════════════════════════════════════════════════════════════════
-   ⚠️ DEVELOPMENT / TEST ADS CONFIGURATION ⚠️
+   ⚠️ DEVELOPMENT / TEST ADS — ACTIVE CONFIGURATION ⚠️
 
-   The app is currently configured to serve ONLY Google's official TEST
-   ad unit IDs (above). Your real production AdMob ad-unit IDs are kept
-   below ONLY as a dormant placeholder — they are NOT used while
-   ADS_USE_TEST_ADS is true, and no live ads are ever served.
+   CURRENT STATE: Google's official TEST ad unit IDs are ACTIVE everywhere
+   (banner → banner test ID, interstitial → interstitial test ID).
+   No real/live AdMob ad-unit IDs are used for any placement right now.
 
-   TO SWITCH TO YOUR REAL AD IDS LATER:
-   1. Replace the placeholder values in PRODUCTION_IDS below with your
-      real AdMob banner + interstitial ad unit IDs.
-   2. Flip ADS_USE_TEST_ADS to false.
-   3. Done — every placement in the app switches over at once because
-      this file is the single source of truth for ad IDs.
+   The Android AdMob APP ID lives in ONE place only:
+     android/app/src/main/AndroidManifest.xml
+       → com.google.android.gms.ads.APPLICATION_ID meta-data
+   The ad-unit IDs live in THIS file only (PRODUCTION_IDS below).
+   Nothing else in the codebase contains ad IDs.
+
+   TO SWITCH TO YOUR REAL AD IDS LATER (when you're ready to go live):
+   1. Paste your real IDs into PRODUCTION_IDS below (banner + interstitial).
+   2. Make sure the AndroidManifest APPLICATION_ID matches your real
+      Android App ID (it's the only place the app ID is configured).
+   3. Flip ADS_USE_TEST_ADS to false.
+   4. Rebuild: npm run build && npx cap sync android
+   5. Done — every placement in the app switches over at once.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/** Placeholder only — NOT used while ADS_USE_TEST_ADS is true. */
+/**
+ * REAL Learnova AdMob IDs — DORMANT placeholders.
+ * NOT used while ADS_USE_TEST_ADS is true. Paste your real IDs here when
+ * going live (they'll come from your AdMob console: 1 banner + 1
+ * interstitial ad unit). They must NOT be touched for dev/test builds.
+ */
 const PRODUCTION_IDS = {
-  banner: "ca-app-pub-3940256099942544/6300978111", // TODO: replace with real banner ID
-  interstitial: "ca-app-pub-3940256099942544/1033173712", // TODO: replace with real interstitial ID
+  banner: "ca-app-pub-XXXXXXXXXXXXXXXX/BBBBBBBBBB", // TODO: real BANNER ad unit ID
+  interstitial: "ca-app-pub-XXXXXXXXXXXXXXXX/IIIIIIIIII", // TODO: real INTERSTITIAL ad unit ID
 } as const;
 
 /**
