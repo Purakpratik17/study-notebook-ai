@@ -8,8 +8,15 @@
 const AI_BASE_URL = "https://integrate.api.nvidia.com/v1";
 const AI_MODEL = "deepseek-ai/deepseek-v4-flash-0731";
 
+type ChatContent =
+  | string
+  | Array<
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string } }
+    >;
+
 export async function chatCompletion(
-  messages: Array<{ role: string; content: string }>,
+  messages: Array<{ role: string; content: ChatContent }>,
   temperature: number,
   maxTokens: number,
 ): Promise<string> {

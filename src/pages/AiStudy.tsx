@@ -15,9 +15,10 @@ import {
   Star,
   XCircle,
 } from "lucide-react";
+import { Link } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useSettings } from "@/hooks/use-settings";
+import { useSettings, useSounds } from "@/hooks/use-settings";
 
 type XpInfo = GenerateResult["xp"];
 
@@ -257,6 +258,7 @@ function NoteView({ noteId }: { noteId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <ImportantQuestions topic={notes.topic} />
       <article className="paper-sheet paper-margin px-5 py-6 pl-14 md:px-8 md:pl-20">
         <p className="annotation text-sm">topic notes</p>
         <h2 className="mt-1 text-2xl font-bold tracking-tight">
@@ -474,5 +476,155 @@ function QuizCard({ noteId, quiz }: { noteId: string; quiz: QuizQuestion[] }) {
         </div>
       )}
     </article>
+  );
+}
+
+/* ─── Important Questions — exam-style questions for the current topic ──── */
+
+type ImportantQ = {
+  _id: string;
+  subject: string;
+  topic: string;
+  questions: Array<{ question: string; answer: string; difficulty: string }>;
+};
+
+const DIFF_STYLE: Record<string, string> = {
+  easy: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  medium: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  hard: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+};
+
+function ImportantQuestions({ topic }: { topic: string }) {
+  const saved = useQuery(api.important.get, { topic });
+  const generateImportant = useAction(api.important.generate);
+  const saveQ = useMutation(api.tutor.saveQuestion);
+  const sounds = useSounds();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [savedMsgs, setSavedMsgs] = useState<Record<number, boolean>>({});
+
+  const data = saved as ImportantQ | null | undefined;
+
+  const run = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await generateImportant({ subject: "General", topic });
+      sounds.unlock();
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message.replace(/^UNAUTHENTICATED:\s*/, "")
+          : "Could not generate questions. Try again.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="paper-sheet px-5 py-5 md:px-7">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+          <Lightbulb className="size-4 text-highlight" /> Important questions
+        </h2>
+        {data === undefined ? null : (
+          <button
+            type="button"
+            onClick={() => {
+              sounds.click();
+              void run();
+            }}
+            disabled={busy}
+            className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+          >
+            {busy ? (
+              <Loader2 className="inline size-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="inline size-3.5" />
+            )} {data ? "Regenerate" : "Generate"}
+          </button>
+        )}
+      </div>
+
+      {busy && (
+        <p className="annotation mt-3 flex items-center gap-2 text-xs">
+          <Loader2 className="size-3.5 animate-spin" /> picking the exam essentials for “{topic}”…
+        </p>
+      )}
+      {error && (
+        <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+      )}
+
+      {data && data.questions.length > 0 && (
+        <ol className="ruled-list mt-3 flex flex-col">
+          {data.questions.map((q, i) => (
+            <li key={i} className="py-2">
+              <div className="flex items-start justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    sounds.click();
+                    setOpenIdx(openIdx === i ? null : i);
+                  }}
+                  className="min-w-0 flex-1 text-left text-sm font-medium leading-snug hover:text-primary"
+                >
+                  <span className="mr-1.5 text-marker">Q{i + 1}.</span>
+                  {q.question}
+                </button>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                    DIFF_STYLE[q.difficulty] ?? DIFF_STYLE.medium,
+                  )}
+                >
+                  {q.difficulty}
+                </span>
+              </div>
+              {openIdx === i && (
+                <div className="mt-2 flex flex-col gap-2 rounded-md border bg-paper-deep/60 p-3">
+                  <p className="text-sm leading-relaxed text-foreground/90">{q.answer}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      to="/practice"
+                      onClick={sounds.click}
+                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition hover:bg-primary/90"
+                    >
+                      Practice this topic
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void saveQ({
+                          source: "important",
+                          subject: data.subject,
+                          topic: data.topic,
+                          question: q.question,
+                          answer: q.answer,
+                        });
+                        setSavedMsgs((m) => ({ ...m, [i]: true }));
+                        sounds.success();
+                      }}
+                      disabled={savedMsgs[i]}
+                      className="rounded-md border px-3 py-1.5 text-xs font-semibold transition hover:bg-accent disabled:opacity-50"
+                    >
+                      {savedMsgs[i] ? "Saved ✓" : "Save question"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {data === null && !busy && (
+        <p className="annotation mt-3 text-xs">
+          tap “Generate” to get the 8 questions most likely to appear in your exam.
+        </p>
+      )}
+    </section>
   );
 }

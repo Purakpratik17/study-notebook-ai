@@ -17,6 +17,9 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useSounds, useSettings } from "@/hooks/use-settings";
 import { maybeShowInterstitial } from "@/lib/ads";
+import SnapSolve from "@/components/tutor/SnapSolve";
+import TutorChat from "@/components/tutor/TutorChat";
+import { Bookmark, Camera, MessageCircleQuestion } from "lucide-react";
 
 type Difficulty = "easy" | "medium" | "hard";
 type PracticeQuestion = {
@@ -83,6 +86,7 @@ export default function Practice() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [motivation] = useState(() => pick(MOTIVATION));
+  const [mode, setMode] = useState<"drills" | "snap" | "saved">("drills");
 
   const session = useQuery(
     api.practice.get,
@@ -180,7 +184,7 @@ export default function Practice() {
           <Dumbbell className="size-7 text-primary" /> Practice
         </h1>
         <p className="annotation text-sm">
-          drill any topic — quick MCQs with instant feedback
+          drill any topic — or snap a question and let the tutor solve it
         </p>
         {settings.motivationalThoughts && (
           <p className="mt-1 w-fit -rotate-1 rounded-md border border-dashed border-highlight/60 bg-highlight-soft/50 px-3 py-1.5 text-sm text-foreground/80">
@@ -189,7 +193,37 @@ export default function Practice() {
         )}
       </header>
 
-      {screen === "setup" && (
+      {/* Mode switcher: Drills / Snap & Solve + AI Tutor / Saved */}
+      <div className="flex gap-2">
+        {([
+          { id: "drills", label: "Drills", icon: Dumbbell },
+          { id: "snap", label: "Snap & Solve", icon: Camera },
+          { id: "saved", label: "Saved", icon: Bookmark },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => {
+              setMode(id);
+              sounds.click();
+            }}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
+              mode === id
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-background hover:bg-accent",
+            )}
+          >
+            <Icon className="size-4" /> {label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "snap" && <SnapSolve />}
+
+      {mode === "saved" && <SavedQuestions />}
+
+      {mode === "drills" && screen === "setup" && (
         <SetupForm
           subject={subject}
           setSubject={setSubject}
@@ -204,7 +238,7 @@ export default function Practice() {
         />
       )}
 
-      {screen === "loading" && (
+      {mode === "drills" && screen === "loading" && (
         <section className="paper-sheet paper-margin flex flex-col items-center gap-3 px-5 py-12 text-center">
           <Loader2 className="size-7 animate-spin text-primary" />
           <p className="font-semibold">
@@ -214,7 +248,7 @@ export default function Practice() {
         </section>
       )}
 
-      {screen === "session" && session && (
+      {mode === "drills" && screen === "session" && session && (
         <PracticeRunner
           key={`${session._id}:${replayKey}`}
           questions={session.questions}
@@ -223,7 +257,7 @@ export default function Practice() {
         />
       )}
 
-      {screen === "results" && session?.status === "completed" && session.answers && (
+      {mode === "drills" && screen === "results" && session?.status === "completed" && session.answers && (
         <Results
           questions={session.questions}
           answers={session.answers}
@@ -612,4 +646,133 @@ function Stat(props: { label: string; value: string }) {
       <p className="annotation text-xs">{props.label}</p>
     </div>
   );
+}
+
+/** Saved/bookmarked questions with subject filter and reopen-conversation. */
+function SavedQuestions() {
+  const sounds = useSounds();
+  const unsaveMutation = useMutation(api.tutor.unsaveQuestion);
+  const [subject, setSubject] = useState<string | null>(null);
+  const [openSession, setOpenSession] = useState<string | null>(null);
+  const saved = useQuery(api.tutor.savedList, subject ? { subject } : {});
+  const subjects = useQuery(api.tutor.subjects, {});
+  const session = useQuery(
+    api.tutor.get,
+    openSession ? { sessionId: openSession as never } : "skip",
+  );
+
+  if (openSession && session) {
+    return (
+      <section className="paper-sheet spiral-edge flex flex-col gap-4 px-5 py-4 md:px-7">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-base font-bold">Saved question</h3>
+          <button
+            type="button"
+            onClick={() => setOpenSession(null)}
+            className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+          >
+            ← Back to saved
+          </button>
+        </div>
+        <TutorChatLazy
+          sessionId={openSession}
+          solution={session.solution}
+          followUps={session.messages}
+        />
+      </section>
+    );
+  }
+
+  return (
+    <section className="paper-sheet spiral-edge flex flex-col gap-3 px-5 py-4 md:px-7">
+      <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+        <Bookmark className="size-4" /> Saved questions
+      </h3>
+      {subjects && subjects.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setSubject(null)}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs font-medium",
+              subject === null ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-accent",
+            )}
+          >
+            All
+          </button>
+          {subjects.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setSubject(s);
+                sounds.click();
+              }}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-medium",
+                subject === s ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-accent",
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {saved === undefined ? (
+        <Loader2 className="size-5 animate-spin text-primary" />
+      ) : saved.length === 0 ? (
+        <p className="annotation py-4 text-center text-sm">
+          Nothing saved yet. Bookmark questions from Drills or Snap &amp; Solve.
+        </p>
+      ) : (
+        <ul className="ruled-list flex flex-col">
+          {saved.map((s) => (
+            <li key={s._id} className="flex items-center justify-between gap-3 py-3 text-sm">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{s.question}</p>
+                <p className="annotation text-xs">
+                  {s.subject ?? "General"}
+                  {s.topic ? ` · ${s.topic}` : ""} · {s.source}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {s.tutorSessionId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenSession(s.tutorSessionId!);
+                      sounds.click();
+                    }}
+                    className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                  >
+                    <MessageCircleQuestion className="size-3.5" /> Reopen
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await unsaveMutation({ id: s._id });
+                    toast("Removed from saved questions");
+                  }}
+                  className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-destructive hover:bg-accent"
+                >
+                  Remove
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** Small wrapper so the TutorChat import stays out of the main bundle path. */
+function TutorChatLazy(props: {
+  sessionId: string;
+  solution: string;
+  followUps: Array<{ role: "user" | "assistant"; content: string }>;
+}) {
+  return <TutorChat {...props} />;
 }

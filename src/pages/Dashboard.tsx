@@ -109,6 +109,18 @@ export default function Dashboard() {
   const summary = useQuery(api.stats.getDashboardSummary) as
     | Summary
     | undefined;
+  const insights = useQuery(api.progress.insights) as
+    | {
+        quizAccuracy: number | null;
+        practiceAccuracy: number | null;
+        completedTopics: number;
+        weakTopics: Array<{ topic: string; percent: number }>;
+        strongTopics: Array<{ topic: string; percent: number }>;
+      }
+    | undefined;
+  const positions = useQuery(api.progress.positions) as
+    | Array<{ _id: string; subject: string; chapter: string; topic: string }>
+    | undefined;
   const todaysTasks = useQuery(api.timetable.list) as Entry[] | undefined;
   const recent = useQuery(api.stats.getRecentActivity) as XpEvent[] | undefined;
   const notes = useQuery(api.notes.list) as
@@ -653,6 +665,97 @@ export default function Dashboard() {
                 );
               })}
             </ul>
+          )}
+        </section>
+        {/* Progress insights */}
+        <section className="paper-sheet px-5 py-5 md:px-7">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+              <Target className="size-4" /> Progress insights
+            </h2>
+            <Link
+              to="/profile"
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              Full stats
+            </Link>
+          </div>
+          {insights === undefined ? (
+            <div className="mt-3 flex flex-col gap-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-9 animate-pulse rounded bg-muted" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {[
+                  { label: "Quiz accuracy", value: insights.quizAccuracy },
+                  { label: "Practice accuracy", value: insights.practiceAccuracy },
+                  { label: "Topics practiced", value: insights.completedTopics },
+                ].map((m) => (
+                  <div
+                    key={m.label}
+                    className="flex flex-col items-center rounded-lg border bg-paper-deep/50 px-2 py-3 text-center"
+                  >
+                    <span className="text-xl font-extrabold text-primary">
+                      {m.value === null ? "–" : m.value}
+                      {typeof m.value === "number" && m.value <= 100 ? "%" : ""}
+                    </span>
+                    <span className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+                      {m.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {(insights.weakTopics.length > 0 || insights.strongTopics.length > 0) && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {insights.weakTopics.length > 0 && (
+                    <div>
+                      <p className="annotation text-xs">needs a little more love</p>
+                      <ul className="mt-1 flex flex-col gap-1">
+                        {insights.weakTopics.map((t) => (
+                          <li key={t.topic} className="flex items-center justify-between gap-2 text-sm">
+                            <span className="min-w-0 truncate">{t.topic}</span>
+                            <span className="shrink-0 text-xs font-bold text-destructive">{t.percent}%</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {insights.strongTopics.length > 0 && (
+                    <div>
+                      <p className="annotation text-xs">your strong suits</p>
+                      <ul className="mt-1 flex flex-col gap-1">
+                        {insights.strongTopics.map((t) => (
+                          <li key={t.topic} className="flex items-center justify-between gap-2 text-sm">
+                            <span className="min-w-0 truncate">{t.topic}</span>
+                            <span className="shrink-0 text-xs font-bold text-emerald-600 dark:text-emerald-400">{t.percent}%</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              {positions !== undefined && positions.length > 0 && (
+                <div className="mt-4">
+                  <p className="annotation text-xs">continue where you left off</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {positions.slice(0, 4).map((p) => (
+                      <Link
+                        key={p._id}
+                        to="/practice"
+                        onClick={sounds.click}
+                        className="rounded-full border bg-highlight-soft/50 px-3 py-1.5 text-xs font-semibold transition hover:bg-highlight/60"
+                      >
+                        {p.subject} · {p.topic}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>

@@ -215,6 +215,72 @@ const schema = defineSchema(
       total: v.number(),
       createdAt: v.number(),
     }).index("by_user_created", ["userId", "createdAt"]),
+
+    // ─── Snap & Solve / AI Tutor ─────────────────────────────────────
+
+    // A solved question (photo or typed) with its AI solution and chat.
+    // The tutor conversation lives here so it can always be reopened.
+    tutorSessions: defineTable({
+      userId: v.string(),
+      subject: v.optional(v.string()),
+      topic: v.optional(v.string()),
+      questionText: v.optional(v.string()), // typed question, if any
+      image: v.optional(v.string()), // data URL of the snapped photo (small)
+      solution: v.string(),
+      messages: v.array(
+        v.object({
+          role: v.union(v.literal("user"), v.literal("assistant")),
+          content: v.string(),
+        }),
+      ),
+      status: v.union(v.literal("active"), v.literal("closed")),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    })
+      .index("by_user_created", ["userId", "createdAt"])
+      .index("by_user_updated", ["userId", "updatedAt"]),
+
+    // Bookmarked/saved questions (from Practice, Important Questions or
+    // Snap & Solve) for later review.
+    savedQuestions: defineTable({
+      userId: v.string(),
+      source: v.string(), // "practice" | "important" | "snap"
+      sourceId: v.optional(v.string()),
+      subject: v.optional(v.string()),
+      topic: v.optional(v.string()),
+      question: v.string(),
+      answer: v.optional(v.string()),
+      options: v.optional(v.array(v.string())),
+      correctIndex: v.optional(v.number()),
+      tutorSessionId: v.optional(v.id("tutorSessions")),
+      createdAt: v.number(),
+    })
+      .index("by_user_created", ["userId", "createdAt"])
+      .index("by_user_subject", ["userId", "subject"]),
+
+    // AI-generated "Important Questions" for a topic.
+    importantQuestions: defineTable({
+      userId: v.string(),
+      subject: v.string(),
+      topic: v.string(),
+      questions: v.array(
+        v.object({
+          question: v.string(),
+          answer: v.string(),
+          difficulty: v.string(),
+        }),
+      ),
+      createdAt: v.number(),
+    }).index("by_user_topic", ["userId", "topic"]),
+
+    // Remember where a user left off in Subject → Chapter → Topic paths.
+    studyPositions: defineTable({
+      userId: v.string(),
+      subject: v.string(),
+      chapter: v.string(),
+      topic: v.string(),
+      updatedAt: v.number(),
+    }).index("by_user", ["userId"]),
   },
   {
     schemaValidation: false,
