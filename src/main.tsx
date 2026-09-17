@@ -10,6 +10,7 @@ import React, { StrictMode, useEffect, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
+import { SettingsProvider } from "@/hooks/use-settings";
 
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
@@ -155,9 +156,10 @@ createRoot(document.getElementById("root")!).render(
           appearance={clerkAppearance}
         >
           <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
-            <NativeAuthBridge />
-            <RouteSyncer />
-            <AdBannerController />
+            <SettingsProvider>
+              <NativeAuthBridge />
+              <RouteSyncer />
+              <AdBannerController />
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Landing />} />
@@ -285,7 +287,8 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-            <Toaster />
+              <Toaster />
+            </SettingsProvider>
           </ConvexProviderWithClerk>
         </ClerkProvider>
       </BrowserRouter>
