@@ -153,7 +153,13 @@ export async function initAds(): Promise<void> {
 
 let bannerShown = false;
 
-/** Show the bottom adaptive banner (Android only). Safe to call repeatedly. */
+/**
+ * Show the bottom adaptive banner (Android only). Safe to call repeatedly:
+ * on first call it creates the banner; if the banner already exists but was
+ * hidden (e.g. after visiting Settings/Practice), it is resumed instead of
+ * re-created — this is what makes the banner reappear when navigating back
+ * to ad-allowed screens.
+ */
 export async function showBannerAd(): Promise<void> {
   if (!isAndroidNative() || bannerShown) return;
   try {
@@ -169,6 +175,20 @@ export async function showBannerAd(): Promise<void> {
     bannerShown = true;
   } catch {
     // Banner failure never breaks the page.
+  }
+}
+
+/**
+ * Resume a hidden banner without re-creating it (cheap, no new ad request).
+ * Called by AdBannerController when navigating to an ad-allowed screen after
+ * the banner was hidden elsewhere. Web/no-banner: safe no-op.
+ */
+export async function resumeBannerAd(): Promise<void> {
+  if (!isAndroidNative() || !bannerShown) return;
+  try {
+    await AdMob.resumeBanner();
+  } catch {
+    // ignore
   }
 }
 

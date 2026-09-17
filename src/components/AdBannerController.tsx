@@ -4,6 +4,7 @@ import {
   bannerRouteAllowed,
   hideBannerAd,
   isAndroidNative,
+  resumeBannerAd,
   showBannerAd,
   warmUpAds,
 } from "@/lib/ads";
@@ -40,7 +41,9 @@ export function AdBannerController() {
     const allowed =
       bannerRouteAllowed(pathname) && !BANNER_ALWAYS_FORBIDDEN.has(pathname);
     if (allowed) {
-      void showBannerAd();
+      // If the banner already exists (created earlier in the session) this
+      // just un-hides it; otherwise it creates it for the first time.
+      void resumeBannerAd().then(() => showBannerAd());
     } else {
       void hideBannerAd();
     }
