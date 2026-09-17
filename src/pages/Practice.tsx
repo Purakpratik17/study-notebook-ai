@@ -16,6 +16,7 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useSounds, useSettings } from "@/hooks/use-settings";
+import { TranslateButton } from "@/components/TranslateButton";
 import { maybeShowInterstitial } from "@/lib/ads";
 import SnapSolve from "@/components/tutor/SnapSolve";
 import TutorChat from "@/components/tutor/TutorChat";
@@ -466,6 +467,9 @@ function PracticeRunner(props: {
   const isCorrect = revealed && picked === q.correctIndex;
   const isWrong = revealed && picked !== null && picked !== q.correctIndex;
   const progress = ((index + (revealed ? 1 : 0)) / props.questions.length) * 100;
+  const questionPlain = `${q.question}\n${q.options
+    .map((o, oi) => `${String.fromCharCode(65 + oi)}) ${o}`)
+    .join("\n")}${q.explanation ? `\nWhy: ${q.explanation}` : ""}`;
 
   return (
     <section className="paper-sheet paper-margin px-5 py-6 pl-14 md:px-8 md:pl-20">
@@ -482,6 +486,10 @@ function PracticeRunner(props: {
           className="h-full rounded-full bg-primary transition-all duration-300"
           style={{ width: `${progress}%` }}
         />
+      </div>
+
+      <div className="mt-3 flex justify-end">
+        <TranslateButton content={questionPlain} />
       </div>
 
       <p className="mt-5 text-lg font-semibold leading-relaxed">{q.question}</p>

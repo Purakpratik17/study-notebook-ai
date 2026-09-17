@@ -9,6 +9,7 @@ import {
   useSettings,
   type Theme,
 } from "@/hooks/use-settings";
+import { LANGUAGES } from "@/lib/languages";
 import { cn } from "@/lib/utils";
 import {
   Bell,
@@ -28,6 +29,7 @@ import {
   Volume2,
   VolumeX,
   Zap,
+  Globe,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -380,6 +382,68 @@ export default function Settings() {
         preferences are saved per account on this device 🔒
       </p>
     </div>
+  );
+}
+
+/* ─── Language ─────────────────────────────────────────────────────── */
+
+function LanguageSection() {
+  const { settings, update, t } = useSettings();
+  const sounds = useSounds();
+  const [query, setQuery] = useState("");
+  const list = LANGUAGES.filter((l) =>
+    (l.name + " " + l.native).toLowerCase().includes(query.toLowerCase()),
+  );
+
+  return (
+    <SettingsCard
+      icon={Globe}
+      title={t("settings", "languageTitle")}
+      hint={t("settings", "languageHint")}
+    >
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t("common", "search")}
+        className="h-10 w-full rounded-lg border bg-background px-3 text-sm"
+        aria-label="Search languages"
+      />
+      <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+        {list.map((l) => {
+          const active = settings.language === l.code;
+          return (
+            <button
+              key={l.code}
+              onClick={() => {
+                update("language", l.code);
+                sounds.click();
+              }}
+              aria-pressed={active}
+              className={cn(
+                "rounded-lg border bg-card px-3 py-2.5 text-left text-sm font-semibold transition",
+                active
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "hover:bg-accent",
+              )}
+            >
+              {l.native}
+              <span className="annotation block text-[11px]">{l.name}</span>
+            </button>
+          );
+        })}
+        {list.length === 0 && (
+          <p className="col-span-full text-sm text-muted-foreground">
+            No languages match “{query}”.
+          </p>
+        )}
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        The interface uses your language where translations are available.
+        Study content (notes, quizzes, practice) can be translated on demand
+        with the 🌐 Translate button — the original is always kept.
+      </p>
+    </SettingsCard>
   );
 }
 

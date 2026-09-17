@@ -66,14 +66,15 @@ export function useTranslator(content: string) {
 
 export function TranslateButton({ content }: { content: string }) {
   const { settings } = useSettings();
-  const { t, active, loading, isTranslated, translateTo, showOriginal } =
+  const { t, active, translated, loading, isTranslated, translateTo, showOriginal } =
     useTranslator(content);
   const [pick, setPick] = useState<LanguageCode | "">(
     settings.language !== "en" ? settings.language : "",
   );
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
       {active ? (
         <button
           type="button"
@@ -125,6 +126,12 @@ export function TranslateButton({ content }: { content: string }) {
       )}
       {active && isTranslated && (
         <span className="annotation text-[11px]">{languageByCode(active).native}</span>
+      )}
+      </div>
+      {active && isTranslated && (
+        <div className="rounded-lg border bg-card/70 p-4 text-sm leading-relaxed whitespace-pre-wrap">
+          {translated}
+        </div>
       )}
     </div>
   );

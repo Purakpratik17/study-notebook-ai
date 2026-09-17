@@ -19,6 +19,7 @@ import { Link } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSettings, useSounds } from "@/hooks/use-settings";
+import { TranslateButton } from "@/components/TranslateButton";
 
 type XpInfo = GenerateResult["xp"];
 
@@ -256,14 +257,33 @@ function NoteView({ noteId }: { noteId: string }) {
   const notes = note.notes as StudyNotes;
   const quiz = note.quiz as QuizQuestion[];
 
+  // One shared translation of the whole notes document, on demand.
+  const notesPlain = [
+    notes.topic,
+    notes.intro,
+    ...notes.sections.map(
+      (s) =>
+        `${s.heading}\n${s.bullets.map((b) => `- ${b}`).join("\n")}${s.highlight ? `\n★ ${s.highlight}` : ""}`,
+    ),
+    ...notes.keyPoints.map((k) => `✓ ${k}`),
+    ...notes.formulas.map((f) => `[formula] ${f}`),
+    ...notes.examTips.map((t) => `💡 ${t}`),
+    notes.summary ? `Summary\n${notes.summary}` : "",
+  ].join("\n\n");
+
   return (
     <div className="flex flex-col gap-6">
       <ImportantQuestions topic={notes.topic} />
       <article className="paper-sheet paper-margin px-5 py-6 pl-14 md:px-8 md:pl-20">
-        <p className="annotation text-sm">topic notes</p>
-        <h2 className="mt-1 text-2xl font-bold tracking-tight">
-          {notes.topic}
-        </h2>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="annotation text-sm">topic notes</p>
+            <h2 className="mt-1 text-2xl font-bold tracking-tight">
+              {notes.topic}
+            </h2>
+          </div>
+          <TranslateButton content={notesPlain} />
+        </div>
         <p className="mt-3 leading-relaxed text-foreground/90">{notes.intro}</p>
 
         {notes.sections.map((s, i) => (
@@ -412,6 +432,18 @@ function QuizCard({ noteId, quiz, topic }: { noteId: string; quiz: QuizQuestion[
       <p className="annotation mt-0.5 text-xs">
         pick an answer — you'll see why it's right
       </p>
+      <div className="mt-2">
+        <TranslateButton
+          content={quiz
+            .map(
+              (q, i) =>
+                `${i + 1}. ${q.question}\n${q.options
+                  .map((o, oi) => `${String.fromCharCode(65 + oi)}) ${o}`)
+                  .join("\n")}\nWhy: ${q.explanation}`,
+            )
+            .join("\n\n")}
+        />
+      </div>
 
       <ol className="mt-5 flex flex-col gap-6">
         {quiz.map((q, qi) => {
