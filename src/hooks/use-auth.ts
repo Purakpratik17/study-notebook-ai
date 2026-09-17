@@ -20,6 +20,7 @@ export function useAuth() {
     isLoading: !isLoaded,
     isAuthenticated: Boolean(isSignedIn && isAuthenticated),
     clerkUser: user,
+    userId: user?.id ?? null,
     name,
     imageUrl: user?.imageUrl,
     email:
