@@ -16,6 +16,7 @@ import {
   Gamepad2,
   Info,
   LogOut,
+  Megaphone,
   Moon,
   NotebookPen,
   Palette,
@@ -262,6 +263,43 @@ export default function Settings() {
           <span className="mx-1 font-semibold">Sound Effects</span> mutes
           everything.
         </p>
+      </SettingsCard>
+
+      {/* ── Ads & Privacy ──────────────────────────────────────── */}
+      <SettingsCard
+        icon={Megaphone}
+        title="📢 Ads & Privacy"
+        hint="Support Learnova with unobtrusive ads."
+      >
+        <SettingRow
+          label="Show ads"
+          description={
+            settings.adsEnabled
+              ? "ON — a small banner may appear on Home, Profile and Settings (never during notes, quizzes or questions)"
+              : "OFF — no ads are shown anywhere in the app"
+          }
+        >
+          <Switch
+            checked={settings.adsEnabled}
+            onCheckedChange={(v) => {
+              update("adsEnabled", v);
+              sounds.click();
+            }}
+            aria-label="Toggle ads"
+          />
+        </SettingRow>
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-dashed bg-card/60 px-3 py-2.5 text-xs text-muted-foreground">
+          <Info className="mt-0.5 size-3.5 shrink-0" />
+          <p>
+            Ads use Google AdMob and appear only on Android at natural, quiet
+            spots — never over notes, quizzes, buttons or navigation. On the
+            web version no ad code runs at all. Learnova never sends your
+            email, sign-in details, notes or study data to advertisers. Where
+            required by law (e.g. the EEA), Google's consent form is shown
+            before ads serve, and you can revisit your privacy choices via the
+            Google privacy options in the app.
+          </p>
+        </div>
       </SettingsCard>
 
       {/* ── Account ────────────────────────────────────────────── */}

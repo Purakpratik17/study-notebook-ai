@@ -16,6 +16,7 @@ import {
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useSounds, useSettings } from "@/hooks/use-settings";
+import { maybeShowInterstitial } from "@/lib/ads";
 
 type Difficulty = "easy" | "medium" | "hard";
 type PracticeQuestion = {
@@ -144,6 +145,10 @@ export default function Practice() {
       }
       sounds.complete();
       setScreen("results");
+      // Natural break: results are already on screen. maybeShowInterstitial
+      // internally enforces the 3-minute cooldown and only shows if a loaded
+      // ad is ready — otherwise the flow continues untouched.
+      void maybeShowInterstitial();
       return result;
     } catch (e) {
       toast.error(

@@ -34,6 +34,7 @@ export type LearnovaSettings = {
   questReminders: boolean;
   xpAnimations: boolean;
   arcadeSounds: boolean;
+  adsEnabled: boolean;
 };
 
 export const DEFAULT_SETTINGS: LearnovaSettings = {
@@ -46,6 +47,7 @@ export const DEFAULT_SETTINGS: LearnovaSettings = {
   questReminders: false,
   xpAnimations: true,
   arcadeSounds: true,
+  adsEnabled: true,
 };
 
 const KEY_PREFIX = "learnova:settings:";

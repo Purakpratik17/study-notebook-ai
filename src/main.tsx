@@ -27,6 +27,11 @@ const ProjectCreator = lazy(() => import("./pages/ProjectCreator.tsx"));
 const Arcade = lazy(() => import("./pages/Arcade.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
+const AdBannerController = lazy(() =>
+  import("./components/AdBannerController").then((m) => ({
+    default: m.AdBannerController,
+  })),
+);
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -149,6 +154,7 @@ createRoot(document.getElementById("root")!).render(
           <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
             <NativeAuthBridge />
             <RouteSyncer />
+            <AdBannerController />
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Landing />} />
