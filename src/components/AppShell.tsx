@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
   NotebookPen,
   PenLine,
+  Settings as SettingsIcon,
   Sparkles,
   Swords,
   Target,
@@ -32,6 +33,7 @@ const TABS = [
   { to: "/quests", label: "Quests", icon: Swords },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { to: "/profile", label: "Profile", icon: User },
+  { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
 /** Mobile bottom bar keeps the 4 highest-traffic destinations; the rest
@@ -49,6 +51,7 @@ const MORE_TABS = [
   { to: "/practice", label: "Practice", icon: Target },
   { to: "/timetable", label: "Timetable", icon: CalendarDays },
   { to: "/profile", label: "Profile", icon: User },
+  { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {

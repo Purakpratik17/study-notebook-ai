@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useSounds } from "@/hooks/use-settings";
+import { useSounds, useSettings } from "@/hooks/use-settings";
 
 type Difficulty = "easy" | "medium" | "hard";
 type PracticeQuestion = {
@@ -66,6 +66,7 @@ const pick = <T,>(arr: readonly T[]): T =>
 
 export default function Practice() {
   const sounds = useSounds();
+  const { settings } = useSettings();
   const startAction = useAction(api.practice.start);
   const completeMutation = useMutation(api.practice.complete);
   const historyList = useQuery(api.practice.history);
@@ -176,9 +177,11 @@ export default function Practice() {
         <p className="annotation text-sm">
           drill any topic — quick MCQs with instant feedback
         </p>
-        <p className="mt-1 w-fit -rotate-1 rounded-md border border-dashed border-highlight/60 bg-highlight-soft/50 px-3 py-1.5 text-sm text-foreground/80">
-          {motivation}
-        </p>
+        {settings.motivationalThoughts && (
+          <p className="mt-1 w-fit -rotate-1 rounded-md border border-dashed border-highlight/60 bg-highlight-soft/50 px-3 py-1.5 text-sm text-foreground/80">
+            {motivation}
+          </p>
+        )}
       </header>
 
       {screen === "setup" && (

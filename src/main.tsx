@@ -26,6 +26,7 @@ const EssayWriter = lazy(() => import("./pages/EssayWriter.tsx"));
 const ProjectCreator = lazy(() => import("./pages/ProjectCreator.tsx"));
 const Arcade = lazy(() => import("./pages/Arcade.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Settings = lazy(() => import("./pages/Settings.tsx"));
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -237,6 +238,14 @@ createRoot(document.getElementById("root")!).render(
                   element={
                     <RequireAuth>
                       <Profile />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <RequireAuth>
+                      <Settings />
                     </RequireAuth>
                   }
                 />

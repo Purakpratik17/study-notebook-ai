@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useSettings } from "@/hooks/use-settings";
 
 type XpInfo = GenerateResult["xp"];
 
@@ -63,6 +64,8 @@ const SUCCESS_NOTES = [
 const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
 export default function AiStudy() {
+  const { settings } = useSettings();
+  const motivationalThoughts = settings.motivationalThoughts;
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,9 +108,11 @@ export default function AiStudy() {
         <p className="annotation text-sm">
           type any topic — personalized notes + a quiz, written just for you
         </p>
-        <p className="mt-1 w-fit -rotate-1 rounded-md border border-dashed border-highlight/60 bg-highlight-soft/50 px-3 py-1.5 text-sm text-foreground/80">
-          {MOTIVATION[0]}
-        </p>
+        {motivationalThoughts && (
+          <p className="mt-1 w-fit -rotate-1 rounded-md border border-dashed border-highlight/60 bg-highlight-soft/50 px-3 py-1.5 text-sm text-foreground/80">
+            {MOTIVATION[0]}
+          </p>
+        )}
       </header>
 
       {/* Topic input */}
