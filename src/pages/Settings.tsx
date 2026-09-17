@@ -280,7 +280,7 @@ export default function Settings() {
           label="Show ads"
           description={
             settings.adsEnabled
-              ? "ON — a small banner may appear on Home, Profile and Settings (never during notes, quizzes or questions)"
+              ? "ON — small banners may appear on Home, after Notes, in Friends, Timetable, Quests, Profile and the Arcade hub (never in Settings, during questions, or mid-game)"
               : "OFF — no ads are shown anywhere in the app"
           }
         >

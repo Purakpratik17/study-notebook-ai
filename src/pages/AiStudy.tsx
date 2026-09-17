@@ -20,6 +20,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useSettings, useSounds } from "@/hooks/use-settings";
 import { TranslateButton } from "@/components/TranslateButton";
+import { maybeShowInterstitial } from "@/lib/ads";
 
 type XpInfo = GenerateResult["xp"];
 
@@ -392,6 +393,8 @@ function QuizCard({ noteId, quiz, topic }: { noteId: string; quiz: QuizQuestion[
     try {
       const result = await record({ noteId: noteId as never, score, total: quiz.length });
       showXpToasts(result.xp, result.settledQuests);
+      // Natural break: quiz results are already on screen.
+      void maybeShowInterstitial("quizResultsInterstitial");
       // Save wrong answers for Smart Revision (fire-and-forget, idempotent).
       const wrong = quiz
         .map((q, i) => ({ q, i }))

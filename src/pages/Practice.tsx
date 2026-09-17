@@ -153,7 +153,7 @@ export default function Practice() {
       // Natural break: results are already on screen. maybeShowInterstitial
       // internally enforces the 3-minute cooldown and only shows if a loaded
       // ad is ready — otherwise the flow continues untouched.
-      void maybeShowInterstitial();
+      void maybeShowInterstitial("practiceResultsInterstitial");
       return result;
     } catch (e) {
       toast.error(

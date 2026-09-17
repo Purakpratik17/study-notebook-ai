@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSounds } from "@/hooks/use-settings";
+import { maybeShowInterstitial } from "@/lib/ads";
 
 /* ═══════════════════════════════════════════════════════════════════════
    Arcade hub — Study Blocks + Study Bee
@@ -454,6 +455,10 @@ function StudyBlocks() {
       toast.success(`New Study Blocks best: ${score}! 🧱`);
       sounds.unlock();
     }
+    if (gameOver) {
+      // Natural break: game-over overlay is on screen. Never mid-game.
+      void maybeShowInterstitial("gameResultsInterstitial");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameOver]);
 
@@ -656,6 +661,10 @@ function StudyBee() {
       saveScore({ gameId: "bee", score }).catch(() => undefined);
       toast.success(`New Study Bee best: ${score}! 🐝`);
       sounds.unlock();
+    }
+    if (gameOver) {
+      // Natural break: game-over overlay is on screen. Never mid-game.
+      void maybeShowInterstitial("gameResultsInterstitial");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameOver]);

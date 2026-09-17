@@ -40,6 +40,58 @@ const PRODUCTION_IDS = {
  */
 export const ADS_USE_TEST_ADS = false;
 
+/* ═══════════════════════════════════════════════════════════════════════
+   CENTRALIZED AD PLACEMENT CONFIG — the single place to enable/disable
+   individual placements or tune frequency later. No other file hardcodes
+   ad decisions; components and controllers read from here.
+
+   • *Banner flags    → where the (Android-native, bottom-pinned) banner
+     is allowed to sit. Settings, Practice questions, Notes reading,
+     chat threads and active gameplay are ALWAYS forbidden regardless.
+   • *Interstitial flags → natural completion breaks where a cooldown-
+     protected interstitial MAY appear (only if already loaded).
+   • interstitialCooldownMs → minimum time between any two interstitials.
+   Set any flag to false to disable that placement app-wide.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+export const AD_PLACEMENTS = {
+  // Bottom banner placements (Android native).
+  dashboardBanner: true, // Home — sits below content sections
+  notesBanner: true, // AI Study — appears after the notes content
+  friendsBanner: true, // Friends — below the friends/conversation area
+  timetableBanner: true, // Timetable — lower-page position
+  questsBanner: true, // Quests — lower-page position
+  arcadeHubBanner: true, // Arcade hub only — never during gameplay
+  profileBanner: true, // Profile — low-disruption
+  // Interstitial placements (natural completion breaks only).
+  practiceResultsInterstitial: true, // after a full practice session
+  quizResultsInterstitial: true, // after submitting a notes quiz
+  gameResultsInterstitial: true, // after a game-over (never mid-game)
+  // Frequency tuning.
+  interstitialCooldownMs: 3 * 60 * 1000,
+} as const;
+
+export type AdPlacementId = keyof typeof AD_PLACEMENTS;
+
+/** Routes where the bottom banner may appear, derived from the config. */
+const BANNER_ROUTES: Record<Exclude<AdPlacementId, `practiceResultsInterstitial` | `quizResultsInterstitial` | `gameResultsInterstitial` | `interstitialCooldownMs`>, string> = {
+  dashboardBanner: "/dashboard",
+  notesBanner: "/ai-study",
+  friendsBanner: "/friends",
+  timetableBanner: "/timetable",
+  questsBanner: "/quests",
+  arcadeHubBanner: "/arcade",
+  profileBanner: "/profile",
+};
+
+export function bannerRouteAllowed(pathname: string): boolean {
+  // Gameplay guard: while inside an Arcade game the hub stays on the same
+  // route, so gameplay itself is never ad-supported here.
+  return Object.entries(BANNER_ROUTES).some(
+    ([id, route]) => AD_PLACEMENTS[id as AdPlacementId] === true && pathname === route,
+  );
+}
+
 const AD_IDS = ADS_USE_TEST_ADS ? TEST_IDS : PRODUCTION_IDS;
 
 /** Android only — web is always a no-op. */
@@ -121,7 +173,7 @@ export async function removeBannerAd(): Promise<void> {
 
 /* ─── Interstitial (cooldown-protected) ───────────────────────────────── */
 
-const INTERSTITIAL_COOLDOWN_MS = 3 * 60 * 1000; // min 3 min between interstitials
+const INTERSTITIAL_COOLDOWN_MS = AD_PLACEMENTS.interstitialCooldownMs;
 let lastInterstitialAt = 0;
 let interstitialReady = false;
 
@@ -154,14 +206,18 @@ async function preloadInterstitial(): Promise<void> {
 }
 
 /**
- * Called at natural breaks (e.g. right after a Practice session completes,
- * results already on screen). Shows an interstitial only when ALL of:
+ * Called at natural breaks ONLY (session/quiz/game completion, results
+ * already on screen). Shows an interstitial when ALL of:
  *  - running on Android,
+ *  - the placement is enabled in AD_PLACEMENTS,
  *  - the ad is already loaded,
- *  - the cooldown (3 min) has elapsed.
+ *  - the cooldown has elapsed.
  * Otherwise does nothing and the app flow continues unchanged.
  */
-export async function maybeShowInterstitial(): Promise<void> {
+export async function maybeShowInterstitial(
+  placement: "practiceResultsInterstitial" | "quizResultsInterstitial" | "gameResultsInterstitial",
+): Promise<void> {
+  if (!AD_PLACEMENTS[placement]) return;
   if (!isAndroidNative()) return;
   const now = Date.now();
   if (now - lastInterstitialAt < INTERSTITIAL_COOLDOWN_MS) return;

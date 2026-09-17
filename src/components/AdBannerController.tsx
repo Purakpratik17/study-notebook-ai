@@ -1,6 +1,12 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
-import { hideBannerAd, isAndroidNative, showBannerAd, warmUpAds } from "@/lib/ads";
+import {
+  bannerRouteAllowed,
+  hideBannerAd,
+  isAndroidNative,
+  showBannerAd,
+  warmUpAds,
+} from "@/lib/ads";
 import { useSettings } from "@/hooks/use-settings";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -14,13 +20,10 @@ import { useSettings } from "@/hooks/use-settings";
    complete no-op (nothing renders, nothing loads).
    ═════════════════════════════════════════════════════════════════════ */
 
-/** Screens where banners are allowed (low-disruption, non-study focus). */
-const BANNER_ALLOWED = new Set(["/dashboard", "/profile", "/settings"]);
-
-/** Screens where ads must never appear. */
-const BANNER_FORBIDDEN = new Set([
-  "/ai-study",
-  "/practice",
+/** Screens where ads must never appear, regardless of config. */
+const BANNER_ALWAYS_FORBIDDEN = new Set([
+  "/settings", // explicitly ad-free
+  "/practice", // active studying
   "/auth",
   "/sign-up",
   "/sso-callback",
@@ -35,7 +38,7 @@ export function AdBannerController() {
     if (!isAndroidNative() || !adsEnabled) return;
 
     const allowed =
-      BANNER_ALLOWED.has(pathname) && !BANNER_FORBIDDEN.has(pathname);
+      bannerRouteAllowed(pathname) && !BANNER_ALWAYS_FORBIDDEN.has(pathname);
     if (allowed) {
       void showBannerAd();
     } else {
