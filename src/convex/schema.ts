@@ -135,6 +135,9 @@ const schema = defineSchema(
         v.literal("minutes_studied"),
         v.literal("notes_generated"),
         v.literal("quiz_score"),
+        v.literal("flashcards_reviewed"),
+        v.literal("revision_done"),
+        v.literal("focus_completed"),
       ),
       progress: v.number(),
       status: v.union(
@@ -281,6 +284,59 @@ const schema = defineSchema(
       topic: v.string(),
       updatedAt: v.number(),
     }).index("by_user", ["userId"]),
+
+    // ─── Flashcards + spaced repetition revision ─────────────────
+
+    // One flashcard. `nextDue` drives the revision queue.
+    flashcards: defineTable({
+      userId: v.string(),
+      topic: v.string(),
+      subject: v.optional(v.string()),
+      noteId: v.optional(v.id("notes")), // when generated from a note
+      front: v.string(),
+      back: v.string(),
+      // Simple SM-2-lite state:
+      intervalDays: v.number(), // current interval
+      ease: v.number(), // multiplier (1.3–2.5)
+      nextDue: v.number(), // epoch ms when the card is due again
+      reviews: v.number(), // total times reviewed
+      lapses: v.number(), // times marked "Again"
+      lastReviewedAt: v.optional(v.number()),
+      source: v.union(v.literal("manual"), v.literal("ai")),
+      dedupeKey: v.optional(v.string()), // ai:<noteId>:<idx> — prevents duplicates
+      createdAt: v.number(),
+    })
+      .index("by_user", ["userId"])
+      .index("by_user_due", ["userId", "nextDue"])
+      .index("by_dedupe", ["userId", "dedupeKey"]),
+
+    // Log of individual flashcard reviews (for history/stats).
+    flashcardReviews: defineTable({
+      userId: v.string(),
+      cardId: v.id("flashcards"),
+      rating: v.union(
+        v.literal("again"),
+        v.literal("hard"),
+        v.literal("good"),
+        v.literal("easy"),
+      ),
+      createdAt: v.number(),
+    }).index("by_user_created", ["userId", "createdAt"]),
+
+    // Incorrect quiz questions saved for revision.
+    quizMistakes: defineTable({
+      userId: v.string(),
+      noteId: v.id("notes"),
+      topic: v.string(),
+      question: v.string(),
+      options: v.array(v.string()),
+      correctIndex: v.number(),
+      explanation: v.optional(v.string()),
+      resolved: v.boolean(), // cleared once answered correctly in revision
+      createdAt: v.number(),
+    })
+      .index("by_user_unresolved", ["userId", "resolved"])
+      .index("by_user", ["userId"]),
   },
   {
     schemaValidation: false,

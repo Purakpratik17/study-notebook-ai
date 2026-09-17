@@ -15,7 +15,10 @@ export type QuestTemplate = {
     | "task_completed"
     | "minutes_studied"
     | "notes_generated"
-    | "quiz_score";
+    | "quiz_score"
+    | "flashcards_reviewed"
+    | "revision_done"
+    | "focus_completed";
   target: number;
 };
 
@@ -66,6 +69,38 @@ export const QUEST_CATALOG: QuestTemplate[] = [
     description: "Complete a quiz",
     difficulty: "easy",
     metric: "quiz_completed",
+    target: 1,
+  },
+  {
+    id: "flash_10",
+    title: "Card Sharp",
+    description: "Review 10 flashcards",
+    difficulty: "easy",
+    metric: "flashcards_reviewed",
+    target: 10,
+  },
+  {
+    id: "flash_20",
+    title: "Memory Master",
+    description: "Review 20 flashcards",
+    difficulty: "medium",
+    metric: "flashcards_reviewed",
+    target: 20,
+  },
+  {
+    id: "revision_1",
+    title: "Patch the Gaps",
+    description: "Complete a revision session",
+    difficulty: "easy",
+    metric: "revision_done",
+    target: 1,
+  },
+  {
+    id: "focus_1",
+    title: "Locked In",
+    description: "Complete a focus session",
+    difficulty: "medium",
+    metric: "focus_completed",
     target: 1,
   },
   {

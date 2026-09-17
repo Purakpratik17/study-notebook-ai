@@ -345,13 +345,16 @@ function NoteView({ noteId }: { noteId: string }) {
         )}
       </article>
 
-      {quiz.length > 0 && <QuizCard noteId={noteId} quiz={quiz} />}
+      {quiz.length > 0 && (
+        <QuizCard noteId={noteId} quiz={quiz} topic={notes.topic} />
+      )}
     </div>
   );
 }
 
-function QuizCard({ noteId, quiz }: { noteId: string; quiz: QuizQuestion[] }) {
+function QuizCard({ noteId, quiz, topic }: { noteId: string; quiz: QuizQuestion[]; topic: string }) {
   const record = useAction(api.ai.recordQuizAttempt);
+  const saveMistakes = useMutation(api.revision.saveMistakes);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -369,6 +372,26 @@ function QuizCard({ noteId, quiz }: { noteId: string; quiz: QuizQuestion[] }) {
     try {
       const result = await record({ noteId: noteId as never, score, total: quiz.length });
       showXpToasts(result.xp, result.settledQuests);
+      // Save wrong answers for Smart Revision (fire-and-forget, idempotent).
+      const wrong = quiz
+        .map((q, i) => ({ q, i }))
+        .filter(({ q, i }) => answers[i] !== q.correctIndex)
+        .map(({ q }) => ({
+          question: q.question,
+          options: q.options,
+          correctIndex: q.correctIndex,
+          explanation: q.explanation,
+        }));
+      if (wrong.length > 0) {
+        try {
+          await saveMistakes({ noteId: noteId as never, topic, mistakes: wrong });
+          toast.info(
+            `${wrong.length} mistake${wrong.length === 1 ? "" : "s"} added to your Revision queue`,
+          );
+        } catch {
+          // Non-fatal: quiz result already saved.
+        }
+      }
     } catch {
       toast.error("Could not save your attempt, but your score is shown.");
     } finally {

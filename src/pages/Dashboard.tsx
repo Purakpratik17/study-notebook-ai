@@ -121,6 +121,13 @@ export default function Dashboard() {
   const positions = useQuery(api.progress.positions) as
     | Array<{ _id: string; subject: string; chapter: string; topic: string }>
     | undefined;
+  const weekly = useQuery(api.stats.getWeeklyActivity) as
+    | Array<{ day: string; label: string; minutes: number }>
+    | undefined;
+  const revQueue = useQuery(api.revision.queue) as
+    | { total: number; overdueCards: number; dueTodayCards: number; mistakes: unknown[] }
+    | undefined;
+  const flashDue = revQueue ? revQueue.overdueCards + revQueue.dueTodayCards : 0;
   const todaysTasks = useQuery(api.timetable.list) as Entry[] | undefined;
   const recent = useQuery(api.stats.getRecentActivity) as XpEvent[] | undefined;
   const notes = useQuery(api.notes.list) as
@@ -755,10 +762,55 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
+
+            {/* Weekly study rhythm */}
+            {weekly !== undefined && (
+              <div className="mt-5">
+                <p className="annotation text-xs">this week's study rhythm</p>
+                <div className="mt-2 flex items-end justify-between gap-2 sm:gap-3">
+                  {weekly.map((d) => {
+                    const max = Math.max(...weekly.map((x) => x.minutes), 1);
+                    const h = Math.max(Math.round((d.minutes / max) * 56), 4);
+                    return (
+                      <div key={d.day} className="flex flex-1 flex-col items-center gap-1">
+                        <div
+                          className="w-full max-w-8 rounded-t bg-marker/80 transition-all"
+                          style={{ height: `${h}px` }}
+                          title={`${d.minutes} XP`}
+                        />
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          {d.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             </>
           )}
         </section>
       </div>
+
+      {/* Revision + flashcards shortcut */}
+      {revQueue !== undefined && revQueue.total > 0 && (
+        <Link
+          to="/revision"
+          onClick={sounds.click}
+          className="paper-sheet flex items-center justify-between px-5 py-4 transition-transform hover:-translate-y-0.5"
+        >
+          <div>
+            <p className="text-sm font-bold">
+              🔁 {revQueue.total} item{revQueue.total === 1 ? "" : "s"} due for revision
+            </p>
+            <p className="annotation text-xs">
+              {revQueue.overdueCards} overdue · {revQueue.dueTodayCards} due today ·{" "}
+              {revQueue.mistakes.length} quiz mistakes to fix
+            </p>
+          </div>
+          <ArrowRight className="size-5 shrink-0 text-primary" />
+        </Link>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent notes */}

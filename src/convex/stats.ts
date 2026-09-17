@@ -341,3 +341,35 @@ export const getRecentActivity = query({
     }));
   },
 });
+
+/** Minutes of XP-earning study per day for the last 7 days (weekly chart). */
+export const getWeeklyActivity = query({
+  args: {},
+  handler: async (
+    ctx,
+  ): Promise<Array<{ day: string; label: string; minutes: number }>> => {
+    const userId = await requireUserId(ctx);
+    const events = await ctx.db
+      .query("xpEvents")
+      .withIndex("by_user_created", (q) => q.eq("userId", userId))
+      .order("desc")
+      .take(500);
+    const days: Array<{ day: string; label: string; minutes: number }> = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86_400_000);
+      days.push({
+        day: d.toISOString().slice(0, 10),
+        label: d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 3),
+        minutes: 0,
+      });
+    }
+    const byDay = new Map(days.map((d) => [d.day, d]));
+    for (const e of events) {
+      if (e.amount <= 0) continue;
+      const d = byDay.get(new Date(e.createdAt).toISOString().slice(0, 10));
+      if (d) d.minutes += e.amount; // proxy: XP earned as activity volume
+    }
+    return days;
+  },
+});

@@ -27,6 +27,9 @@ const ProjectCreator = lazy(() => import("./pages/ProjectCreator.tsx"));
 const Arcade = lazy(() => import("./pages/Arcade.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
+const Flashcards = lazy(() => import("./pages/Flashcards.tsx"));
+const Revision = lazy(() => import("./pages/Revision.tsx"));
+const FocusMode = lazy(() => import("./pages/FocusMode.tsx"));
 const AdBannerController = lazy(() =>
   import("./components/AdBannerController").then((m) => ({
     default: m.AdBannerController,
@@ -252,6 +255,30 @@ createRoot(document.getElementById("root")!).render(
                   element={
                     <RequireAuth>
                       <Settings />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/flashcards"
+                  element={
+                    <RequireAuth>
+                      <Flashcards />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/revision"
+                  element={
+                    <RequireAuth>
+                      <Revision />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/focus"
+                  element={
+                    <RequireAuth>
+                      <FocusMode />
                     </RequireAuth>
                   }
                 />
