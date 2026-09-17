@@ -2,6 +2,7 @@ import { useAuth } from "@clerk/react-router";
 import { useConvexAuth } from "convex/react";
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router";
+import { AppShell } from "./AppShell";
 
 /**
  * Route guard for authenticated pages. Auth is Clerk; useConvexAuth() only
@@ -34,5 +35,6 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     );
   }
 
-  return children;
+  // Authenticated pages render inside the app shell (nav + tab backgrounds).
+  return <AppShell>{children}</AppShell>;
 }
