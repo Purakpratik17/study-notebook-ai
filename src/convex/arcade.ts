@@ -152,7 +152,7 @@ export const onQuestCompleted = mutation({
 /**
  * DEV/TEST ONLY helper: immediately grant a permanent unlock so the flow can
  * be verified without a real 4-hour session. Guarded by an environment flag
- * so it throws for production users.
+ * so it throws for production users. Never touches XP or quest/study records.
  */
 export const devUnlockGame = mutation({
   args: { gameId: v.string() },
@@ -166,5 +166,27 @@ export const devUnlockGame = mutation({
     }
     const newlyUnlocked = await ensureUnlock(ctx, userId, args.gameId);
     return { newlyUnlocked };
+  },
+});
+
+/**
+ * DEV/TEST ONLY: clear any dev-granted test unlocks, restoring the real
+ * production unlock conditions. Server-gated like devUnlockGame.
+ */
+export const devResetArcade = mutation({
+  args: {},
+  handler: async (ctx) => {
+    if (process.env.ARCADE_DEV_UNLOCK !== "enabled") {
+      throw new Error("Dev unlocks are disabled in this deployment");
+    }
+    const userId = await requireUserId(ctx);
+    const profile = await getProfileRow(ctx, userId);
+    if (profile?.arcadeUnlocks) {
+      await ctx.db.patch(profile._id, {
+        arcadeUnlocks: {},
+        updatedAt: Date.now(),
+      });
+    }
+    return { reset: true };
   },
 });
