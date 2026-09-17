@@ -27,18 +27,35 @@ const TEST_IDS = {
   interstitial: "ca-app-pub-3940256099942544/1033173712",
 } as const;
 
-/** Learnova's real AdMob ad unit IDs (production). */
+/* ═══════════════════════════════════════════════════════════════════════
+   ⚠️ DEVELOPMENT / TEST ADS CONFIGURATION ⚠️
+
+   The app is currently configured to serve ONLY Google's official TEST
+   ad unit IDs (above). Your real production AdMob ad-unit IDs are kept
+   below ONLY as a dormant placeholder — they are NOT used while
+   ADS_USE_TEST_ADS is true, and no live ads are ever served.
+
+   TO SWITCH TO YOUR REAL AD IDS LATER:
+   1. Replace the placeholder values in PRODUCTION_IDS below with your
+      real AdMob banner + interstitial ad unit IDs.
+   2. Flip ADS_USE_TEST_ADS to false.
+   3. Done — every placement in the app switches over at once because
+      this file is the single source of truth for ad IDs.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/** Placeholder only — NOT used while ADS_USE_TEST_ADS is true. */
 const PRODUCTION_IDS = {
-  banner: "ca-app-pub-8054008558761017/7213968505",
-  interstitial: "ca-app-pub-8054008558761017/5055156139",
+  banner: "ca-app-pub-3940256099942544/6300978111", // TODO: replace with real banner ID
+  interstitial: "ca-app-pub-3940256099942544/1033173712", // TODO: replace with real interstitial ID
 } as const;
 
 /**
- * Master switch. false = serve real production ads with the PRODUCTION_IDS
- * above. Flip to true (TEST_IDS) for any development/testing build so dev
- * builds never serve real ads or accrue invalid traffic.
+ * ⚠️ DEVELOPMENT / TEST ADS — MASTER SWITCH ⚠️
+ * true (current) = serve Google's official TEST ad unit IDs everywhere.
+ * No personal/live ad IDs are used in any placement while this is true.
+ * Flip to false ONLY after replacing PRODUCTION_IDS with real IDs.
  */
-export const ADS_USE_TEST_ADS = false;
+export const ADS_USE_TEST_ADS = true;
 
 /* ═══════════════════════════════════════════════════════════════════════
    CENTRALIZED AD PLACEMENT CONFIG — the single place to enable/disable
@@ -93,6 +110,10 @@ export function bannerRouteAllowed(pathname: string): boolean {
 }
 
 const AD_IDS = ADS_USE_TEST_ADS ? TEST_IDS : PRODUCTION_IDS;
+// Note: with ADS_USE_TEST_ADS = true (current), AD_IDS is always the test
+// IDs above — test ads are used in EVERY placement: Dashboard, Notes,
+// Practice completion, Arcade menu, Friends, Timetable/Quests, Profile,
+// and all interstitial breaks.
 
 /** Android only — web is always a no-op. */
 export const isAndroidNative = (): boolean =>
