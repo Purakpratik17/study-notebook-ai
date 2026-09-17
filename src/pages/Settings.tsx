@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth, useClerkSignOut } from "@/hooks/use-auth";
 import {
   playUiSound,
+  useSounds,
   useSettings,
   type Theme,
 } from "@/hooks/use-settings";
@@ -40,6 +41,7 @@ import { toast } from "sonner";
 
 export default function Settings() {
   const { settings, update, resetAll } = useSettings();
+  const sounds = useSounds();
   const { name, email } = useAuth();
   const signOut = useClerkSignOut();
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -48,6 +50,8 @@ export default function Settings() {
     update("soundEffects", on);
     if (on) setTimeout(() => playUiSound(settings, "success"), 60);
   };
+
+  // Preview each chime when the volume slider changes (respects ON/OFF).
 
   const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
     { value: "light", label: "Light", icon: Sun },
@@ -124,7 +128,10 @@ export default function Settings() {
               min={0}
               max={100}
               value={Math.round(settings.soundVolume * 100)}
-              onChange={(e) => update("soundVolume", Number(e.target.value) / 100)}
+              onChange={(e) => {
+                update("soundVolume", Number(e.target.value) / 100);
+                playUiSound({ ...settings, soundVolume: Number(e.target.value) / 100 }, "correct");
+              }}
               className="h-2 w-40 cursor-pointer accent-[var(--primary)]"
               aria-label="Sound volume"
             />
@@ -276,13 +283,14 @@ export default function Settings() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button variant="outline" onClick={signOut} className="flex-1">
+          <Button variant="outline" onClick={() => { sounds.click(); signOut(); }} className="flex-1">
             <LogOut className="size-4" /> Log out
           </Button>
           <Button
             variant="outline"
             onClick={() => {
               resetAll();
+              sounds.click();
               toast.success("All settings reset to defaults");
             }}
             className="flex-1"

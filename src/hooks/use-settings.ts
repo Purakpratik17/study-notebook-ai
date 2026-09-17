@@ -1,4 +1,5 @@
 import {
+  createElement,
   createContext,
   useCallback,
   useContext,
@@ -77,48 +78,130 @@ type SettingsContextValue = {
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
-/** Play a short UI sound respecting the sound settings. */
-export function playUiSound(
-  settings: LearnovaSettings | null,
-  kind: "success" | "click" | "levelup" = "click",
-) {
-  if (!settings?.soundEffects) return;
-  if (typeof window === "undefined") return;
+/* ─── Sound engine ───────────────────────────────────────────────────────
+
+   All sounds are synthesized with the Web Audio API — zero audio assets in
+   the bundle, nothing copyrighted. One AudioContext is lazily created and
+   shared app-wide (cheap, and resumes after mobile autoplay restrictions
+   once the user has interacted). Missing/failed audio never breaks the UI.
+   ═════════════════════════════════════════════════════════════════════ */
+
+type SoundKind =
+  | "click" // subtle button tap
+  | "success" // small two-note chime (task/quest done)
+  | "xp" // quick rising blip (XP gained)
+  | "levelup" // fanfare (rank up)
+  | "correct" // pleasant ding
+  | "incorrect" // soft low buzz
+  | "complete" // session finished — small fanfare
+  | "game" // arcade interaction blip
+  | "unlock"; // achievement/unlock sparkle
+
+const SOUND_RECIPES: Record<
+  SoundKind,
+  { notes: number[]; dur: number; type: OscillatorType; gap?: number; vol?: number }
+> = {
+  click: { notes: [520], dur: 0.07, type: "triangle", vol: 0.5 },
+  success: { notes: [659.25, 783.99], dur: 0.13, type: "sine", gap: 0.09 },
+  xp: { notes: [587.33, 880], dur: 0.11, type: "triangle", gap: 0.07 },
+  levelup: {
+    notes: [523.25, 659.25, 783.99, 1046.5],
+    dur: 0.24,
+    type: "triangle",
+    gap: 0.11,
+  },
+  correct: { notes: [880, 1174.66], dur: 0.12, type: "sine", gap: 0.08 },
+  incorrect: { notes: [220, 174.61], dur: 0.16, type: "square", gap: 0.1, vol: 0.35 },
+  complete: {
+    notes: [659.25, 783.99, 1046.5],
+    dur: 0.2,
+    type: "triangle",
+    gap: 0.13,
+  },
+  game: { notes: [740], dur: 0.08, type: "square", vol: 0.4 },
+  unlock: {
+    notes: [1046.5, 1318.5, 1568],
+    dur: 0.18,
+    type: "sine",
+    gap: 0.1,
+  },
+};
+
+let sharedCtx: AudioContext | null = null;
+function getCtx(): AudioContext | null {
+  if (typeof window === "undefined") return null;
   try {
     const Ctx =
       window.AudioContext ??
       (window as unknown as { webkitAudioContext?: typeof AudioContext })
         .webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    const freqs =
-      kind === "levelup"
-        ? [523.25, 659.25, 783.99]
-        : kind === "success"
-          ? [659.25, 783.99]
-          : [440];
-    const dur = kind === "levelup" ? 0.35 : 0.15;
-    freqs.forEach((f, i) => {
+    if (!Ctx) return null;
+    if (!sharedCtx) sharedCtx = new Ctx();
+    if (sharedCtx.state === "suspended") void sharedCtx.resume();
+    return sharedCtx;
+  } catch {
+    return null;
+  }
+}
+
+let lastPlayedAt = 0;
+/**
+ * Play a short, subtle UI sound respecting the user's sound settings.
+ * Throttled to 60 ms so rapid events never stack into a buzz.
+ */
+export function playUiSound(
+  settings: LearnovaSettings | null,
+  kind: SoundKind = "click",
+) {
+  if (!settings?.soundEffects) return;
+  const now = Date.now();
+  if (now - lastPlayedAt < 60) return;
+  lastPlayedAt = now;
+
+  try {
+    const ctx = getCtx();
+    if (!ctx) return;
+    const recipe = SOUND_RECIPES[kind];
+    const baseVol = (recipe.vol ?? 1) * settings.soundVolume * 0.3;
+    recipe.notes.forEach((f, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = "sine";
+      osc.type = recipe.type;
       osc.frequency.value = f;
-      const start = ctx.currentTime + i * (dur / (freqs.length + 0.5));
+      const start = ctx.currentTime + i * (recipe.gap ?? 0.08);
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(
-        Math.max(0.001, settings.soundVolume * 0.35),
-        start + 0.02,
+        Math.max(0.001, baseVol),
+        start + 0.015,
       );
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + recipe.dur);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(start);
-      osc.stop(start + dur + 0.02);
+      osc.stop(start + recipe.dur + 0.02);
     });
-    setTimeout(() => void ctx.close(), (dur + 0.3) * 1000 + freqs.length * 200);
   } catch {
     // Audio is a nice-to-have; never break the UI over it.
   }
+}
+
+/** Convenience hook for pages: sound callbacks that respect settings. */
+export function useSounds() {
+  const { settings } = useSettings();
+  return useMemo(
+    () => ({
+      click: () => playUiSound(settings, "click"),
+      success: () => playUiSound(settings, "success"),
+      xp: () => playUiSound(settings, "xp"),
+      levelup: () => playUiSound(settings, "levelup"),
+      correct: () => playUiSound(settings, "correct"),
+      incorrect: () => playUiSound(settings, "incorrect"),
+      complete: () => playUiSound(settings, "complete"),
+      game: () => playUiSound(settings, "game"),
+      unlock: () => playUiSound(settings, "unlock"),
+    }),
+    [settings],
+  );
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -187,10 +270,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [settings, update, resetAll],
   );
 
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
+  // createElement avoids JSX in a .ts file (JSX is only parsed in .tsx).
+  return createElement(
+    SettingsContext.Provider,
+    { value },
+    children,
   );
 }
 

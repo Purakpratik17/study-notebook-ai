@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Loader2, RefreshCw, Swords, Trophy, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useSounds } from "@/hooks/use-settings";
 
 type Quest = {
   _id: string;
@@ -41,6 +42,7 @@ const DIFFICULTY_STYLES: Record<
 };
 
 export default function Quests() {
+  const sounds = useSounds();
   const quests = useQuery(api.quests.list) as Quest[] | undefined;
   const completed = useQuery(api.quests.completedCount);
   const refresh = useMutation(api.quests.refresh);
@@ -55,6 +57,7 @@ export default function Quests() {
         if (cancelled) return;
         for (const q of result.settled ?? []) {
           toast.success(`Quest complete: ${q.title} (+${q.xp} XP)`);
+          sounds.success();
         }
       } catch {
         // unauthenticated or transient — the page still renders via list()

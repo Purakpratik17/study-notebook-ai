@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useSounds } from "@/hooks/use-settings";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -36,19 +37,22 @@ type Entry = {
   completed: boolean;
 };
 
-function showXp(xp: { granted: boolean; amount: number; reason: string; totalXp: number; leveledUp: boolean; level: number; newLevelName: string | null } | null | undefined) {
+function showXp(xp: { granted: boolean; amount: number; reason: string; totalXp: number; leveledUp: boolean; level: number; newLevelName: string | null } | null | undefined, sounds?: { xp: () => void; levelup: () => void }) {
   if (!xp) return;
   if (xp.granted) {
     toast.success(`+${xp.amount} XP — ${xp.reason}`);
+    sounds?.xp();
   }
   if (xp.leveledUp) {
     toast.success(`Level up! You are now Level ${xp.level}${xp.newLevelName ? ` — ${xp.newLevelName}` : ""}`, {
       duration: 6000,
     });
+    sounds?.levelup();
   }
 }
 
 export default function Timetable() {
+  const sounds = useSounds();
   const entries = useQuery(api.timetable.list) as Entry[] | undefined;
   const toggle = useMutation(api.timetable.toggleComplete);
   const create = useMutation(api.timetable.create);
@@ -72,10 +76,11 @@ export default function Timetable() {
     try {
       const result = await toggle({ entryId: e._id as never });
       if (result.completed) {
-        showXp(result.xp);
+        showXp(result.xp, sounds);
         for (const q of result.settledQuests ?? []) {
           toast.success(`Quest complete: ${q.title} (+${q.xp} XP)`);
         }
+        sounds.success();
         toast.success("Task completed — nice work!", {
           description: e.subject,
         });

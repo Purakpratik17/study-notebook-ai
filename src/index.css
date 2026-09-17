@@ -338,3 +338,180 @@
 .animate-float-up {
   animation: float-up 1.4s ease-out forwards;
 }
+
+/* ---------- Tab-specific notebook worlds ----------
+   Each major section gets a subtle full-bleed backdrop rendered by
+   <TabBackground /> (fixed, -z-10, ink-only colors so it adapts to light
+   & dark and never competes with content). All are pure CSS = zero assets,
+   and they freeze when the user prefers reduced motion. */
+
+.tab-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  overflow: hidden;
+}
+.tab-bg span {
+  position: absolute;
+  font-family: var(--font-hand);
+  color: color-mix(in oklab, var(--ink) 10%, transparent);
+  user-select: none;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tab-bg span {
+    animation: none !important;
+  }
+}
+
+/* Shared gentle drift for a few accents (disabled by reduced-motion above
+   and by the app's own animation setting via [data-animations="off"]) */
+@keyframes tab-drift {
+  0% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-8px) rotate(var(--r, 0deg)); }
+  100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+}
+[data-animations="on"] .tab-bg span.drift {
+  animation: tab-drift 9s ease-in-out infinite;
+}
+
+/* DASHBOARD — warm study desk: coffee ring, ruler, pencil doodles */
+.tab-bg-dash {
+  background:
+    radial-gradient(
+      circle 90px at 88% 8%,
+      color-mix(in oklab, var(--highlight) 16%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      circle 60px at 8% 92%,
+      color-mix(in oklab, var(--marker) 8%, transparent),
+      transparent 70%
+    );
+}
+
+/* PRACTICE — focused: faint math symbols & grid */
+.tab-bg-practice {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--ruled) 40%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--ruled) 40%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 56px 56px;
+}
+
+/* AI STUDY / NOTES — margin-ruled paper with faint formulas */
+.tab-bg-notes {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--ruled) 55%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 2.1rem 2.1rem;
+}
+
+/* TIMETABLE — planner grid */
+.tab-bg-timetable {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--ink) 4%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--ink) 4%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--ink) 8%, transparent) 1px,
+      transparent 1px
+    );
+  background-size:
+    72px 72px,
+    72px 18px,
+    100% 72px;
+}
+
+/* QUESTS — treasure-map contour feel */
+.tab-bg-quests {
+  background:
+    radial-gradient(
+      ellipse 200px 140px at 15% 20%,
+      color-mix(in oklab, var(--xp) 7%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 240px 160px at 85% 75%,
+      color-mix(in oklab, var(--highlight) 10%, transparent),
+      transparent 70%
+    ),
+    repeating-radial-gradient(
+      circle at 90% 10%,
+      transparent 0 38px,
+      color-mix(in oklab, var(--ink) 3%, transparent) 38px 39px
+    ),
+    repeating-radial-gradient(
+      circle at 10% 85%,
+      transparent 0 30px,
+      color-mix(in oklab, var(--ink) 3%, transparent) 30px 31px
+    );
+}
+
+/* ARCADE — retro scanlines + pixel-corner glow */
+.tab-bg-arcade {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 6px,
+      color-mix(in oklab, var(--ink) 2.5%, transparent) 6px 7px
+    ),
+    radial-gradient(
+      circle 70px at 92% 90%,
+      color-mix(in oklab, var(--marker) 10%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      circle 70px at 6% 10%,
+      color-mix(in oklab, var(--chart-5) 10%, transparent),
+      transparent 70%
+    );
+}
+
+/* LEADERBOARD — award board: rosette rays */
+.tab-bg-leaderboard {
+  background:
+    repeating-conic-gradient(
+      from 0deg at 50% -10%,
+      transparent 0deg 14deg,
+      color-mix(in oklab, var(--highlight) 5%, transparent) 14deg 15deg
+    ),
+    radial-gradient(
+      circle 120px at 50% -5%,
+      color-mix(in oklab, var(--highlight) 12%, transparent),
+      transparent 70%
+    );
+}
+
+/* PROFILE — personal journal: soft vignette + bookmark ribbon */
+.tab-bg-profile {
+  background:
+    radial-gradient(
+      ellipse 120% 60% at 50% 0%,
+      color-mix(in oklab, var(--paper-deep) 90%, transparent),
+      transparent
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--marker) 4%, transparent) 0 12px,
+      transparent 12px
+    );
+}

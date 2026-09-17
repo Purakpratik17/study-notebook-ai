@@ -1,6 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { TabBackground } from "@/components/TabBackground";
 import { useAuth, useClerkSignOut } from "@/hooks/use-auth";
+import { useSounds } from "@/hooks/use-settings";
 import { cn } from "@/lib/utils";
 import {
   CalendarDays,
@@ -52,6 +54,7 @@ const MORE_TABS = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { name, imageUrl } = useAuth();
   const signOut = useClerkSignOut();
+  const sounds = useSounds();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const inMore = MORE_TABS.some((t) => location.pathname === t.to);
@@ -87,6 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <NavLink
                 key={tab.to}
                 to={tab.to}
+                onClick={sounds.click}
                 className={cn(
                   "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                   active && "bg-primary/10 font-semibold text-primary",
@@ -174,6 +178,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Page content */}
       <main className="px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8">
+        <TabBackground />
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
 

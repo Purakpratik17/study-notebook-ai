@@ -4,6 +4,7 @@ import { ArrowLeft, FlaskConical, Gamepad2, Lock, Pause, Play, RefreshCw, Rotate
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useSounds } from "@/hooks/use-settings";
 
 /* ═══════════════════════════════════════════════════════════════════════
    Arcade hub — Study Blocks + Study Bee
@@ -23,6 +24,7 @@ type GameRow = {
 type Screen = "hub" | "blocks" | "bee";
 
 export default function Arcade() {
+  const sounds = useSounds();
   const arcade = useQuery(api.arcade.getArcade);
   const devUnlock = useMutation(api.arcade.devUnlockGame);
   const devReset = useMutation(api.arcade.devResetArcade);
@@ -334,6 +336,7 @@ function collides(board: Board, p: Piece): boolean {
 }
 
 function StudyBlocks() {
+  const sounds = useSounds();
   const best = useQuery(api.profiles.getTetrisHighScore) ?? 0;
   const saveScore = useMutation(api.arcade.saveScore);
 
@@ -449,6 +452,7 @@ function StudyBlocks() {
     if (gameOver && score > 0 && score > best) {
       saveScore({ gameId: "blocks", score }).catch(() => undefined);
       toast.success(`New Study Blocks best: ${score}! 🧱`);
+      sounds.unlock();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameOver]);
@@ -549,6 +553,7 @@ const SPEED_BASE = 2.4;
 type Obstacle = { x: number; gapY: number; scored: boolean };
 
 function StudyBee() {
+  const sounds = useSounds();
   const best = useQuery(api.profiles.getBeeHighScore) ?? 0;
   const saveScore = useMutation(api.arcade.saveScore);
 
@@ -650,6 +655,7 @@ function StudyBee() {
     if (gameOver && score > 0 && score > best) {
       saveScore({ gameId: "bee", score }).catch(() => undefined);
       toast.success(`New Study Bee best: ${score}! 🐝`);
+      sounds.unlock();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameOver]);

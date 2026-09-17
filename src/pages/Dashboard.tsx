@@ -27,6 +27,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
+import { useSounds } from "@/hooks/use-settings";
 
 type Stats = {
   xp: number;
@@ -103,6 +104,7 @@ function fmtHm(mins: number) {
 
 export default function Dashboard() {
   const { name } = useAuth();
+  const sounds = useSounds();
   const stats = useQuery(api.stats.getStats) as Stats | null | undefined;
   const summary = useQuery(api.stats.getDashboardSummary) as
     | Summary
@@ -170,10 +172,13 @@ export default function Dashboard() {
         description: "4 hours of pure focus deserves a reward.",
         duration: 8000,
       });
+      sounds.unlock();
     } else if (unlocked.newlyUnlocked.length > 0) {
       toast.success("🏆 New achievement unlocked!");
+      sounds.unlock();
     }
     toast.success(`+${unlocked.xp.amount} XP — ${fmtHm(minutes)} focused`);
+    sounds.xp();
     setFocusSeconds(0);
     startedAtRef.current = null;
   };
@@ -189,8 +194,10 @@ export default function Dashboard() {
       const r = await logSession({ minutes: 30 });
       if (r.xp.granted) {
         toast.success(`+${r.xp.amount} XP — studied 30 minutes`);
+        sounds.xp();
         for (const q of r.settledQuests ?? []) {
           toast.success(`Quest complete: ${q.title} (+${q.xp} XP)`);
+          sounds.success();
         }
       } else {
         toast("Session already logged recently", {
@@ -211,6 +218,7 @@ export default function Dashboard() {
       const r = await claimGoal({});
       if (r.xp.granted) {
         toast.success(`+${r.xp.amount} XP — daily study goal reached!`);
+        sounds.xp();
       } else {
         toast("Daily goal bonus already claimed today");
       }
@@ -227,10 +235,15 @@ export default function Dashboard() {
     try {
       const r = await toggle({ entryId: t._id as never });
       if (r.completed) {
-        if (r.xp?.granted) toast.success(`+${r.xp.amount} XP — task completed`);
+        if (r.xp?.granted) {
+          toast.success(`+${r.xp.amount} XP — task completed`);
+          sounds.xp();
+        }
         for (const q of r.settledQuests ?? []) {
           toast.success(`Quest complete: ${q.title} (+${q.xp} XP)`);
+          sounds.success();
         }
+        if (r.xp?.granted || (r.settledQuests?.length ?? 0) > 0) sounds.success();
       }
     } catch {
       toast.error("Could not update the task");

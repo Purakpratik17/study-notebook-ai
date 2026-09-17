@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useSounds } from "@/hooks/use-settings";
 
 type Difficulty = "easy" | "medium" | "hard";
 type PracticeQuestion = {
@@ -64,6 +65,7 @@ const pick = <T,>(arr: readonly T[]): T =>
   arr[Math.floor(Math.random() * arr.length)];
 
 export default function Practice() {
+  const sounds = useSounds();
   const startAction = useAction(api.practice.start);
   const completeMutation = useMutation(api.practice.complete);
   const historyList = useQuery(api.practice.history);
@@ -94,6 +96,7 @@ export default function Practice() {
     }
     setScreen("loading");
     setError(null);
+    sounds.click();
     try {
       const result = await startAction({
         subject,
@@ -126,16 +129,19 @@ export default function Practice() {
         toast.success(`+${result.xp.amount} XP`, {
           description: `${result.xp.totalXp} XP total`,
         });
+        sounds.xp();
       }
       if (result.xp.leveledUp) {
         toast.success(
           `Level up! You are now Level ${result.xp.level}${result.xp.newLevelName ? ` — ${result.xp.newLevelName}` : ""}`,
           { duration: 6000 },
         );
+        sounds.levelup();
       }
       for (const q of result.settledQuests) {
         toast.success(`Quest complete: ${q.title} (+${q.xp} XP)`);
       }
+      sounds.complete();
       setScreen("results");
       return result;
     } catch (e) {
@@ -376,6 +382,7 @@ function PracticeRunner(props: {
   const [revealed, setRevealed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [locked, setLocked] = useState(false); // prevent double submit
+  const sounds = useSounds();
 
   const q = props.questions[index];
   const answersRef = useMemo(() => new Array(props.total).fill(-1), [props.total]);
@@ -385,6 +392,8 @@ function PracticeRunner(props: {
 
   const choose = (oi: number) => {
     if (revealed || submitting || locked) return;
+    if (oi === q.correctIndex) sounds.correct();
+    else sounds.incorrect();
     setPicked(oi);
     setRevealed(true);
     setAnswers((a) => {
