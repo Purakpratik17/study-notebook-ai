@@ -8,14 +8,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <!-- AdMob application ID. This is Google's official TEST app ID for
-             development. Replace with your real AdMob APPLICATION_ID before
-             releasing to Google Play (the app will crash at ad-init time if
-             a test app ID ships to production). Ad unit IDs live in
-             src/lib/ads.ts. -->
+        <!-- AdMob application ID (Learnova production).
+             Ad unit IDs live in src/lib/ads.ts. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-8054008558761017~7946886664" />
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"

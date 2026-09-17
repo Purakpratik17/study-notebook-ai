@@ -14,31 +14,31 @@ import {
    - Native SDK calls happen ONLY on Android (Capacitor.isNativePlatform()).
    - On web (Vite dev/preview/build) every function is a safe no-op, so the
      web app never crashes and never loads the native SDK.
-   - TEST ad unit IDs (Google's official sample IDs) are used while
-     initializeForTesting is true. Swap PRODUCTION ids below when going
-     live — no other application code changes.
+   - PRODUCTION ad unit IDs are configured below and are used while
+     initializeForTesting is false. To go back to safe development ads,
+     set ADS_USE_TEST_ADS back to true — no other code changes.
    - No personal data (Clerk credentials, emails, study content, Convex
      data) is ever passed to the ad SDK.
    ═════════════════════════════════════════════════════════════════════ */
 
-/** Google's official always-test ad unit IDs — safe for development. */
+/** Fallback: Google's official always-test ad unit IDs — safe for development. */
 const TEST_IDS = {
   banner: "ca-app-pub-3940256099942544/6300978111",
   interstitial: "ca-app-pub-3940256099942544/1033173712",
 } as const;
 
-/** TODO: Replace with real AdMob ad unit IDs before releasing to Play. */
+/** Learnova's real AdMob ad unit IDs (production). */
 const PRODUCTION_IDS = {
-  banner: "ca-app-pub-XXXX/YYYY-BANNER",
-  interstitial: "ca-app-pub-XXXX/YYYY-INTERSTITIAL",
+  banner: "ca-app-pub-8054008558761017/7213968505",
+  interstitial: "ca-app-pub-8054008558761017/5055156139",
 } as const;
 
 /**
- * Master switch. While true, every ad request uses TEST ads.
- * Flip to false only when PRODUCTION_IDS above are real and the app is
- * release-ready. Kept explicit so dev builds can never serve real ads.
+ * Master switch. false = serve real production ads with the PRODUCTION_IDS
+ * above. Flip to true (TEST_IDS) for any development/testing build so dev
+ * builds never serve real ads or accrue invalid traffic.
  */
-export const ADS_USE_TEST_ADS = true;
+export const ADS_USE_TEST_ADS = false;
 
 const AD_IDS = ADS_USE_TEST_ADS ? TEST_IDS : PRODUCTION_IDS;
 
