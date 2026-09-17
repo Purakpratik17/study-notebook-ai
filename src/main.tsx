@@ -32,6 +32,7 @@ const Flashcards = lazy(() => import("./pages/Flashcards.tsx"));
 const Revision = lazy(() => import("./pages/Revision.tsx"));
 const FocusMode = lazy(() => import("./pages/FocusMode.tsx"));
 const Friends = lazy(() => import("./pages/Friends.tsx"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel.tsx"));
 const AdBannerController = lazy(() =>
   import("./components/AdBannerController").then((m) => ({
     default: m.AdBannerController,
@@ -290,6 +291,14 @@ createRoot(document.getElementById("root")!).render(
                   element={
                     <RequireAuth>
                       <Friends />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <RequireAuth>
+                      <AdminPanel />
                     </RequireAuth>
                   }
                 />

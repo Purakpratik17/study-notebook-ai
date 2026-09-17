@@ -382,6 +382,19 @@ const schema = defineSchema(
     })
       .index("by_user_unresolved", ["userId", "resolved"])
       .index("by_user", ["userId"]),
+
+    // ─── Admin audit log ─────────────────────────────────────────
+    // Every admin XP action is journaled here: who did it, to whom,
+    // what changed (previous → new), and when.
+    adminAudit: defineTable({
+      adminId: v.string(), // Clerk subject of the admin who acted
+      targetUserId: v.string(), // Clerk subject of the affected user
+      action: v.string(), // "add" | "remove" | "set" | "reset"
+      amount: v.optional(v.number()), // delta (add/remove) or null
+      previousXp: v.number(),
+      newXp: v.number(),
+      createdAt: v.number(),
+    }).index("by_created", ["createdAt"]),
   },
   {
     schemaValidation: false,

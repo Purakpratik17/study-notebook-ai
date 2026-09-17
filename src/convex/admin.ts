@@ -1,0 +1,227 @@
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { requireUserId } from "./identity";
+import { getOrCreateStats } from "./stats";
+import { levelForXp } from "./data";
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ADMIN PANEL — backend-enforced authorization.
+
+   Authorization model:
+   • The admin allowlist lives in src/lib/admin-config.ts and contains
+     Clerk user IDs (identity.subject values).
+   • EVERY admin query/mutation re-derives the caller's identity from the
+     Clerk JWT on the Convex server (requireUserId) and checks it against
+     the allowlist. Nothing is trusted from the client.
+   • A non-admin who calls any admin function gets an authorization
+     error — the function never touches data.
+   • The frontend nav entry is a convenience only; the real protection
+     is this file.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+// NOTE: src/lib/admin-config.ts is deliberately dependency-free (no DOM
+// APIs) so it can be imported from Convex server code as well as the app.
+import { ADMIN_USER_IDS } from "../lib/admin-config";
+
+function assertAdmin(userId: string): void {
+  if (!ADMIN_USER_IDS.includes(userId)) {
+    throw new Error(
+      "FORBIDDEN: this function is restricted to Learnova administrators",
+    );
+  }
+}
+
+/* ─── Queries ────────────────────────────────────────────────────────── */
+
+/** Is the signed-in user an admin? Used for nav visibility only — the
+ *  backend enforces the same check independently on every call. */
+export const isAdmin = query({
+  args: {},
+  handler: async (ctx): Promise<boolean> => {
+    const userId = await requireUserId(ctx);
+    return ADMIN_USER_IDS.includes(userId);
+  },
+});
+
+/** Lightweight dashboard stats: total users + recent signups. */
+export const overview = query({
+  args: {},
+  handler: async (ctx) => {
+    assertAdmin(await requireUserId(ctx));
+
+    const profiles = await ctx.db.query("profiles").collect();
+    const totalUsers = profiles.length;
+    const recent = profiles
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 5)
+      .map((p) => ({
+        userId: p.userId,
+        username: p.username ?? p.displayName ?? "(no username)",
+        createdAt: p.createdAt,
+      }));
+    return { totalUsers, recent };
+  },
+});
+
+/** Search users by username (substring, case-insensitive). */
+export const searchUsers = query({
+  args: { query: v.string() },
+  handler: async (ctx, args) => {
+    assertAdmin(await requireUserId(ctx));
+    const q = args.query.trim().toLowerCase();
+    if (!q) return [];
+
+    const profiles = await ctx.db.query("profiles").collect();
+    const matches = profiles
+      .filter(
+        (p) =>
+          (p.username ?? "").toLowerCase().includes(q) ||
+          (p.displayName ?? "").toLowerCase().includes(q),
+      )
+      .slice(0, 10);
+
+    const results = [];
+    for (const p of matches) {
+      const stats = await ctx.db
+        .query("stats")
+        .withIndex("by_user", (q2) => q2.eq("userId", p.userId))
+        .first();
+      const lvl = levelForXp(stats?.xp ?? 0);
+      results.push({
+        userId: p.userId,
+        username: p.username ?? p.displayName ?? "(no username)",
+        bio: p.bio ?? null,
+        school: p.school ?? null,
+        course: p.course ?? null,
+        createdAt: p.createdAt,
+        xp: stats?.xp ?? 0,
+        level: lvl.level,
+        levelName: lvl.name,
+      });
+    }
+    return results;
+  },
+});
+
+/** Recent admin audit entries (newest first), usernames resolved for
+ *  display. No private data — usernames only. */
+export const auditLog = query({
+  args: {},
+  handler: async (ctx) => {
+    assertAdmin(await requireUserId(ctx));
+    const entries = await ctx.db
+      .query("adminAudit")
+      .withIndex("by_created")
+      .order("desc")
+      .take(25);
+
+    const profiles = await ctx.db.query("profiles").collect();
+    const nameOf = (id: string) =>
+      profiles.find((p) => p.userId === id)?.username ?? "(unknown)";
+
+    return entries.map((e) => ({
+      _id: e._id,
+      adminName: nameOf(e.adminId),
+      targetName: nameOf(e.targetUserId),
+      action: e.action,
+      amount: e.amount ?? null,
+      previousXp: e.previousXp,
+      newXp: e.newXp,
+      createdAt: e.createdAt,
+    }));
+  },
+});
+
+/** Fetch a user's current XP/level before the admin commits a change. */
+export const getUserXp = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    assertAdmin(await requireUserId(ctx));
+    const stats = await ctx.db
+      .query("stats")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+    const lvl = levelForXp(stats?.xp ?? 0);
+    return {
+      xp: stats?.xp ?? 0,
+      level: lvl.level,
+      levelName: lvl.name,
+    };
+  },
+});
+
+/* ─── XP management ──────────────────────────────────────────────────── */
+
+/** Apply an XP change (add/remove/set/reset) using the EXISTING stats
+ *  system so rank/level recalculates through levelForXp, and journal an
+ *  audit entry. XP can never become negative. */
+export const adjustXp = mutation({
+  args: {
+    userId: v.string(),
+    action: v.union(
+      v.literal("add"),
+      v.literal("remove"),
+      v.literal("set"),
+      v.literal("reset"),
+    ),
+    amount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const adminId = await requireUserId(ctx);
+    assertAdmin(adminId);
+
+    if (!Number.isFinite(args.amount ?? 0)) {
+      throw new Error("Invalid XP amount");
+    }
+
+    const stats = await getOrCreateStats(ctx, args.userId);
+    const previousXp = stats.xp;
+    let newXp: number;
+    let delta: number | undefined;
+
+    switch (args.action) {
+      case "add": {
+        delta = Math.floor(args.amount ?? 0);
+        if (delta <= 0) throw new Error("Add amount must be a positive number");
+        newXp = previousXp + delta;
+        break;
+      }
+      case "remove": {
+        delta = Math.floor(args.amount ?? 0);
+        if (delta <= 0)
+          throw new Error("Remove amount must be a positive number");
+        newXp = Math.max(0, previousXp - delta); // never negative
+        break;
+      }
+      case "set": {
+        newXp = Math.floor(args.amount ?? 0);
+        if (newXp < 0) throw new Error("XP cannot be negative");
+        break;
+      }
+      case "reset": {
+        newXp = 0;
+        break;
+      }
+    }
+
+    // Recalculate rank/level through the existing system.
+    const lvl = levelForXp(newXp);
+    await ctx.db.patch(stats._id, {
+      xp: newXp,
+      level: lvl.level,
+      updatedAt: Date.now(),
+    });
+
+    await ctx.db.insert("adminAudit", {
+      adminId,
+      targetUserId: args.userId,
+      action: args.action,
+      amount: delta,
+      previousXp,
+      newXp,
+      createdAt: Date.now(),
+    });
+
+    return { previousXp, newXp, level: lvl.level, levelName: lvl.name };
+  },
+});

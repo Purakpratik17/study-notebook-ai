@@ -26,6 +26,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { ShieldCheck } from "lucide-react";
 
 const TABS = [
   { to: "/dashboard", label: "Home", icon: Home },
@@ -73,6 +76,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const inMore = MORE_TABS.some((t) => location.pathname === t.to);
+  // Admin nav visibility is COSMETIC ONLY — the Convex backend re-checks
+  // the allowlist on every admin call (src/convex/admin.ts).
+  const isAdmin = useQuery(api.admin.isAdmin) === true;
 
   // Close the "More" sheet whenever the route changes.
   useEffect(() => {
@@ -127,6 +133,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Gamepad2 className="size-4" />
             Arcade
           </NavLink>
+          {isAdmin && (
+            <NavLink
+              to="/admin"
+              className={cn(
+                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                location.pathname === "/admin" &&
+                  "bg-primary/10 font-semibold text-primary",
+              )}
+            >
+              <ShieldCheck className="size-4" />
+              Admin
+            </NavLink>
+          )}
         </nav>
 
         <div className="mt-auto flex flex-col gap-3 px-4 pb-5">
@@ -258,6 +277,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Gamepad2 className="size-5" />
               Arcade
             </Link>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={cn(
+                  "flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-medium text-muted-foreground",
+                  location.pathname === "/admin"
+                    ? "bg-primary/10 text-primary"
+                    : "hover:bg-accent",
+                )}
+              >
+                <ShieldCheck className="size-5" />
+                Admin
+              </Link>
+            )}
           </div>
         )}
       </nav>
