@@ -22,6 +22,7 @@ import {
   Timer as TimerIcon,
   Trophy,
   User,
+  Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
@@ -36,6 +37,7 @@ const TABS = [
   { to: "/flashcards", label: "Flashcards", icon: Layers },
   { to: "/revision", label: "Revision", icon: RefreshCw },
   { to: "/focus", label: "Focus", icon: TimerIcon },
+  { to: "/friends", label: "Friends", icon: Users },
   { to: "/quests", label: "Quests", icon: Swords },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { to: "/profile", label: "Profile", icon: User },
@@ -58,6 +60,7 @@ const MORE_TABS = [
   { to: "/flashcards", label: "Flashcards", icon: Layers },
   { to: "/revision", label: "Revision", icon: RefreshCw },
   { to: "/focus", label: "Focus", icon: TimerIcon },
+  { to: "/friends", label: "Friends", icon: Users },
   { to: "/timetable", label: "Timetable", icon: CalendarDays },
   { to: "/profile", label: "Profile", icon: User },
   { to: "/settings", label: "Settings", icon: SettingsIcon },

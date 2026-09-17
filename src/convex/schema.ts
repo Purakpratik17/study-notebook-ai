@@ -323,6 +323,51 @@ const schema = defineSchema(
       createdAt: v.number(),
     }).index("by_user_created", ["userId", "createdAt"]),
 
+    // ─── Friends & Chat ──────────────────────────────────────────
+
+    // A friend/chat request. `status`: pending → accepted | declined.
+    // Only an accepted request creates a friendship + conversation.
+    friendRequests: defineTable({
+      fromId: v.string(), // Clerk subject of sender
+      toId: v.string(), // Clerk subject of receiver
+      status: v.union(
+        v.literal("pending"),
+        v.literal("accepted"),
+        v.literal("declined"),
+      ),
+      createdAt: v.number(),
+      respondedAt: v.optional(v.number()),
+    })
+      .index("by_to_status", ["toId", "status"])
+      .index("by_from_status", ["fromId", "status"]),
+
+    // An accepted, mutual friendship (userA < userB, normalized).
+    friendships: defineTable({
+      userA: v.string(),
+      userB: v.string(),
+      createdAt: v.number(),
+    })
+      .index("by_userA", ["userA"])
+      .index("by_userB", ["userB"]),
+
+    // One private conversation per accepted friendship (same pair rule).
+    conversations: defineTable({
+      userA: v.string(),
+      userB: v.string(),
+      createdAt: v.number(),
+    })
+      .index("by_pair", ["userA", "userB"])
+      .index("by_userA", ["userA"])
+      .index("by_userB", ["userB"]),
+
+    messages: defineTable({
+      conversationId: v.id("conversations"),
+      senderId: v.string(),
+      body: v.string(),
+      readAt: v.optional(v.number()), // set when the OTHER participant reads it
+      createdAt: v.number(),
+    }).index("by_conversation", ["conversationId", "createdAt"]),
+
     // Incorrect quiz questions saved for revision.
     quizMistakes: defineTable({
       userId: v.string(),
