@@ -331,7 +331,7 @@ export default function Friends() {
                       @{u.username ?? "?"}
                     </p>
                     <p className="annotation truncate text-xs">
-                      {u.displayName ?? u.school ?? "Learnova student"}
+                      {u.displayName ?? u.school ?? "Cerevyn student"}
                     </p>
                   </div>
                   {u.requestState === "none" && (
@@ -480,7 +480,7 @@ export default function Friends() {
                       @{f.user?.username ?? "user"}
                     </p>
                     <p className="annotation truncate text-xs">
-                      {f.user?.displayName ?? "Learnova student"}
+                      {f.user?.displayName ?? "Cerevyn student"}
                     </p>
                   </div>
                   <button

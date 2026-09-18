@@ -146,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
           <span className="flex flex-col leading-tight">
             <span className="text-sm font-bold tracking-tight">
-              Learnova
+              Cerevyn
             </span>
             <span className="annotation text-[11px]">ai study companion</span>
           </span>
@@ -240,7 +240,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <NotebookPen className="size-4" />
           </span>
           <span className="text-sm font-bold tracking-tight">
-            Learnova
+            Cerevyn
           </span>
         </Link>
         <div className="flex items-center gap-2">

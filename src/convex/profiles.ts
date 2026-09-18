@@ -142,7 +142,7 @@ export const ACHIEVEMENTS = [
   { id: "xp_3500", name: "Expert Mind", desc: "Earn 3,500 XP" },
   { id: "xp_7000", name: "Mastermind", desc: "Earn 7,000 XP" },
   { id: "xp_14000", name: "Virtuoso", desc: "Earn 14,000 XP" },
-  { id: "xp_20000", name: "Learnova Legend", desc: "Earn 20,000 XP" },
+  { id: "xp_20000", name: "Cerevyn Legend", desc: "Earn 20,000 XP" },
   { id: "streak_7", name: "Week Warrior", desc: "Reach a 7-day streak" },
   { id: "streak_30", name: "Month Master", desc: "Reach a 30-day streak" },
   { id: "tetris_unlocked", name: "Arcade Night Owl", desc: "Unlock the 4-hour focus game" },

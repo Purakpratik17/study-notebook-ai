@@ -32,7 +32,7 @@ async function assertAdmin(
   const userId = await requireUserId(ctx);
   if (!ADMIN_USER_IDS.includes(userId)) {
     throw new Error(
-      "FORBIDDEN: this function is restricted to Learnova administrators",
+      "FORBIDDEN: this function is restricted to Cerevyn administrators",
     );
   }
   return userId;

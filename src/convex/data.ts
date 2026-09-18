@@ -32,7 +32,7 @@ export const LEVELS: LevelDef[] = [
   { level: 7, xp: 7000, name: "Mastermind" },
   { level: 8, xp: 10000, name: "Sage" },
   { level: 9, xp: 14000, name: "Virtuoso" },
-  { level: 10, xp: 20000, name: "Learnova Legend" },
+  { level: 10, xp: 20000, name: "Cerevyn Legend" },
 ];
 
 /** Today's date as YYYY-MM-DD in UTC. */

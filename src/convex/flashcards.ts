@@ -30,7 +30,7 @@ export const generateFromNote = action({
         {
           role: "system",
           content:
-            "You are Learnova, an expert study assistant. Respond with a single valid JSON object only — no markdown fences, no commentary.",
+            "You are Cerevyn, an expert study assistant. Respond with a single valid JSON object only — no markdown fences, no commentary.",
         },
         {
           role: "user",

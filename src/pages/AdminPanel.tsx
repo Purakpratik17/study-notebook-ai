@@ -103,7 +103,7 @@ export default function AdminPanel() {
         <ShieldCheck className="size-10 text-destructive" />
         <h1 className="text-xl font-bold">Access denied</h1>
         <p className="max-w-sm text-sm text-muted-foreground">
-          This area is restricted to Learnova administrators. If you believe
+          This area is restricted to Cerevyn administrators. If you believe
           you should have access, contact the app owner.
         </p>
       </div>

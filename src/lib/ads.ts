@@ -8,7 +8,7 @@ import {
 } from "@capacitor-community/admob";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Learnova ads — Google AdMob via @capacitor-community/admob (Android).
+   Cerevyn ads — Google AdMob via @capacitor-community/admob (Android).
 
    Platform rules:
    - Native SDK calls happen ONLY on Android (Capacitor.isNativePlatform()).
@@ -50,7 +50,7 @@ const TEST_IDS = {
    ═══════════════════════════════════════════════════════════════════════ */
 
 /**
- * REAL Learnova AdMob ad-unit IDs (production, from the AdMob console).
+ * REAL Cerevyn AdMob ad-unit IDs (production, from the AdMob console).
  * These are used ONLY when ADS_USE_TEST_ADS is flipped to false below —
  * while the master switch is true (development/testing), Google's official
  * TEST ad unit IDs are served in every placement instead.

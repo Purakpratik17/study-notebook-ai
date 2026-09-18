@@ -182,7 +182,7 @@ export default function SnapSolve() {
     <section className="paper-sheet spiral-edge flex flex-col gap-4 px-5 py-4 md:px-7">
       <h3 className="text-base font-bold">Snap a question</h3>
       <p className="annotation text-xs">
-        Take a photo of any problem or upload one from your gallery — Learnova solves it
+        Take a photo of any problem or upload one from your gallery — Cerevyn solves it
         step by step.
       </p>
 

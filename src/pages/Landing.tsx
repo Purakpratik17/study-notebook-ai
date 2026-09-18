@@ -35,7 +35,7 @@ const FEATURES = [
   {
     icon: Trophy,
     title: "Levels & streaks",
-    body: "Climb from Novice to Learnova Legend, keep your streak alive, and track every stat on your profile.",
+    body: "Climb from Novice to Cerevyn Legend, keep your streak alive, and track every stat on your profile.",
     accent: "bg-highlight text-foreground",
   },
 ] as const;
@@ -58,7 +58,7 @@ const RANKS = [
   { lvl: 7, name: "Mastermind", xp: "7,000 XP" },
   { lvl: 8, name: "Sage", xp: "10,000 XP" },
   { lvl: 9, name: "Virtuoso", xp: "14,000 XP" },
-  { lvl: 10, name: "Learnova Legend", xp: "20,000 XP" },
+  { lvl: 10, name: "Cerevyn Legend", xp: "20,000 XP" },
 ] as const;
 
 export default function Landing() {
@@ -76,7 +76,7 @@ export default function Landing() {
             <NotebookPen className="size-5" />
           </span>
           <span className="text-base font-bold tracking-tight">
-            Learnova
+            Cerevyn
             <span className="annotation ml-1.5 text-xs font-normal">ai</span>
           </span>
         </div>
@@ -218,7 +218,7 @@ export default function Landing() {
       </main>
 
       <footer className="border-t bg-card/60 py-6 text-center text-xs text-muted-foreground">
-        Learnova — study smart, level up daily.
+        Cerevyn — study smart, level up daily.
       </footer>
     </motion.div>
   );

@@ -35,7 +35,7 @@ import { LoadingNotebook } from "@/components/loading";
 import { cn } from "@/lib/utils";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   WHITEBOARD — Learnova's study canvas.
+   WHITEBOARD — Cerevyn's study canvas.
 
    Original lightweight canvas implementation (no drawing library):
    • Pointer Events unify mouse / touch / stylus.
@@ -188,7 +188,7 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
   const { click: playClick } = useSounds();
 
   const [activeId, setActiveId] = useState<Id<"whiteboards"> | null>(null);
-  // Fullscreen: canvas becomes the main focus and surrounding Learnova UI
+  // Fullscreen: canvas becomes the main focus and surrounding Cerevyn UI
   // (nav, top bar, drawer chrome) disappears behind a fixed overlay.
   const [fullscreen, setFullscreen] = useState(false);
 

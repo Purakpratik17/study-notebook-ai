@@ -62,7 +62,7 @@ class RouteErrorBoundary extends React.Component<
     return { hasError: true, key: 0 };
   }
   componentDidCatch(err: Error) {
-    console.error("[Learnova] Route error:", err);
+    console.error("[Cerevyn] Route error:", err);
   }
   render() {
     if (this.state.hasError) {

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   Learnova languages — single registry for the launch set. To add a
+   Cerevyn languages — single registry for the launch set. To add a
    language later: append one entry here and (optionally) one translations
    block in src/lib/i18n.ts. Everything downstream reads from these lists.
    ═══════════════════════════════════════════════════════════════════════ */

@@ -1,7 +1,7 @@
 import { DEFAULT_LANGUAGE, type LanguageCode } from "./languages";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Learnova i18n — static UI strings for the launch languages.
+   Cerevyn i18n — static UI strings for the launch languages.
 
    Any language missing from this map falls back to English, so new
    languages can be added to the registry first and translated

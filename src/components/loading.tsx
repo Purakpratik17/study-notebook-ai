@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Learnova loading system — one reusable visual language for every
+   Cerevyn loading system — one reusable visual language for every
    loading state in the app.
 
    Design rules:
@@ -57,7 +57,7 @@ export function LoadingScreen({ message = "checking your notebook…" }: { messa
 /* ─── AI generation: rotating study phrases ──────────────────────────── */
 
 const AI_PHASES = [
-  "Learnova is studying this with you…",
+  "Cerevyn is studying this with you…",
   "Gathering the key concepts…",
   "Organizing your notes…",
   "Preparing examples…",

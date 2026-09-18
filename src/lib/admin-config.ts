@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   Learnova admin configuration — CENTRALIZED ADMIN ALLOWLIST.
+   Cerevyn admin configuration — CENTRALIZED ADMIN ALLOWLIST.
 
    Admin access is granted ONLY to the Clerk user IDs listed below. Each
    entry is the Clerk user ID (the `sub` claim / identity.subject), which

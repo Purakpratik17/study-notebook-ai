@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
  *  A single tap reloads with a fresh cache-busted location — no blank screen. */
 export function RouteErrorFallback({ onRetry }: { onRetry: () => void }) {
   useEffect(() => {
-    console.error("[Learnova] A screen failed to load. Use retry.");
+    console.error("[Cerevyn] A screen failed to load. Use retry.");
   }, []);
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-6 text-center">

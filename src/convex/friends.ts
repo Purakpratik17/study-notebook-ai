@@ -70,10 +70,10 @@ async function relationshipStates(
   return states;
 }
 
-/* ─── Username sync (Clerk → Learnova profile) ───────────────────────────── */
+/* ─── Username sync (Clerk → Cerevyn profile) ───────────────────────────── */
 
 /**
- * Sync the signed-in user's username into their Learnova profile.
+ * Sync the signed-in user's username into their Cerevyn profile.
  * Called from the app shell with the Clerk client user object.
  * - If Clerk provides a username, it wins (validated + uniqueness enforced).
  * - Otherwise the profile keeps whatever it already has.

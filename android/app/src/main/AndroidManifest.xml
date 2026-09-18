@@ -8,7 +8,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <!-- AdMob application ID (Learnova production).
+        <!-- AdMob application ID (Cerevyn production).
              Ad unit IDs live in src/lib/ads.ts. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

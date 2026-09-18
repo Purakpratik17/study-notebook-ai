@@ -1,7 +1,7 @@
 {
-  "name": "Learnova",
-  "short_name": "Learnova",
-  "description": "Learnova — AI-powered study companion: notes, quizzes, timetable, quests and XP.",
+  "name": "Cerevyn",
+  "short_name": "Cerevyn",
+  "description": "Cerevyn — AI-powered study companion: notes, quizzes, timetable, quests and XP.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf7ef",

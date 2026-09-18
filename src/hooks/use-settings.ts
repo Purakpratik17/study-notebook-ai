@@ -13,7 +13,7 @@ import { tFor } from "@/lib/i18n";
 import { useAuth } from "@/hooks/use-auth";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Learnova settings — user-scoped preferences.
+   Cerevyn settings — user-scoped preferences.
 
    Storage strategy: preferences are stored in localStorage under a key
    that includes the signed-in user id, so settings never leak between
@@ -54,7 +54,7 @@ export const DEFAULT_SETTINGS: LearnovaSettings = {
   language: DEFAULT_LANGUAGE,
 };
 
-const KEY_PREFIX = "learnova:settings:";
+const KEY_PREFIX = "learnova:settings:"; // intentionally NOT renamed — preserves existing users' saved settings
 
 function storageKey(userId: string | null | undefined) {
   // Fall back to a shared guest key when identity isn't ready yet.

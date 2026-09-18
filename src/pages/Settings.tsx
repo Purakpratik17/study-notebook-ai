@@ -35,7 +35,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Settings — Learnova notebook-style preferences page.
+   Settings — Cerevyn notebook-style preferences page.
 
    Storage: preferences live in localStorage scoped to the signed-in user
    (see src/hooks/use-settings.ts). No schema/backend changes; settings
@@ -101,7 +101,7 @@ export default function Settings() {
           })}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Dark mode reuses Learnova's existing dark notebook palette — your
+          Dark mode reuses Cerevyn's existing dark notebook palette — your
           notes, XP bar and rank colors all adapt automatically.
         </p>
       </SettingsCard>
@@ -144,7 +144,7 @@ export default function Settings() {
           </SettingRow>
         )}
         <p className="mt-3 text-xs text-muted-foreground">
-          Turning sounds off silences Learnova's UI chimes only — it never
+          Turning sounds off silences Cerevyn's UI chimes only — it never
           changes your device or system volume.
         </p>
       </SettingsCard>
@@ -220,7 +220,7 @@ export default function Settings() {
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-dashed bg-card/60 px-3 py-2.5 text-xs text-muted-foreground">
           <Info className="mt-0.5 size-3.5 shrink-0" />
           <p>
-            Learnova doesn't send push notifications yet. These preferences are
+            Cerevyn doesn't send push notifications yet. These preferences are
             stored so your choice is ready the moment reminders arrive — no
             notifications are being delivered right now.
           </p>
@@ -274,7 +274,7 @@ export default function Settings() {
       <SettingsCard
         icon={Megaphone}
         title="📢 Ads & Privacy"
-        hint="Support Learnova with unobtrusive ads."
+        hint="Support Cerevyn with unobtrusive ads."
       >
         <SettingRow
           label="Show ads"
@@ -298,7 +298,7 @@ export default function Settings() {
           <p>
             Ads use Google AdMob and appear only on Android at natural, quiet
             spots — never over notes, quizzes, buttons or navigation. On the
-            web version no ad code runs at all. Learnova never sends your
+            web version no ad code runs at all. Cerevyn never sends your
             email, sign-in details, notes or study data to advertisers. Where
             required by law (e.g. the EEA), Google's consent form is shown
             before ads serve, and you can revisit your privacy choices via the

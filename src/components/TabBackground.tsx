@@ -1,7 +1,7 @@
 import { useLocation } from "react-router";
 
 /* ═══════════════════════════════════════════════════════════════════════
-   TabBackground — gives each major Learnova section its own subtle
+   TabBackground — gives each major Cerevyn section its own subtle
    notebook "world" while staying one cohesive brand. Pure CSS (no image
    assets), fixed behind content (-z-10, pointer-events-none), ink-based
    colors only so light/dark themes both stay readable. Doodles freeze

@@ -28,7 +28,7 @@ export const translate = action({
         {
           role: "system",
           content:
-            "You are Learnova's academic translator. You translate study material with complete fidelity to formatting, notation and structure. Output ONLY the translated text — no preamble, no commentary, no code fences.",
+            "You are Cerevyn's academic translator. You translate study material with complete fidelity to formatting, notation and structure. Output ONLY the translated text — no preamble, no commentary, no code fences.",
         },
         {
           role: "user",
