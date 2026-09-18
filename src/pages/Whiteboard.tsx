@@ -9,6 +9,8 @@ import {
   Eraser,
   Highlighter,
   Loader2,
+  Maximize2,
+  Minimize2,
   Minus,
   Move,
   Pencil,
@@ -179,7 +181,7 @@ function elementBBox(el: Element) {
 
 /* ─── Page ───────────────────────────────────────────────────────────── */
 
-export default function Whiteboard() {
+export default function Whiteboard({ embedded = false }: { embedded?: boolean }) {
   const boards = useQuery(api.whiteboards.list) ?? null;
   const createBoard = useMutation(api.whiteboards.create);
   const renameBoard = useMutation(api.whiteboards.rename);
@@ -189,6 +191,9 @@ export default function Whiteboard() {
 
   const [activeId, setActiveId] = useState<Id<"whiteboards"> | null>(null);
   const [showList, setShowList] = useState(true);
+  // Fullscreen: canvas becomes the main focus and surrounding Learnova UI
+  // (nav, top bar, drawer chrome) disappears behind a fixed overlay.
+  const [fullscreen, setFullscreen] = useState(false);
 
   // Board state
   const [elements, setElements] = useState<Element[]>([]);
@@ -582,7 +587,12 @@ export default function Whiteboard() {
 
   if (!activeId) {
     return (
-      <div className="mx-auto max-w-3xl space-y-6 p-4 pb-24 md:p-6">
+      <div
+        className={cn(
+          "mx-auto max-w-3xl space-y-6 p-4 pb-24 md:p-6",
+          fullscreen && "fixed inset-0 z-[60] overflow-y-auto bg-background pb-10",
+        )}
+      >
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">📝 Whiteboard</h1>
@@ -644,7 +654,25 @@ export default function Whiteboard() {
   /* ─── Editor view ─────────────────────────────────────────────────── */
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col bg-[#faf7ef] dark:bg-background">
+    <div
+      className={cn(
+        "flex flex-col bg-[#faf7ef] dark:bg-background",
+        embedded && !fullscreen
+          ? "h-[calc(78dvh-2.6rem)]"
+          : fullscreen
+            ? "fixed inset-0 z-[70]"
+            : "fixed inset-0 z-30",
+      )}
+    >
+      {fullscreen && (
+        <button
+          onClick={() => setFullscreen(false)}
+          className="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full border bg-card/95 px-3 py-2 text-xs font-bold shadow-lg backdrop-blur transition active:scale-95"
+          aria-label="Exit fullscreen"
+        >
+          <Minimize2 className="size-4" /> Exit fullscreen
+        </button>
+      )}
       {/* Top bar */}
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <Button variant="ghost" size="sm" onClick={() => setActiveId(null)}>
@@ -664,6 +692,15 @@ export default function Whiteboard() {
               ? "✓ Saved"
               : ""}
         </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setFullscreen(true)}
+          aria-label="Fullscreen"
+          title="Fullscreen"
+        >
+          <Maximize2 className="size-4" />
+        </Button>
         <Button variant="ghost" size="icon" onClick={exportPng} aria-label="Export PNG">
           <Download className="size-4" />
         </Button>

@@ -278,10 +278,10 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       {/* Hero: greeting + level */}
-      <section className="paper-sheet paper-margin px-5 py-5 pl-14 md:px-8 md:pl-20">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      <section className="paper-sheet paper-margin px-5 py-5 pl-12 md:px-8 md:pl-20">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div className="min-w-0">
             <p className="annotation text-sm">{greeting().toLowerCase()},</p>
             <h1 className="truncate text-2xl font-bold tracking-tight md:text-3xl">
@@ -328,8 +328,8 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Stat widgets */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Stat widgets — tighter on small screens */}
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-4 sm:gap-3">
         <MiniStat
           icon={<Zap className="size-4" />}
           label="Study time today"
@@ -356,74 +356,58 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Link
-          to="/ai-study"
-          className="paper-sheet spiral-edge group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
-        >
-          <span className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-            <Sparkles className="size-5" />
-          </span>
-          <span className="block font-bold">AI Study</span>
-          <span className="block text-xs text-muted-foreground">
-            Notes + quiz on any topic
-          </span>
-        </Link>
-
-        <Link
-          to="/essay"
-          className="paper-sheet group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
-        >
-          <span className="flex size-10 items-center justify-center rounded-lg bg-marker text-white shadow-sm">
-            <PenLine className="size-5" />
-          </span>
-          <span className="block font-bold">Essay Writer</span>
-          <span className="block text-xs text-muted-foreground">
-            Structured essays, instantly
-          </span>
-        </Link>
-
-        <Link
-          to="/projects"
-          className="paper-sheet group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
-        >
-          <span className="flex size-10 items-center justify-center rounded-lg bg-highlight text-foreground shadow-sm">
-            <FileStack className="size-5" />
-          </span>
-          <span className="block font-bold">Project Creator</span>
-          <span className="block text-xs text-muted-foreground">
-            Full assignment projects
-          </span>
-        </Link>
-
-        {arcadeUnlocked ? (
+      {/* Quick actions — compact icon row on mobile, roomy cards on desktop */}
+      <div className="grid grid-cols-4 gap-2 sm:gap-3">
+        {[
+          {
+            to: "/ai-study",
+            icon: <Sparkles className="size-5" />,
+            bg: "bg-primary text-primary-foreground",
+            label: "AI Study",
+          },
+          {
+            to: "/essay",
+            icon: <PenLine className="size-5" />,
+            bg: "bg-marker text-white",
+            label: "Essay",
+          },
+          {
+            to: "/projects",
+            icon: <FileStack className="size-5" />,
+            bg: "bg-highlight text-foreground",
+            label: "Projects",
+          },
+          arcadeUnlocked
+            ? {
+                to: "/arcade",
+                icon: <Gamepad2 className="size-5" />,
+                bg: "bg-xp text-white",
+                label: "Arcade",
+              }
+            : {
+                to: "/leaderboard",
+                icon: <Trophy className="size-5" />,
+                bg: "bg-xp text-white",
+                label: "Ranks",
+              },
+        ].map((a) => (
           <Link
-            to="/arcade"
-            className="paper-sheet group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
+            key={a.to}
+            to={a.to}
+            onClick={sounds.click}
+            className="paper-sheet group flex flex-col items-center gap-1.5 px-2 py-3 transition-transform hover:-translate-y-0.5"
           >
-            <span className="flex size-10 items-center justify-center rounded-lg bg-xp text-white shadow-sm">
-              <Gamepad2 className="size-5" />
+            <span
+              className={cn(
+                "flex size-10 items-center justify-center rounded-lg shadow-sm",
+                a.bg,
+              )}
+            >
+              {a.icon}
             </span>
-            <span className="block font-bold">Arcade</span>
-            <span className="block text-xs text-muted-foreground">
-              Your focus reward 🎮
-            </span>
+            <span className="block text-xs font-bold">{a.label}</span>
           </Link>
-        ) : (
-          <Link
-            to="/leaderboard"
-            className="paper-sheet group flex flex-col gap-2 px-4 py-4 transition-transform hover:-translate-y-0.5"
-          >
-            <span className="flex size-10 items-center justify-center rounded-lg bg-xp text-white shadow-sm">
-              <Trophy className="size-5" />
-            </span>
-            <span className="block font-bold">Leaderboard</span>
-            <span className="block text-xs text-muted-foreground">
-              Climb the ranks
-            </span>
-          </Link>
-        )}
+        ))}
       </div>
 
       {/* Focus timer + log session */}
@@ -541,7 +525,7 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Upcoming timetable */}
-        <section className="paper-sheet paper-margin px-5 py-5 pl-14 md:pl-18">
+        <section className="paper-sheet paper-margin px-5 py-5 pl-12 md:pl-18">
           <div className="flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
               <CalendarCheck2 className="size-4" /> Today's timetable
@@ -913,13 +897,13 @@ function MiniStat({
   sub?: string;
 }) {
   return (
-    <div className="paper-sheet spiral-edge flex flex-col gap-0.5 px-4 py-3">
-      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
+    <div className="paper-sheet spiral-edge flex flex-col gap-0.5 px-2.5 py-2.5 sm:px-4 sm:py-3">
+      <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-soft sm:text-[11px]">
         {icon}
-        {label}
+        <span className="truncate">{label}</span>
       </span>
-      <span className="text-xl font-black leading-tight">{value}</span>
-      {sub && <span className="text-[10px] text-muted-foreground">{sub}</span>}
+      <span className="text-lg font-black leading-tight sm:text-xl">{value}</span>
+      {sub && <span className="hidden text-[10px] text-muted-foreground sm:block">{sub}</span>}
     </div>
   );
 }

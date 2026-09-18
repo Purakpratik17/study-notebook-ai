@@ -25,8 +25,11 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
+import { ChevronLeft, X } from "lucide-react";
+
+const Whiteboard = lazy(() => import("@/pages/Whiteboard"));
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { ShieldCheck } from "lucide-react";
@@ -61,16 +64,55 @@ const MOBILE_TABS = [
 const MORE_TABS = [
   { to: "/essay", label: "Essay Writer", icon: PenLine },
   { to: "/projects", label: "Projects", icon: FileStack },
-  { to: "/practice", label: "Practice", icon: Target },
   { to: "/flashcards", label: "Flashcards", icon: Layers },
   { to: "/revision", label: "Revision", icon: RefreshCw },
+  { to: "/timetable", label: "Timetable", icon: CalendarDays },
   { to: "/focus", label: "Focus", icon: TimerIcon },
   { to: "/whiteboard", label: "Whiteboard", icon: Palette },
+] as const;
+
+const MORE_SOCIAL = [
   { to: "/friends", label: "Friends", icon: Users },
-  { to: "/timetable", label: "Timetable", icon: CalendarDays },
+  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { to: "/profile", label: "Profile", icon: User },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
+
+function MoreGroup({
+  title,
+  tabs,
+  pathname,
+}: {
+  title: string;
+  tabs: ReadonlyArray<{ to: string; label: string; icon: React.ComponentType<{ className?: string }> }>;
+  pathname: string;
+}) {
+  return (
+    <div className="mb-2">
+      <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint">
+        {title}
+      </p>
+      <div className="flex flex-col">
+        {tabs.map((tab) => {
+          const active = pathname === tab.to;
+          return (
+            <Link
+              key={tab.to}
+              to={tab.to}
+              className={cn(
+                "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground",
+                active ? "bg-primary/10 text-primary" : "hover:bg-accent",
+              )}
+            >
+              <tab.icon className="size-5" />
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { name, imageUrl } = useAuth();
@@ -78,7 +120,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sounds = useSounds();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
-  const inMore = MORE_TABS.some((t) => location.pathname === t.to);
+  const inMore =
+    MORE_TABS.some((t) => location.pathname === t.to) ||
+    MORE_SOCIAL.some((t) => location.pathname === t.to);
+  // Global Whiteboard drawer — hidden/collapsed by default so it never takes
+  // space in the normal study UI. Opens as a smooth bottom sheet; the editor
+  // itself can go fullscreen from inside.
+  const [wbOpen, setWbOpen] = useState(false);
   // Admin nav visibility is COSMETIC ONLY — the Convex backend re-checks
   // the allowlist on every admin call (src/convex/admin.ts).
   const isAdmin = useQuery(api.admin.isAdmin) === true;
@@ -213,8 +261,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
+      {/* Global Whiteboard handle — a slim chevron on the right edge.
+          Hidden while already inside the Whiteboard or Arcade (fullscreen-ish
+          experiences) and on desktop, where the sidebar already links it. */}
+      {!wbOpen &&
+        location.pathname !== "/whiteboard" &&
+        location.pathname !== "/arcade" && (
+          <button
+            onClick={() => {
+              sounds.click();
+              setWbOpen(true);
+            }}
+            aria-label="Open Whiteboard"
+            className="fixed right-0 top-1/2 z-40 flex -translate-y-1/2 items-center gap-0.5 rounded-l-xl border border-r-0 bg-card/95 py-4 pl-2 pr-1.5 text-primary shadow-lg backdrop-blur transition-transform active:scale-95 md:hidden"
+          >
+            <Palette className="size-4" />
+            <ChevronLeft className="size-4" />
+          </button>
+        )}
+
+      {/* Whiteboard bottom-sheet drawer (smooth expand/collapse). */}
+      <div
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-50 h-[78dvh] overflow-hidden rounded-t-2xl border-t bg-background shadow-2xl transition-transform duration-300 ease-out md:hidden",
+          wbOpen ? "translate-y-0" : "pointer-events-none translate-y-full",
+        )}
+        aria-hidden={!wbOpen}
+      >
+        <div className="flex items-center justify-between border-b px-3 py-2">
+          <span className="text-sm font-bold">📝 Whiteboard</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={() => setWbOpen(false)}
+            aria-label="Close Whiteboard"
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+        <div className="h-[calc(100%-2.6rem)] overflow-y-auto overscroll-contain">
+          {wbOpen && (
+            <Suspense fallback={null}>
+              <Whiteboard embedded />
+            </Suspense>
+          )}
+        </div>
+      </div>
+
       {/* Page content */}
-      <main className="px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8">
+      <main className="overflow-x-hidden px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8">
         <TabBackground />
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
@@ -251,47 +347,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
         {moreOpen && (
-          <div className="grid grid-cols-3 gap-1 border-t bg-card px-2 py-3">
-            {MORE_TABS.map((tab) => {
-              const active = location.pathname === tab.to;
-              return (
-                <Link
-                  key={tab.to}
-                  to={tab.to}
-                  className={cn(
-                    "flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-medium text-muted-foreground",
-                    active ? "bg-primary/10 text-primary" : "hover:bg-accent",
-                  )}
-                >
-                  <tab.icon className="size-5" />
-                  {tab.label}
-                </Link>
-              );
-            })}
-            <Link
-              to="/arcade"
-              className={cn(
-                "flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-medium text-muted-foreground",
-                location.pathname === "/arcade"
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-accent",
-              )}
-            >
-              <Gamepad2 className="size-5" />
-              Arcade
-            </Link>
+          <div className="max-h-[60dvh] overflow-y-auto overscroll-contain border-t bg-card px-3 py-3">
+            <MoreGroup
+              title="Study"
+              tabs={[
+                { to: "/practice", label: "Practice", icon: Target },
+                { to: "/arcade", label: "Arcade", icon: Gamepad2 },
+                ...MORE_TABS,
+              ]}
+              pathname={location.pathname}
+            />
+            <MoreGroup title="You" tabs={MORE_SOCIAL} pathname={location.pathname} />
             {isAdmin && (
               <Link
                 to="/admin"
                 className={cn(
-                  "flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-medium text-muted-foreground",
+                  "mt-1 flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground",
                   location.pathname === "/admin"
                     ? "bg-primary/10 text-primary"
                     : "hover:bg-accent",
                 )}
               >
-                <ShieldCheck className="size-5" />
-                Admin
+                <ShieldCheck className="size-4" /> Admin
               </Link>
             )}
           </div>

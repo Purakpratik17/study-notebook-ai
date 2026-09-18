@@ -1,6 +1,6 @@
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, FlaskConical, Gamepad2, Lock, Pause, Play, RefreshCw, RotateCcw, Trophy } from "lucide-react";
+import { ArrowLeft, FlaskConical, Gamepad2, Lock, Maximize2, Minimize2, Pause, Play, RefreshCw, RotateCcw, Trophy } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -67,15 +67,9 @@ export default function Arcade() {
 
   if (screen !== "hub") {
     return (
-      <div className="flex flex-col gap-4">
-        <button
-          onClick={() => setScreen("hub")}
-          className="inline-flex w-fit items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm font-semibold transition hover:bg-accent"
-        >
-          <ArrowLeft className="size-4" /> Back to Arcade
-        </button>
+      <GameShell gameId={screen} onExit={() => setScreen("hub")}>
         {screen === "blocks" ? <StudyBlocks /> : <StudyBee />}
-      </div>
+      </GameShell>
     );
   }
 
@@ -233,6 +227,58 @@ export default function Arcade() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+/** GameShell — wraps an active game and provides a fullscreen toggle that
+ *  hides all surrounding UI (back button, page padding, chrome) so gameplay
+ *  gets the full screen. The toggle sits outside the game's own controls and
+ *  never interrupts play. */
+function GameShell({
+  gameId,
+  onExit,
+  children,
+}: {
+  gameId: string;
+  onExit: () => void;
+  children: React.ReactNode;
+}) {
+  const [fullscreen, setFullscreen] = useState(false);
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-4",
+        fullscreen &&
+          "fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-background p-3",
+      )}
+    >
+      <div className={cn("flex items-center gap-2", fullscreen && "justify-end")}>
+        {!fullscreen && (
+          <button
+            onClick={onExit}
+            className="inline-flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm font-semibold transition hover:bg-accent"
+          >
+            <ArrowLeft className="size-4" /> Back to Arcade
+          </button>
+        )}
+        <button
+          onClick={() => setFullscreen((f) => !f)}
+          className="ml-auto inline-flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm font-semibold transition hover:bg-accent active:scale-95"
+          aria-label={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+        >
+          {fullscreen ? (
+            <>
+              <Minimize2 className="size-4" /> Exit fullscreen
+            </>
+          ) : (
+            <>
+              <Maximize2 className="size-4" /> Fullscreen
+            </>
+          )}
+        </button>
+      </div>
+      {children}
     </div>
   );
 }
