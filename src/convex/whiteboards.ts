@@ -18,13 +18,7 @@ export const list = query({
       .query("whiteboards")
       .withIndex("by_user_updated", (q) => q.eq("userId", userId))
       .order("desc")
-      .take(100)
-      .map((b) => ({
-        _id: b._id,
-        title: b.title,
-        updatedAt: b.updatedAt,
-        elementCount: b.elements.length,
-      }));
+      .take(100);
   },
 });
 
