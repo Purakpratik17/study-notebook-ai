@@ -440,7 +440,6 @@ export default function Dashboard() {
             {!focusRunning ? (
               <button
                 onClick={startFocus}
-                disabled={focusSeconds === 0 && false}
                 className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98]"
               >
                 <Play className="size-4" />

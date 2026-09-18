@@ -382,6 +382,47 @@
   animation: tab-drift 9s ease-in-out infinite;
 }
 
+/* ─── Page transitions & polish ───────────────────────────────────────
+   Subtle route fade/slide. Disabled by reduced-motion AND by the user's
+   animations setting, so low-end devices / motion-sensitive users get an
+   instant swap with zero cost. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+main > div {
+  animation: page-in 0.22s ease-out both;
+}
+[data-animations="off"] main > div {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  main > div {
+    animation: none;
+  }
+}
+
+/* Comfortable scroll on Android WebView without janky momentum overrides */
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Keep tap highlights subtle and on-brand on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* DASHBOARD — warm study desk: coffee ring, ruler, pencil doodles */
 .tab-bg-dash {
   background:

@@ -654,16 +654,20 @@ function ImportantQuestions({ topic }: { topic: string }) {
                     </Link>
                     <button
                       type="button"
-                      onClick={() => {
-                        void saveQ({
-                          source: "important",
-                          subject: data.subject,
-                          topic: data.topic,
-                          question: q.question,
-                          answer: q.answer,
-                        });
-                        setSavedMsgs((m) => ({ ...m, [i]: true }));
-                        sounds.success();
+                      onClick={async () => {
+                        try {
+                          await saveQ({
+                            source: "important",
+                            subject: data.subject,
+                            topic: data.topic,
+                            question: q.question,
+                            answer: q.answer,
+                          });
+                          setSavedMsgs((m) => ({ ...m, [i]: true }));
+                          sounds.success();
+                        } catch {
+                          toast.error("Could not save the question");
+                        }
                       }}
                       disabled={savedMsgs[i]}
                       className="rounded-md border px-3 py-1.5 text-xs font-semibold transition hover:bg-accent disabled:opacity-50"

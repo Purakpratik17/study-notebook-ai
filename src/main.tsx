@@ -11,6 +11,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 import { SettingsProvider } from "@/hooks/use-settings";
+import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
@@ -40,13 +41,54 @@ const AdBannerController = lazy(() =>
   })),
 );
 
-// Simple loading fallback for route transitions
+// Polished route loading fallback (kept minimal for slow networks)
 function RouteLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Loading…</div>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+      <span className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+        <svg
+          viewBox="0 0 24 24"
+          className="size-5 animate-pulse"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 7v14" />
+          <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+        </svg>
+      </span>
     </div>
   );
+}
+
+/** Route-level error boundary — a failed lazy chunk or render error now shows
+ *  a friendly retry screen instead of a blank page or the raw crash UI. */
+class RouteErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; key: number }
+> {
+  state = { hasError: false, key: 0 };
+  static getDerivedStateFromError() {
+    return { hasError: true, key: 0 };
+  }
+  componentDidCatch(err: Error) {
+    console.error("[Learnova] Route error:", err);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <RouteErrorFallback
+          onRetry={() =>
+            this.setState((s) => ({ hasError: false, key: s.key + 1 }))
+          }
+        />
+      );
+    }
+    // key remount gives the boundary a fresh attempt on retry
+    return <React.Fragment key={this.state.key}>{this.props.children}</React.Fragment>;
+  }
 }
 
 /** Silent error boundary — if VlyToolbar crashes it renders nothing instead of
@@ -163,6 +205,7 @@ createRoot(document.getElementById("root")!).render(
               <NativeAuthBridge />
               <RouteSyncer />
               <AdBannerController />
+            <RouteErrorBoundary>
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Landing />} />
@@ -314,6 +357,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            </RouteErrorBoundary>
               <Toaster />
             </SettingsProvider>
           </ConvexProviderWithClerk>
