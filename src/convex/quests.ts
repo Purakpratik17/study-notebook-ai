@@ -1,9 +1,7 @@
-import { v } from "convex/values";
 import { mutation, query, QueryCtx, MutationCtx } from "./_generated/server";
 import { requireUserId } from "./identity";
 import { XP_REWARDS } from "./data";
 import { grantXp } from "./stats";
-import { Doc } from "./_generated/dataModel";
 
 export type QuestTemplate = {
   id: string;

@@ -20,7 +20,7 @@ import { useSettings } from "@/hooks/use-settings";
 const sessionCache = new Map<string, string>();
 
 export function useTranslator(content: string) {
-  const { settings, t } = useSettings();
+  const { t } = useSettings();
   const translateAction = useAction(api.translate.translate);
   const [active, setActive] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

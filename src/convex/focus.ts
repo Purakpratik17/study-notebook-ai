@@ -15,7 +15,7 @@ import { XP_REWARDS } from "./data";
  */
 export const start = mutation({
   args: { plannedMinutes: v.number() },
-  handler: async (ctx, args): Promise<number> => {
+  handler: async (ctx): Promise<number> => {
     await requireUserId(ctx);
     return Date.now();
   },

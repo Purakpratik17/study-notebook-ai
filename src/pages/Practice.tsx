@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import { useAction, useMutation, useQuery } from "convex/react";
 import {
   AlertTriangle,
-  BookOpenCheck,
   CheckCircle2,
   Dumbbell,
   History,
@@ -463,7 +462,6 @@ function PracticeRunner(props: {
   };
 
   const isCorrect = revealed && picked === q.correctIndex;
-  const isWrong = revealed && picked !== null && picked !== q.correctIndex;
   const progress = ((index + (revealed ? 1 : 0)) / props.questions.length) * 100;
   const questionPlain = `${q.question}\n${q.options
     .map((o, oi) => `${String.fromCharCode(65 + oi)}) ${o}`)

@@ -128,7 +128,6 @@ export default function Dashboard() {
   const revQueue = useQuery(api.revision.queue) as
     | { total: number; overdueCards: number; dueTodayCards: number; mistakes: unknown[] }
     | undefined;
-  const flashDue = revQueue ? revQueue.overdueCards + revQueue.dueTodayCards : 0;
   const todaysTasks = useQuery(api.timetable.list) as Entry[] | undefined;
   const recent = useQuery(api.stats.getRecentActivity) as XpEvent[] | undefined;
   const notes = useQuery(api.notes.list) as

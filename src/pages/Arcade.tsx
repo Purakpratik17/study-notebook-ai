@@ -1,6 +1,6 @@
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, FlaskConical, Gamepad2, Lock, Maximize2, Minimize2, Pause, Play, RefreshCw, RotateCcw, Trophy } from "lucide-react";
+import { ArrowLeft, FlaskConical, Gamepad2, Maximize2, Minimize2, Pause, Play, RefreshCw, RotateCcw, Trophy } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,6 @@ type GameRow = {
 type Screen = "hub" | "blocks" | "bee";
 
 export default function Arcade() {
-  const sounds = useSounds();
   const arcade = useQuery(api.arcade.getArcade);
   const devUnlock = useMutation(api.arcade.devUnlockGame);
   const devReset = useMutation(api.arcade.devResetArcade);
@@ -67,7 +66,7 @@ export default function Arcade() {
 
   if (screen !== "hub") {
     return (
-      <GameShell gameId={screen} onExit={() => setScreen("hub")}>
+      <GameShell onExit={() => setScreen("hub")}>
         {screen === "blocks" ? <StudyBlocks /> : <StudyBee />}
       </GameShell>
     );
@@ -236,11 +235,9 @@ export default function Arcade() {
  *  gets the full screen. The toggle sits outside the game's own controls and
  *  never interrupts play. */
 function GameShell({
-  gameId,
   onExit,
   children,
 }: {
-  gameId: string;
   onExit: () => void;
   children: React.ReactNode;
 }) {

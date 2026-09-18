@@ -1,6 +1,6 @@
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
-import { Crown, Medal, Sparkles, Trophy } from "lucide-react";
+import { Medal, Sparkles, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 

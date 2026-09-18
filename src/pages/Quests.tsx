@@ -2,7 +2,7 @@ import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect } from "react";
-import { Loader2, RefreshCw, Swords, Trophy, Zap } from "lucide-react";
+import { RefreshCw, Swords, Trophy, Zap } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSounds } from "@/hooks/use-settings";

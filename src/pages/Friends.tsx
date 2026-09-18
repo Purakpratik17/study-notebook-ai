@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
-  AtSign,
   Check,
   MessageCircle,
   Search,

@@ -30,7 +30,6 @@ export const queue = query({
     total: number;
   }> => {
     const userId = await requireUserId(ctx);
-    const now = Date.now();
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
 

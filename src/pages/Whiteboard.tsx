@@ -3,12 +3,10 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import {
   ArrowRight,
-  Check,
   Circle,
   Download,
   Eraser,
   Highlighter,
-  Loader2,
   Maximize2,
   Minimize2,
   Minus,
@@ -93,7 +91,6 @@ function drawElement(
   ctx: CanvasRenderingContext2D,
   el: Element,
   view: { x: number; y: number; zoom: number },
-  eraseMask?: CanvasRenderingContext2D,
 ) {
   const { x: vx, y: vy, zoom } = view;
   const tx = (x: number) => (x - vx) * zoom;
@@ -191,7 +188,6 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
   const { click: playClick } = useSounds();
 
   const [activeId, setActiveId] = useState<Id<"whiteboards"> | null>(null);
-  const [showList, setShowList] = useState(true);
   // Fullscreen: canvas becomes the main focus and surrounding Learnova UI
   // (nav, top bar, drawer chrome) disappears behind a fixed overlay.
   const [fullscreen, setFullscreen] = useState(false);
@@ -531,7 +527,6 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
     try {
       const id = await createBoard({ title: "Untitled board" });
       setActiveId(id);
-      setShowList(false);
       toast.success("New board created");
     } catch {
       toast.error("Could not create board");
@@ -626,7 +621,6 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
                   onClick={() => {
                     playClick();
                     setActiveId(b._id);
-                    setShowList(false);
                   }}
                 >
                   <div className="truncate font-semibold">{b.title}</div>

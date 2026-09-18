@@ -1,5 +1,5 @@
 import { api } from "@/convex/_generated/api";
-import { useAction, useQuery } from "convex/react";
+import { useAction } from "convex/react";
 import {
   BookOpen,
   Footprints,

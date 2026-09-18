@@ -1,5 +1,4 @@
 import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -55,7 +54,6 @@ export default function Timetable() {
   const sounds = useSounds();
   const entries = useQuery(api.timetable.list) as Entry[] | undefined;
   const toggle = useMutation(api.timetable.toggleComplete);
-  const create = useMutation(api.timetable.create);
   const remove = useMutation(api.timetable.remove);
   const [showForm, setShowForm] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
