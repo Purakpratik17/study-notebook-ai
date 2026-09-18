@@ -30,6 +30,10 @@ export function NativeAuthBridge() {
       if (cancelled) return;
 
       const urlOpen = await App.addListener("appUrlOpen", (event) => {
+        // The OAuth transport (see src/lib/native-oauth.ts) consumes the
+        // primary auth callback. This listener is the safety net: it catches
+        // callbacks that arrive when the transport is not waiting (e.g. the
+        // app was killed mid-flow and relaunched via the deep link).
         const url = new URL(event.url);
         const isAuthCallback =
           url.searchParams.has("transfer") ||

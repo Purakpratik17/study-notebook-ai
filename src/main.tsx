@@ -11,6 +11,8 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 import { SettingsProvider } from "@/hooks/use-settings";
+import { isNative } from "@/lib/native";
+import { createNativeOAuthTransport } from "@/lib/native-oauth";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 import { LoadingScreen } from "@/components/loading";
 
@@ -137,6 +139,13 @@ class RootErrorBoundary extends React.Component<
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
+// On Android, route Clerk OAuth through the system browser with the
+// `studynotebook://sso-callback` deep link (see src/lib/native-oauth.ts).
+// Web builds keep Clerk's normal same-document redirect flow.
+const clerkProviderProps = isNative()
+  ? ({ __internal_oauthTransport: createNativeOAuthTransport() } as const)
+  : {};
+
 const clerkAppearance = {
   variables: {
     colorPrimary: "var(--primary)",
@@ -187,6 +196,7 @@ createRoot(document.getElementById("root")!).render(
         <ClerkProvider
           publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}
           appearance={clerkAppearance}
+          {...clerkProviderProps}
         >
           <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
             <SettingsProvider>

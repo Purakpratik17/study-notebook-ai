@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import cerevynLogo from "@/assets/cerevyn-logo.svg";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -72,7 +73,12 @@ export default function Landing() {
       {/* Nav */}
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5">
         <div className="flex items-center gap-2">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+          <img
+            src={cerevynLogo}
+            alt="Cerevyn logo"
+            className="hidden h-9 rounded-lg sm:block"
+          />
+          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm sm:hidden">
             <NotebookPen className="size-5" />
           </span>
           <span className="text-base font-bold tracking-tight">

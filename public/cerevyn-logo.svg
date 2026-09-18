@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420">
+  <!-- Cerevyn full logo: emblem + wordmark + tagline (for header/landing/splash) -->
+  <rect width="960" height="420" rx="48" fill="#FAF5E9"/>
+
+  <!-- Emblem (scaled from the launcher emblem) -->
+  <g transform="translate(60,30) scale(0.7)">
+    <circle cx="256" cy="256" r="208" fill="none" stroke="#0F4C43" stroke-opacity="0.06" stroke-width="10"/>
+    <path d="M 340 118 A 172 172 0 1 0 340 394 L 306 340 A 108 108 0 1 1 306 172 Z" fill="#0F4C43"/>
+    <g fill="#FFFFFF" stroke="#0F4C43" stroke-width="14" stroke-linejoin="round">
+      <path d="M 256 300 C 226 276 194 268 162 270 L 162 200 C 194 198 226 206 256 230 Z"/>
+      <path d="M 256 300 C 286 276 318 268 350 270 L 350 200 C 318 198 286 206 256 230 Z"/>
+    </g>
+    <path d="M 400 92 L 410 122 L 440 132 L 410 142 L 400 172 L 390 142 L 360 132 L 390 122 Z" fill="#D4A93C"/>
+    <path d="M 96 128 C 128 120 152 136 158 164 C 128 172 104 156 96 128 Z" fill="#3E7C59"/>
+    <path d="M 416 384 C 384 392 360 376 354 348 C 384 340 408 356 416 384 Z" fill="#3E7C59"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="440" y="230" font-family="Georgia, 'Times New Roman', serif" font-size="132" font-weight="bold" fill="#0F4C43" letter-spacing="2">Cerevyn</text>
+
+  <!-- Tagline -->
+  <text x="446" y="296" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#3E7C59" letter-spacing="10">LEARN • PLAY • LEVEL UP</text>
+
+  <!-- Sparkle next to wordmark -->
+  <path d="M 856 130 L 866 160 L 896 170 L 866 180 L 856 210 L 846 180 L 816 170 L 846 160 Z" fill="#D4A93C"/>
+</svg>
