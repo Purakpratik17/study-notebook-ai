@@ -3,6 +3,7 @@ import { useConvexAuth } from "convex/react";
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router";
 import { AppShell } from "./AppShell";
+import { LoadingScreen } from "@/components/loading";
 
 /**
  * Route guard for authenticated pages. Auth is Clerk; useConvexAuth() only
@@ -17,10 +18,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (!isLoaded || isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="annotation text-sm">checking your notebook…</p>
-        </div>
+        <LoadingScreen message="checking your notebook…" />
       </main>
     );
   }

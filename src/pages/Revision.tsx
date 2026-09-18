@@ -87,7 +87,7 @@ export default function Revision() {
       {queue === undefined ? (
         <div className="flex flex-col gap-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />
+            <div key={i} className="shimmer h-20 rounded-lg" />
           ))}
         </div>
       ) : queue.total === 0 && finished ? (

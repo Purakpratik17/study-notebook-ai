@@ -116,7 +116,7 @@ export default function Quests() {
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="paper-sheet h-36 animate-pulse opacity-70"
+              className="paper-sheet h-36 shimmer opacity-80"
             />
           ))}
         </div>

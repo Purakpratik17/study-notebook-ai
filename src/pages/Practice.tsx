@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useSounds, useSettings } from "@/hooks/use-settings";
 import { TranslateButton } from "@/components/TranslateButton";
 import { maybeShowInterstitial } from "@/lib/ads";
+import { AiLoadingCard } from "@/components/loading";
 import SnapSolve from "@/components/tutor/SnapSolve";
 import TutorChat from "@/components/tutor/TutorChat";
 import { Bookmark, Camera, MessageCircleQuestion } from "lucide-react";
@@ -240,13 +241,10 @@ export default function Practice() {
       )}
 
       {mode === "drills" && screen === "loading" && (
-        <section className="paper-sheet paper-margin flex flex-col items-center gap-3 px-5 py-12 text-center">
-          <Loader2 className="size-7 animate-spin text-primary" />
-          <p className="font-semibold">
-            Writing {count} {difficulty} questions on “{topic.trim()}”…
-          </p>
-          <p className="annotation text-xs">this usually takes a few seconds</p>
-        </section>
+        <AiLoadingCard
+          topic={topic}
+          detail={`writing ${count} ${difficulty} questions`}
+        />
       )}
 
       {mode === "drills" && screen === "session" && session && (

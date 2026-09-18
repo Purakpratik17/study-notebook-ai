@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSounds } from "@/hooks/use-settings";
 import { maybeShowInterstitial } from "@/lib/ads";
+import { LoadingScreen } from "@/components/loading";
 
 /* ═══════════════════════════════════════════════════════════════════════
    Arcade hub — Study Blocks + Study Bee
@@ -58,9 +59,8 @@ export default function Arcade() {
 
   if (arcade === undefined) {
     return (
-      <div className="paper-sheet flex items-center gap-3 px-5 py-10">
-        <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="annotation text-sm">powering up the arcade…</p>
+      <div className="paper-sheet flex items-center justify-center px-5 py-10">
+        <LoadingScreen message="powering up the arcade…" />
       </div>
     );
   }

@@ -28,6 +28,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { useSounds } from "@/hooks/use-settings";
+import { Shimmer } from "@/components/loading";
 
 type Stats = {
   xp: number;
@@ -470,7 +471,7 @@ export default function Dashboard() {
             <Target className="size-4" /> Today's progress
           </h2>
           {summary === undefined ? (
-            <div className="mt-3 h-16 animate-pulse rounded bg-muted" />
+            <Shimmer className="mt-3 h-16" />
           ) : (
             <div className="mt-3 flex flex-col gap-4">
               <div>
@@ -538,9 +539,8 @@ export default function Dashboard() {
 
           {todayTasks === undefined ? (
             <div className="mt-3 flex flex-col gap-2.5">
-              {[80, 65].map((w, i) => (
-                <div key={i} className="h-4 animate-pulse rounded bg-muted" style={{ width: `${w}%` }} />
-              ))}
+              <Shimmer className="h-4 w-[80%]" />
+              <Shimmer className="h-4 w-[65%]" />
             </div>
           ) : todayTasks.length === 0 ? (
             <div className="py-6 text-center">
@@ -622,9 +622,8 @@ export default function Dashboard() {
           </div>
           {summary === undefined ? (
             <div className="mt-3 flex flex-col gap-2">
-              {[0, 1].map((i) => (
-                <div key={i} className="h-10 animate-pulse rounded bg-muted" />
-              ))}
+              <Shimmer className="h-10" />
+              <Shimmer className="h-10" />
             </div>
           ) : summary.activeQuests.length === 0 ? (
             <p className="py-5 text-center text-sm text-muted-foreground">
@@ -672,9 +671,9 @@ export default function Dashboard() {
           </div>
           {insights === undefined ? (
             <div className="mt-3 flex flex-col gap-2">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="h-9 animate-pulse rounded bg-muted" />
-              ))}
+              <Shimmer className="h-9" />
+              <Shimmer className="h-9" />
+              <Shimmer className="h-9" />
             </div>
           ) : (
             <>
@@ -811,9 +810,8 @@ export default function Dashboard() {
           </div>
           {notes === undefined ? (
             <div className="mt-3 flex flex-col gap-2">
-              {[0, 1].map((i) => (
-                <div key={i} className="h-8 animate-pulse rounded bg-muted" />
-              ))}
+              <Shimmer className="h-8" />
+              <Shimmer className="h-8" />
             </div>
           ) : notes.length === 0 ? (
             <p className="py-5 text-center text-sm text-muted-foreground">
@@ -851,9 +849,9 @@ export default function Dashboard() {
           </div>
           {recent === undefined ? (
             <div className="mt-3 flex flex-col gap-2">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="h-8 animate-pulse rounded bg-muted" />
-              ))}
+              <Shimmer className="h-8" />
+              <Shimmer className="h-8" />
+              <Shimmer className="h-8" />
             </div>
           ) : recent.length === 0 ? (
             <p className="py-5 text-center text-sm text-muted-foreground">

@@ -19,6 +19,7 @@ import { Link } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSettings, useSounds } from "@/hooks/use-settings";
+import { AiLoadingCard } from "@/components/loading";
 import { TranslateButton } from "@/components/TranslateButton";
 import { maybeShowInterstitial } from "@/lib/ads";
 
@@ -209,31 +210,8 @@ export default function AiStudy() {
         </section>
       )}
 
-      {/* Loading skeleton */}
-      {loading && (
-        <section className="paper-sheet paper-margin px-5 py-6 pl-14 md:pl-16">
-          <div className="flex items-center gap-3">
-            <Loader2 className="size-5 animate-spin text-primary" />
-            <div>
-              <p className="text-sm font-semibold">
-                Studying “{topic.trim()}”…
-              </p>
-              <p className="annotation text-xs">
-                writing notes, examples and a quiz
-              </p>
-            </div>
-          </div>
-          <div className="mt-5 flex flex-col gap-3">
-            {[80, 95, 70, 88].map((w, i) => (
-              <div
-                key={i}
-                className="h-3 animate-pulse rounded bg-muted"
-                style={{ width: `${w}%` }}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* AI generation loading — animated notebook + rotating study phrases */}
+      {loading && <AiLoadingCard topic={topic} />}
 
       {/* Notes + quiz */}
       {activeNote && !loading ? (
@@ -608,9 +586,7 @@ function ImportantQuestions({ topic }: { topic: string }) {
       </div>
 
       {busy && (
-        <p className="annotation mt-3 flex items-center gap-2 text-xs">
-          <Loader2 className="size-3.5 animate-spin" /> picking the exam essentials for “{topic}”…
-        </p>
+        <AiLoadingCard topic={topic} detail="picking the exam essentials" />
       )}
       {error && (
         <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>

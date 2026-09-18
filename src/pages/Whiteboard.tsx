@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSounds } from "@/hooks/use-settings";
+import { LoadingNotebook } from "@/components/loading";
 import { cn } from "@/lib/utils";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -607,7 +608,7 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
 
         {boards === null ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            <LoadingNotebook className="scale-75" />
           </div>
         ) : boards.length === 0 ? (
           <div className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">

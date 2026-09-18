@@ -344,7 +344,7 @@ export default function Profile() {
       )}
 
       {stats === undefined ? (
-        <div className="paper-sheet h-40 animate-pulse" />
+        <div className="paper-sheet shimmer h-40" />
       ) : stats === null ? (
         <p className="text-sm text-muted-foreground">
           Sign in to see your progress.
@@ -450,7 +450,7 @@ export default function Profile() {
             {achievements === undefined ? (
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />
+                  <div key={i} className="shimmer h-20 rounded-lg" />
                 ))}
               </div>
             ) : (

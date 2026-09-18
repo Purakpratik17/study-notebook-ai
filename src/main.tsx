@@ -12,6 +12,7 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 import { SettingsProvider } from "@/hooks/use-settings";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
+import { LoadingScreen } from "@/components/loading";
 
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
@@ -41,24 +42,11 @@ const AdBannerController = lazy(() =>
   })),
 );
 
-// Polished route loading fallback (kept minimal for slow networks)
+// Route chunk loading — branded notebook, no layout jump
 function RouteLoading() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-3">
-      <span className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-        <svg
-          viewBox="0 0 24 24"
-          className="size-5 animate-pulse"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 7v14" />
-          <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
-        </svg>
-      </span>
+    <div className="flex min-h-screen items-center justify-center">
+      <LoadingScreen message="opening your notebook…" />
     </div>
   );
 }

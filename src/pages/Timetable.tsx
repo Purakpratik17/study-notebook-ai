@@ -400,7 +400,7 @@ function SkeletonList() {
     <section className="paper-sheet px-5 py-6">
       <div className="flex flex-col gap-3">
         {[90, 75, 85].map((w, i) => (
-          <div key={i} className="h-4 animate-pulse rounded bg-muted" style={{ width: `${w}%` }} />
+          <div key={i} className="shimmer h-4 rounded" style={{ width: `${w}%` }} />
         ))}
       </div>
     </section>

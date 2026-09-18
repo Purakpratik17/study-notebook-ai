@@ -245,7 +245,7 @@ export default function Friends() {
           </div>
 
           {filteredChats === undefined ? (
-            <div className="h-20 animate-pulse rounded-lg bg-muted" />
+            <div className="shimmer h-20 rounded-lg" />
           ) : filteredChats.length === 0 ? (
             <section className="paper-sheet flex flex-col items-center gap-2 px-6 py-10 text-center">
               <span className="text-3xl">💬</span>
@@ -373,7 +373,7 @@ export default function Friends() {
               Friend Requests
             </h2>
             {requests === undefined ? (
-              <div className="mt-3 h-16 animate-pulse rounded bg-muted" />
+              <div className="shimmer mt-3 h-16 rounded" />
             ) : requests.incoming.length === 0 ? (
               <p className="py-5 text-center text-sm text-muted-foreground">
                 No pending requests
@@ -424,7 +424,7 @@ export default function Friends() {
               Pending Requests (sent)
             </h2>
             {requests === undefined ? (
-              <div className="mt-3 h-16 animate-pulse rounded bg-muted" />
+              <div className="shimmer mt-3 h-16 rounded" />
             ) : requests.outgoing.length === 0 ? (
               <p className="py-5 text-center text-sm text-muted-foreground">
                 No pending requests
@@ -452,7 +452,7 @@ export default function Friends() {
             My Friends
           </h2>
           {friends === undefined ? (
-            <div className="mt-3 h-16 animate-pulse rounded bg-muted" />
+            <div className="shimmer mt-3 h-16 rounded" />
           ) : friends.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
               <span className="text-3xl">🫂</span>
@@ -580,7 +580,7 @@ function Thread({
 
       <div className="flex-1 overflow-y-auto py-4">
         {messages === undefined ? (
-          <div className="h-20 animate-pulse rounded bg-muted" />
+          <div className="shimmer h-20 rounded" />
         ) : messages.length === 0 ? (
           <p className="annotation py-10 text-center text-sm">
             No messages yet — say hi! 👋
