@@ -25,6 +25,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import { useBannerMargin } from "@/hooks/use-banner-margin";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { ChevronLeft, X } from "lucide-react";
@@ -127,6 +128,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // space in the normal study UI. Opens as a smooth bottom sheet; the editor
   // itself can go fullscreen from inside.
   const [wbOpen, setWbOpen] = useState(false);
+  // Native Android banner occupies the very bottom of the screen — reserve
+  // real layout space for it so it can never cover the bottom nav.
+  const bannerMargin = useBannerMargin();
   // Admin nav visibility is COSMETIC ONLY — the Convex backend re-checks
   // the allowlist on every admin call (src/convex/admin.ts).
   const isAdmin = useQuery(api.admin.isAdmin) === true;
@@ -233,8 +237,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/85 px-4 py-3 backdrop-blur md:hidden">
+      {/* Mobile top bar — padded below the status bar / notch via safe-area */}
+      <header style={{ paddingTop: "env(safe-area-inset-top, 0px)" }} className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/85 px-4 py-3 backdrop-blur md:hidden">
         <Link to="/dashboard" className="flex items-center gap-2">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <NotebookPen className="size-4" />
@@ -310,13 +314,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Page content */}
-      <main className="overflow-x-hidden px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8">
+      <main
+        style={bannerMargin ? { marginBottom: 64 } : undefined}
+        className="overflow-x-hidden px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8"
+      >
         <TabBackground />
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
 
-      {/* Mobile bottom navigation: 4 primary tabs + More sheet */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 backdrop-blur md:hidden">
+      {/* Mobile bottom navigation: 4 primary tabs + More sheet.
+          Lifted above the Android gesture/navigation area via safe-area inset,
+          and further above the native AdMob banner (which sits at the very
+          bottom edge) so the ad can never cover the menu. */}
+      <nav
+        style={bannerMargin ? { bottom: 64 } : undefined}
+        className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur md:hidden"
+      >
         <div className="grid grid-cols-5">
           {MOBILE_TABS.map((tab) => {
             const active = location.pathname === tab.to;

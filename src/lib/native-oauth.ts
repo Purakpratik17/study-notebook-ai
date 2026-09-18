@@ -21,6 +21,21 @@ export function createNativeOAuthTransport(): OAuthTransport {
   return {
     getRedirectUrl: () => "studynotebook://sso-callback",
     open: async (url: URL) => {
+      // Defensive guard: Clerk's Browser.open target must always be an
+      // https:// URL (the Accounts/FAPI authorize page). If a custom scheme
+      // ever leaks into this slot the Android Custom Tabs WebView throws
+      // "Invalid URL scheme — Please provide a URL with one of the following
+      // schemes: https://, http://". Fall back to an in-WebView navigation
+      // instead of crashing the flow.
+      if (url.protocol !== "https:" && url.protocol !== "http:") {
+        console.error(
+          "[native-oauth] refusing to open non-https URL in system browser:",
+          url.toString(),
+        );
+        window.location.href = url.toString();
+        return { callbackUrl: url.toString() };
+      }
+
       const { Browser } = await import("@capacitor/browser");
       const { App } = await import("@capacitor/app");
 
