@@ -395,6 +395,35 @@ const schema = defineSchema(
       newXp: v.number(),
       createdAt: v.number(),
     }).index("by_created", ["createdAt"]),
+
+    // ─── Whiteboards ─────────────────────────────────────────────
+    // Infinite-canvas study boards. Each board belongs to exactly one
+    // authenticated user (Clerk subject); elements are stored as a JSON
+    // document (strokes, shapes, text) rendered client-side on canvas.
+    whiteboards: defineTable({
+      userId: v.string(), // Clerk subject — owner
+      title: v.string(),
+      elements: v.array(
+        v.object({
+          id: v.string(),
+          type: v.string(), // "path" | "line" | "arrow" | "rect" | "ellipse" | "text"
+          points: v.optional(v.array(v.array(v.number()))), // path points [x,y]
+          x: v.optional(v.number()),
+          y: v.optional(v.number()),
+          x2: v.optional(v.number()),
+          y2: v.optional(v.number()),
+          color: v.string(),
+          size: v.number(),
+          text: v.optional(v.string()),
+          fontSize: v.optional(v.number()),
+          opacity: v.optional(v.number()),
+        }),
+      ),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    })
+      .index("by_user", ["userId"])
+      .index("by_user_updated", ["userId", "updatedAt"]),
   },
   {
     schemaValidation: false,
