@@ -35,6 +35,12 @@ export const ADMIN_USER_IDS: readonly string[] = [
  * profile's stored username matches an entry here do they pass. The
  * username is never sent from the client, so this cannot be spoofed.
  */
+/**
+ * DEV MODE: when true, EVERY signed-in user is treated as an admin.
+ * Intended only for development. Set to false before shipping to production.
+ */
+export const ADMIN_DEV_MODE = true;
+
 export const ADMIN_USERNAMES: readonly string[] = [
   "purakpratik17",
 ];

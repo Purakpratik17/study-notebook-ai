@@ -21,7 +21,11 @@ import { levelForXp } from "./data";
 
 // NOTE: src/lib/admin-config.ts is deliberately dependency-free (no DOM
 // APIs) so it can be imported from Convex server code as well as the app.
-import { ADMIN_USER_IDS, ADMIN_USERNAMES } from "../lib/admin-config";
+import {
+  ADMIN_USER_IDS,
+  ADMIN_USERNAMES,
+  ADMIN_DEV_MODE,
+} from "../lib/admin-config";
 
 /** Backend-enforced admin check: derives the caller's identity from the
  *  Clerk JWT, then matches against the user-ID allowlist OR resolves the
@@ -30,7 +34,7 @@ async function assertAdmin(
   ctx: QueryCtx | MutationCtx,
 ): Promise<string> {
   const userId = await requireUserId(ctx);
-  if (ADMIN_USER_IDS.includes(userId)) return userId;
+  if (ADMIN_DEV_MODE || ADMIN_USER_IDS.includes(userId)) return userId;
 
   const profile = await ctx.db
     .query("profiles")
@@ -54,7 +58,7 @@ export const isAdmin = query({
   args: {},
   handler: async (ctx): Promise<boolean> => {
     const userId = await requireUserId(ctx);
-    if (ADMIN_USER_IDS.includes(userId)) return true;
+    if (ADMIN_DEV_MODE || ADMIN_USER_IDS.includes(userId)) return true;
     const profile = await ctx.db
       .query("profiles")
       .withIndex("by_user", (q) => q.eq("userId", userId))
