@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, QueryCtx, MutationCtx } from "./_generated/server";
 import { requireUserId } from "./identity";
 import { getOrCreateStats } from "./stats";
 import { levelForXp } from "./data";
@@ -21,14 +21,29 @@ import { levelForXp } from "./data";
 
 // NOTE: src/lib/admin-config.ts is deliberately dependency-free (no DOM
 // APIs) so it can be imported from Convex server code as well as the app.
-import { ADMIN_USER_IDS } from "../lib/admin-config";
+import { ADMIN_USER_IDS, ADMIN_USERNAMES } from "../lib/admin-config";
 
-function assertAdmin(userId: string): void {
-  if (!ADMIN_USER_IDS.includes(userId)) {
-    throw new Error(
-      "FORBIDDEN: this function is restricted to Learnova administrators",
-    );
+/** Backend-enforced admin check: derives the caller's identity from the
+ *  Clerk JWT, then matches against the user-ID allowlist OR resolves the
+ *  caller's own profile username against the username allowlist. */
+async function assertAdmin(
+  ctx: QueryCtx | MutationCtx,
+): Promise<string> {
+  const userId = await requireUserId(ctx);
+  if (ADMIN_USER_IDS.includes(userId)) return userId;
+
+  const profile = await ctx.db
+    .query("profiles")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .first();
+  const uname = (profile?.username ?? "").toLowerCase();
+  if (uname && ADMIN_USERNAMES.map((u) => u.toLowerCase()).includes(uname)) {
+    return userId;
   }
+
+  throw new Error(
+    "FORBIDDEN: this function is restricted to Learnova administrators",
+  );
 }
 
 /* ─── Queries ────────────────────────────────────────────────────────── */
@@ -39,7 +54,14 @@ export const isAdmin = query({
   args: {},
   handler: async (ctx): Promise<boolean> => {
     const userId = await requireUserId(ctx);
-    return ADMIN_USER_IDS.includes(userId);
+    if (ADMIN_USER_IDS.includes(userId)) return true;
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    const uname = (profile?.username ?? "").toLowerCase();
+    return !!uname &&
+      ADMIN_USERNAMES.map((u) => u.toLowerCase()).includes(uname);
   },
 });
 
@@ -47,7 +69,7 @@ export const isAdmin = query({
 export const overview = query({
   args: {},
   handler: async (ctx) => {
-    assertAdmin(await requireUserId(ctx));
+    assertAdmin(ctx);
 
     const profiles = await ctx.db.query("profiles").collect();
     const totalUsers = profiles.length;
@@ -67,7 +89,7 @@ export const overview = query({
 export const searchUsers = query({
   args: { query: v.string() },
   handler: async (ctx, args) => {
-    assertAdmin(await requireUserId(ctx));
+    assertAdmin(ctx);
     const q = args.query.trim().toLowerCase();
     if (!q) return [];
 
@@ -108,7 +130,7 @@ export const searchUsers = query({
 export const auditLog = query({
   args: {},
   handler: async (ctx) => {
-    assertAdmin(await requireUserId(ctx));
+    assertAdmin(ctx);
     const entries = await ctx.db
       .query("adminAudit")
       .withIndex("by_created")
@@ -136,7 +158,7 @@ export const auditLog = query({
 export const getUserXp = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
-    assertAdmin(await requireUserId(ctx));
+    assertAdmin(ctx);
     const stats = await ctx.db
       .query("stats")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -167,8 +189,7 @@ export const adjustXp = mutation({
     amount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const adminId = await requireUserId(ctx);
-    assertAdmin(adminId);
+    const adminId = await assertAdmin(ctx);
 
     if (!Number.isFinite(args.amount ?? 0)) {
       throw new Error("Invalid XP amount");

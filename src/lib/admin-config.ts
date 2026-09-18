@@ -25,3 +25,16 @@ export const ADMIN_USER_IDS: readonly string[] = [
   // TODO: paste your Clerk user ID here, e.g.:
   // "user_2abcExampleYourClerkId",
 ];
+
+/**
+ * ADMIN USERNAMES — alternative allowlist for convenience.
+ *
+ * Each entry is a Learnova username. Security is still enforced entirely
+ * on the backend: in src/convex/admin.ts, the caller's OWN Clerk identity
+ * is used to look up THEIR profile in the database, and only if that
+ * profile's stored username matches an entry here do they pass. The
+ * username is never sent from the client, so this cannot be spoofed.
+ */
+export const ADMIN_USERNAMES: readonly string[] = [
+  "purakpratik17",
+];
