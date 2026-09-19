@@ -55,6 +55,33 @@ export function transportOwnsCallback(): boolean {
   return transportWaiting;
 }
 
+/**
+ * Does this deep-link URL look like a Clerk OAuth/verification callback?
+ *
+ * Clerk's native OAuth return can carry different params depending on the
+ * flow: `transfer` (classic SSO transfer), `verified`/`error_code` (email
+ * verification / errors), or `rotating_token_nonce` + `__clerk_status`
+ * (the __internal_oauthTransport flow — see clerk-js's
+ * authenticateWithTransport.ts, which reads `rotating_token_nonce`).
+ * Matching only the first group made the transport's promise never resolve
+ * and the app buffer forever after returning from Google.
+ */
+export function isAuthCallbackUrl(rawUrl: string): boolean {
+  try {
+    const u = new URL(rawUrl);
+    return (
+      u.searchParams.has("transfer") ||
+      u.searchParams.has("verified") ||
+      u.searchParams.has("error_code") ||
+      u.searchParams.has("error_description") ||
+      u.searchParams.has("rotating_token_nonce") ||
+      u.searchParams.has("__clerk_status")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function createNativeOAuthTransport(): OAuthTransport {
   return {
     getRedirectUrl: () => "studynotebook://sso-callback",
@@ -85,12 +112,7 @@ export function createNativeOAuthTransport(): OAuthTransport {
         let done = false;
         transportWaiting = true;
         void App.addListener("appUrlOpen", (event) => {
-          const u = new URL(event.url);
-          const isAuthCallback =
-            u.searchParams.has("transfer") ||
-            u.searchParams.has("verified") ||
-            u.searchParams.has("error_code") ||
-            u.searchParams.has("error_description");
+          const isAuthCallback = isAuthCallbackUrl(event.url);
           if (!isAuthCallback || done) return;
           if (!claimAuthCallback(event.url)) return;
           done = true;

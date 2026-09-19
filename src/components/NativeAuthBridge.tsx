@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { isNative } from "@/lib/native";
 import {
   claimAuthCallback,
+  isAuthCallbackUrl,
   transportOwnsCallback,
 } from "@/lib/native-oauth";
 
@@ -41,12 +42,7 @@ export function NativeAuthBridge() {
         // relaunched via the deep link). Clerk's transfer token is single-use,
         // so two consumers for the same URL would break sign-in — one would
         // consume it and the session would never activate (infinite spinner).
-        const url = new URL(event.url);
-        const isAuthCallback =
-          url.searchParams.has("transfer") ||
-          url.searchParams.has("verified") ||
-          url.searchParams.has("error_code") ||
-          url.searchParams.has("error_description");
+        const isAuthCallback = isAuthCallbackUrl(event.url);
         if (!isAuthCallback) return;
         if (transportOwnsCallback()) return; // transport will handle it
         if (!claimAuthCallback(event.url)) return; // already processed
