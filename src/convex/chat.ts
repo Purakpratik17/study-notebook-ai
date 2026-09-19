@@ -67,7 +67,9 @@ export const list = query({
         username: profile?.username ?? null,
         displayName: profile?.displayName ?? null,
         avatar: profile?.avatar ?? null,
-        lastMessage: last?.body ?? null,
+        lastMessage:
+          last?.body ||
+          (last?.kind === "image" ? "📷 Photo" : last?.kind === "video" ? "🎥 Video" : null),
         lastMessageAt: last?.createdAt ?? conv.createdAt,
         unread,
       });
@@ -96,30 +98,94 @@ export const getMessages = query({
       body: m.body,
       createdAt: m.createdAt,
       mine: m.senderId === me,
+      kind: m.kind ?? null,
+      mediaType: m.mediaType ?? null,
+      durationSec: m.durationSec ?? null,
     }));
   },
 });
 
 /** Send a message — only inside an accepted friendship (server-enforced). */
 export const send = mutation({
-  args: { conversationId: v.id("conversations"), body: v.string() },
+  args: {
+    conversationId: v.id("conversations"),
+    body: v.string(),
+    kind: v.optional(v.union(v.literal("image"), v.literal("video"))),
+    storageId: v.optional(v.id("_storage")),
+    mediaType: v.optional(v.string()),
+    durationSec: v.optional(v.number()),
+  },
   handler: async (ctx, args): Promise<"sent" | "not_friends"> => {
     const me = await requireUserId(ctx);
     const body = args.body.trim().slice(0, 1000);
-    if (!body) throw new Error("Message is empty.");
+    const hasMedia = !!args.kind && !!args.storageId;
+    if (!body && !hasMedia) throw new Error("Message is empty.");
     const conv = await ctx.db.get(args.conversationId);
     if (!conv || (conv.userA !== me && conv.userB !== me)) {
       throw new Error("Conversation not found.");
     }
     const friendId = conv.userA === me ? conv.userB : conv.userA;
     if (!(await areFriends(ctx, me, friendId))) return "not_friends";
+
+    // Server-side media validation (cannot be bypassed by the frontend).
+    let kind: "image" | "video" | undefined;
+    if (hasMedia) {
+      kind = args.kind!;
+      const meta = await ctx.storage.getMetadata(args.storageId!);
+      if (!meta) throw new Error("Attachment upload not found.");
+      const isImage = kind === "image";
+      const isVideo = kind === "video";
+      const mimeOk = isImage
+        ? (meta.contentType ?? "").startsWith("image/")
+        : (meta.contentType ?? "").startsWith("video/");
+      if (!mimeOk) throw new Error("Invalid attachment type.");
+      const MAX_IMAGE = 5 * 1024 * 1024; // 5 MB
+      const MAX_VIDEO = 100 * 1024 * 1024; // 100 MB
+      const max = isImage ? MAX_IMAGE : MAX_VIDEO;
+      if (meta.size > max) {
+        throw new Error(isImage ? "Images must be 5 MB or smaller." : "Videos must be 100 MB or smaller.");
+      }
+      if (isVideo && (args.durationSec === undefined || args.durationSec > 180 + 1)) {
+        throw new Error("Videos must be 3 minutes or shorter.");
+      }
+    }
+
     await ctx.db.insert("messages", {
       conversationId: conv._id,
       senderId: me,
       body,
+      kind,
+      storageId: hasMedia ? args.storageId : undefined,
+      mediaType: hasMedia ? args.mediaType : undefined,
+      durationSec: kind === "video" ? args.durationSec : undefined,
       createdAt: Date.now(),
     });
     return "sent";
+  },
+});
+
+/**
+ * Short-lived URL for a chat attachment. Only conversation participants can
+ * fetch it — private media is never exposed publicly.
+ */
+export const getMediaUrl = query({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args): Promise<string | null> => {
+    const me = await requireUserId(ctx);
+    const m = await ctx.db.get(args.messageId);
+    if (!m || !m.storageId) return null;
+    const conv = await ctx.db.get(m.conversationId);
+    if (!conv || (conv.userA !== me && conv.userB !== me)) return null;
+    return await ctx.storage.getUrl(m.storageId);
+  },
+});
+
+/** Upload URL for chat attachments (image or ≤3-min video). */
+export const generateMediaUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireUserId(ctx);
+    return await ctx.storage.generateUploadUrl();
   },
 });
 

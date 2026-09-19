@@ -4,9 +4,12 @@ import { useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
   Check,
+  Image as ImageIcon,
   MessageCircle,
+  Paperclip,
   Search,
   Send,
+  Smile,
   UserPlus,
   X,
 } from "lucide-react";
@@ -54,7 +57,29 @@ type ChatMessage = {
   body: string;
   createdAt: number;
   mine: boolean;
+  kind: "image" | "video" | null;
+  mediaType: string | null;
+  durationSec: number | null;
 };
+
+const MAX_VIDEO_SEC = 180;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+
+const EMOJI_GROUPS: Array<{ label: string; emojis: string[] }> = [
+  {
+    label: "Smileys",
+    emojis: "😀 😃 😄 😁 😆 😅 🤣 😊 🙂 😉 😍 🤩 😘 🤔 🤨 😴 😤 😎 🥳 😢 😭 🥺 😱 🤯 😇 🤗 🤫 😂 🥹 😜".split(" "),
+  },
+  {
+    label: "Study",
+    emojis: "📚 ✏️ 📝 📖 🎓 🧠 💡 📐 🔬 🧪 🧮 📊 🖊️ 📋 ⏰ 🎯 ✅ ❌ ⭐ 🔥 💪 🚀 🏆 🥇 🎉 🎊 👏 🙌 👍 👎".split(" "),
+  },
+  {
+    label: "More",
+    emojis: "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🌟 ✨ ⚡ 🌈 ☕ 🍕 🍫 🎮 🎵 🐱 🐶 🦊 🐼 🌍 🌙 ☀️ 🤝 💯 🙏 🫶 🥰 🤝".split(" "),
+  },
+];
 
 type Tab = "friends" | "requests" | "search" | "chat";
 type ChatFilter = "all" | "unread" | "friends" | "recent";
@@ -529,9 +554,21 @@ function Thread({
     | undefined;
   const markRead = useMutation(api.chat.markRead);
   const send = useMutation(api.chat.send);
+  const generateUploadUrl = useMutation(api.chat.generateMediaUploadUrl);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [preview, setPreview] = useState<{
+    kind: "image" | "video";
+    file: File;
+    url: string;
+    durationSec?: number;
+  } | null>(null);
+  const [lightbox, setLightbox] = useState<{ kind: "image" | "video"; url: string } | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void markRead({ conversationId: conversationId as never });
@@ -539,16 +576,50 @@ function Thread({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages?.length]);
+  }, [messages?.length, preview]);
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview.url);
+    };
+  }, [preview]);
 
   const submit = async () => {
     const body = draft.trim();
-    if (!body || sending) return;
+    if ((!body && !preview) || sending || uploading) return;
     setSending(true);
     try {
-      const r = await send({ conversationId: conversationId as never, body });
+      let media: {
+        kind: "image" | "video";
+        storageId: never;
+        mediaType: string;
+        durationSec?: number;
+      } | undefined;
+      if (preview) {
+        const uploadUrl = await generateUploadUrl({});
+        const res = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": preview.file.type },
+          body: preview.file,
+        });
+        if (!res.ok) throw new Error("Upload failed.");
+        const { storageId } = (await res.json()) as { storageId: string };
+        media = {
+          kind: preview.kind,
+          storageId: storageId as never,
+          mediaType: preview.file.type,
+          durationSec: preview.durationSec,
+        };
+      }
+      const r = await send({
+        conversationId: conversationId as never,
+        body: body || (preview ? (preview.kind === "image" ? "📷 Photo" : "🎥 Video") : ""),
+        ...media,
+      });
       if (r === "sent") {
         setDraft("");
+        if (preview) URL.revokeObjectURL(preview.url);
+        setPreview(null);
         sounds.success();
       } else {
         toast.error("You can only message accepted friends.");
@@ -560,9 +631,54 @@ function Thread({
     }
   };
 
+  const pickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    setVideoError(null);
+    if (!file) return;
+    if (file.type.startsWith("image/")) {
+      if (file.size > MAX_IMAGE_BYTES) {
+        toast.error("Images must be 5 MB or smaller.");
+        return;
+      }
+      setPreview({ kind: "image", file, url: URL.createObjectURL(file) });
+    } else if (file.type.startsWith("video/")) {
+      if (file.size > MAX_VIDEO_BYTES) {
+        toast.error("Videos must be 100 MB or smaller.");
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      const probe = document.createElement("video");
+      probe.preload = "metadata";
+      probe.onloadedmetadata = () => {
+        const duration = probe.duration;
+        if (!Number.isFinite(duration) || duration > MAX_VIDEO_SEC + 1) {
+          URL.revokeObjectURL(url);
+          setVideoError("Videos must be 3 minutes or shorter.");
+          toast.error("Videos must be 3 minutes or shorter.");
+          return;
+        }
+        setPreview({ kind: "video", file, url, durationSec: duration });
+      };
+      probe.onerror = () => {
+        URL.revokeObjectURL(url);
+        setVideoError("Could not read this video. Videos must be 3 minutes or shorter.");
+      };
+      probe.src = url;
+    } else {
+      toast.error("Only images and videos are supported.");
+    }
+  };
+
   return (
-    <div className="flex h-[65vh] flex-col">
-      <div className="flex items-center gap-2 border-b pb-3">
+    <div
+      className="flex h-[65vh] flex-col"
+      style={{ maxHeight: `calc(65vh - var(--safe-top, 0px))` }}
+    >
+      <div
+        className="flex items-center gap-2 border-b pb-3"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
         <button
           type="button"
           onClick={() => {
@@ -587,61 +703,239 @@ function Thread({
         ) : (
           <ul className="flex flex-col gap-2">
             {messages.map((m) => (
-              <li
-                key={m._id}
-                className={cn("flex", m.mine ? "justify-end" : "justify-start")}
-              >
-                <div
-                  className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm",
-                    m.mine
-                      ? "rounded-br-sm bg-primary text-primary-foreground"
-                      : "rounded-bl-sm border bg-background",
-                  )}
-                >
-                  <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                  <p
-                    className={cn(
-                      "mt-1 text-[10px]",
-                      m.mine ? "text-primary-foreground/70" : "text-muted-foreground",
-                    )}
-                  >
-                    {new Date(m.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-              </li>
+              <ChatBubble key={m._id} m={m} onOpenLightbox={setLightbox} />
             ))}
           </ul>
         )}
         <div ref={bottomRef} />
       </div>
 
+      {showEmoji && (
+        <div className="mb-2 rounded-xl border bg-background p-3 shadow-sm">
+          {EMOJI_GROUPS.map((g) => (
+            <div key={g.label} className="mb-2 last:mb-0">
+              <p className="annotation mb-1 text-[10px] uppercase tracking-wide">
+                {g.label}
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {g.emojis.map((em, i) => (
+                  <button
+                    key={`${g.label}-${i}`}
+                    type="button"
+                    onClick={() => setDraft((d) => d + em)}
+                    className="rounded-lg p-1.5 text-xl leading-none transition hover:bg-muted"
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {preview && (
+        <div className="mb-2 flex items-center gap-3 rounded-xl border bg-background p-2">
+          {preview.kind === "image" ? (
+            <img src={preview.url} alt="" className="size-14 rounded-lg object-cover" />
+          ) : (
+            <video src={preview.url} className="size-14 rounded-lg object-cover" muted />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-semibold">
+              {preview.kind === "image" ? "Photo" : "Video"}
+              {preview.durationSec
+                ? ` · ${Math.round(preview.durationSec)}s`
+                : ""}
+            </p>
+            <p className="annotation truncate text-[10px]">
+              {(preview.file.size / 1024 / 1024).toFixed(1)} MB — will be sent with your message
+            </p>
+            {videoError && (
+              <p className="text-[10px] font-semibold text-destructive">{videoError}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            aria-label="Remove attachment"
+            onClick={() => {
+              URL.revokeObjectURL(preview.url);
+              setPreview(null);
+              sounds.click();
+            }}
+            className="flex size-8 shrink-0 items-center justify-center rounded-full border text-muted-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+
       <form
-        className="flex items-center gap-2 border-t pt-3"
+        className="flex items-center gap-2 border-t pb-1 pt-3"
+        style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
         onSubmit={(e) => {
           e.preventDefault();
           void submit();
         }}
       >
         <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          className="hidden"
+          onChange={pickFile}
+        />
+        <button
+          type="button"
+          aria-label="Emoji"
+          onClick={() => {
+            sounds.click();
+            setShowEmoji((s) => !s);
+          }}
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-full border",
+            showEmoji && "bg-primary/10 border-primary",
+          )}
+        >
+          <Smile className="size-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Attach photo or video"
+          disabled={uploading || sending}
+          onClick={() => {
+            sounds.click();
+            fileInputRef.current?.click();
+          }}
+          className="flex size-11 shrink-0 items-center justify-center rounded-full border disabled:opacity-50"
+        >
+          <Paperclip className="size-4" />
+        </button>
+        <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Type a message…"
-          className="h-12 flex-1 rounded-full border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+          className="h-12 min-w-0 flex-1 rounded-full border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-primary/40"
           maxLength={1000}
         />
         <button
           type="submit"
-          disabled={!draft.trim() || sending}
+          disabled={(!draft.trim() && !preview) || sending || uploading}
           aria-label="Send"
           className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50"
         >
           <Send className="size-4" />
         </button>
       </form>
+
+      {lightbox && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+        >
+          {lightbox.kind === "image" ? (
+            <img
+              src={lightbox.url}
+              alt=""
+              className="max-h-[85vh] max-w-full rounded-lg object-contain"
+            />
+          ) : (
+            <video
+              src={lightbox.url}
+              controls
+              autoPlay={false}
+              className="max-h-[85vh] max-w-full rounded-lg"
+            />
+          )}
+          <button
+            type="button"
+            aria-label="Close preview"
+            onClick={() => setLightbox(null)}
+            className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/15 text-white"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+      )}
     </div>
+  );
+}
+
+/* Media bubble with authorized, lazily-fetched signed URL. */
+function ChatBubble({
+  m,
+  onOpenLightbox,
+}: {
+  m: ChatMessage;
+  onOpenLightbox: (v: { kind: "image" | "video"; url: string }) => void;
+}) {
+  const getMediaUrl = useQuery(
+    api.chat.getMediaUrl,
+    m.kind ? ({ messageId: m._id } as never) : "skip",
+  ) as string | null | undefined;
+
+  const body = m.body && m.body !== "📷 Photo" && m.body !== "🎥 Video" ? m.body : null;
+
+  return (
+    <li className={cn("flex", m.mine ? "justify-end" : "justify-start")}>
+      <div
+        className={cn(
+          "max-w-[80%] overflow-hidden rounded-2xl text-sm",
+          m.kind ? "p-1.5" : "px-4 py-2.5",
+          m.mine
+            ? "rounded-br-sm bg-primary text-primary-foreground"
+            : "rounded-bl-sm border bg-background",
+        )}
+      >
+        {m.kind === "image" &&
+          (getMediaUrl ? (
+            <img
+              src={getMediaUrl}
+              alt="Photo"
+              onClick={() => onOpenLightbox({ kind: "image", url: getMediaUrl })}
+              className="max-h-56 w-52 cursor-pointer rounded-xl object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-28 w-52 items-center justify-center rounded-xl bg-muted">
+              <ImageIcon className="size-5 text-muted-foreground" />
+            </div>
+          ))}
+        {m.kind === "video" &&
+          (getMediaUrl ? (
+            <div
+              className="cursor-pointer"
+              onClick={() => onOpenLightbox({ kind: "video", url: getMediaUrl })}
+            >
+              <video src={getMediaUrl} className="max-h-56 w-52 rounded-xl object-cover" muted preload="metadata" />
+              <span className="annotation mt-1 block px-2 text-[10px]">
+                ▶ {m.durationSec ? `${Math.round(m.durationSec)}s` : "Video"} — tap to play
+              </span>
+            </div>
+          ) : (
+            <div className="flex h-28 w-52 items-center justify-center rounded-xl bg-muted">
+              <span className="text-muted-foreground">🎥</span>
+            </div>
+          ))}
+        {body && (
+          <p className={cn("whitespace-pre-wrap break-words", m.kind && "px-2.5 pb-1 pt-1.5")}>
+            {body}
+          </p>
+        )}
+        <p
+          className={cn(
+            "mt-1 px-2 text-[10px]",
+            m.mine ? "text-primary-foreground/70" : "text-muted-foreground",
+          )}
+        >
+          {new Date(m.createdAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
+      </div>
+    </li>
   );
 }

@@ -363,8 +363,14 @@ const schema = defineSchema(
     messages: defineTable({
       conversationId: v.id("conversations"),
       senderId: v.string(),
-      body: v.string(),
+      body: v.string(), // text content; "" for pure media messages
       readAt: v.optional(v.number()), // set when the OTHER participant reads it
+      // Optional chat attachment (image or ≤3-min video) in Convex storage.
+      // Access is mediated through chat.getMediaUrl — participants only.
+      kind: v.optional(v.union(v.literal("image"), v.literal("video"))),
+      storageId: v.optional(v.id("_storage")),
+      mediaType: v.optional(v.string()), // MIME type, e.g. image/jpeg
+      durationSec: v.optional(v.number()), // video duration (client-reported)
       createdAt: v.number(),
     }).index("by_conversation", ["conversationId", "createdAt"]),
 
