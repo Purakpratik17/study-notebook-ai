@@ -337,9 +337,11 @@ export default function Friends() {
   };
 
   if (threadId) {
+    const peer = (conversations ?? []).find((c) => c.conversationId === threadId);
     return (
       <Thread
         conversationId={threadId}
+        peerName={peer?.displayName ?? peer?.username ?? "Conversation"}
         onBack={() => {
           sounds.click();
           setThreadId(null);
@@ -352,6 +354,7 @@ export default function Friends() {
     return (
       <GroupThread
         groupId={groupThreadId}
+        groupName={groups?.find((g) => g.groupId === groupThreadId)?.name ?? "Group"}
         onBack={() => {
           sounds.click();
           setGroupThreadId(null);
@@ -801,9 +804,11 @@ export default function Friends() {
 
 function Thread({
   conversationId,
+  peerName,
   onBack,
 }: {
   conversationId: string;
+  peerName: string;
   onBack: () => void;
 }) {
   const sounds = useSounds();
@@ -976,7 +981,7 @@ function Thread({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex h-[100dvh] flex-col overflow-hidden bg-background"
+      className="fixed inset-0 z-[60] flex h-[100dvh] flex-col overflow-hidden bg-background"
       style={{
         // Dynamic viewport: the composer hugs the Android gesture/nav area
         // (or the ad banner) at the true visual bottom of the screen.
@@ -998,7 +1003,7 @@ function Thread({
         >
           <ArrowLeft className="size-4" />
         </button>
-        <p className="min-w-0 flex-1 truncate text-sm font-bold">Conversation</p>
+        <p className="min-w-0 flex-1 truncate text-sm font-bold">{peerName}</p>
         <button
           type="button"
           aria-label="Chat+ settings"
@@ -1472,9 +1477,11 @@ function CreateGroup({
 
 function GroupThread({
   groupId,
+  groupName,
   onBack,
 }: {
   groupId: string;
+  groupName: string;
   onBack: () => void;
 }) {
   const sounds = useSounds();
@@ -1623,7 +1630,7 @@ function GroupThread({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex h-[100dvh] flex-col overflow-hidden bg-background"
+      className="fixed inset-0 z-[60] flex h-[100dvh] flex-col overflow-hidden bg-background"
       style={{
         // Dynamic viewport: the composer hugs the Android gesture/nav area
         // (or the ad banner) at the true visual bottom of the screen.
@@ -1645,6 +1652,7 @@ function GroupThread({
         >
           <ArrowLeft className="size-4" />
         </button>
+        <p className="min-w-0 flex-1 truncate text-sm font-bold">{groupName}</p>
         <button
           type="button"
           aria-label="Chat+ settings"
