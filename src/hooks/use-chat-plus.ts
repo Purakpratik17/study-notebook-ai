@@ -1,4 +1,5 @@
 import { useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useCallback, useEffect } from "react";
 import { updateChatPlusAdFree } from "@/lib/ads";
@@ -15,7 +16,19 @@ export const CHAT_PLUS_LIMITS = {
 };
 
 export function useChatPlus() {
-  const entitlement = useQuery(api.chatPlus.getEntitlement);
+  // Convex auth gate: `useConvexAuth().isAuthenticated` only turns true once
+  // the Clerk JWT has been validated by Convex. While auth is loading (or
+  // the user is signed out) the entitlement query is SKIPPED — protected
+  // Convex functions must never run without an authenticated identity.
+  // This is the fix for the "UNAUTHENTICATED: sign in with Clerk…" crash
+  // that fired at app start: this hook is mounted at the root (via
+  // AdBannerController / useBannerMargin), before RequireAuth completes.
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+
+  const entitlement = useQuery(
+    api.chatPlus.getEntitlement,
+    isAuthenticated ? {} : "skip",
+  );
 
   // Feed the ad-free cache used by the native ad controllers.
   useEffect(() => {
@@ -33,7 +46,9 @@ export function useChatPlus() {
 
   return {
     plus,
-    isLoading: entitlement === undefined,
+    // Loading only while auth is initializing or the (authorized) query is
+    // still in flight — signed-out users resolve to free immediately.
+    isLoading: authLoading || (isAuthenticated && entitlement === undefined),
     limits,
     expiresAt: entitlement?.expiresAt ?? null,
     describeExpiry,
