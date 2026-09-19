@@ -249,8 +249,21 @@ function GameShell({
         fullscreen &&
           "fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-background p-3",
       )}
+      style={
+        fullscreen
+          ? {
+              // Use the real device viewport (dvh tracks browser/keyboard
+              // changes) and keep controls clear of the notch + gesture bar.
+              height: "100dvh",
+              paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)",
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+              paddingLeft: "calc(env(safe-area-inset-left, 0px) + 12px)",
+              paddingRight: "calc(env(safe-area-inset-right, 0px) + 12px)",
+            }
+          : undefined
+      }
     >
-      <div className={cn("flex items-center gap-2", fullscreen && "justify-end")}>
+      <div className={cn("flex shrink-0 items-center gap-2", fullscreen && "justify-end")}>
         {!fullscreen && (
           <button
             onClick={onExit}

@@ -68,7 +68,8 @@ export const verifyPurchase = action({
   },
   handler: async (ctx, args): Promise<"ok" | "rejected" | "not_configured"> => {
     const me = await requireUserId(ctx);
-    if (args.productId !== "chat_plus_monthly") return "rejected";
+    if (args.productId !== "chat_plus_monthly" && args.productId !== "chat_plus_yearly")
+      return "rejected";
 
     const result = await verifyWithGoogle(args.purchaseToken).catch(
       (): PlayVerifyResult => ({ ok: false, reason: "invalid" }),

@@ -11,6 +11,8 @@ import {
 } from "@/hooks/use-settings";
 import { LANGUAGES } from "@/lib/languages";
 import { cn } from "@/lib/utils";
+import { useChatPlus } from "@/hooks/use-chat-plus";
+import { ChatPlusSheet } from "@/components/ChatPlusSheet";
 import {
   Bell,
   BellOff,
@@ -108,6 +110,9 @@ export default function Settings() {
 
       {/* ── Language ───────────────────────────────────────────── */}
       <LanguageSection />
+
+      {/* ── Chat+ ───────────────────────────────────────────────── */}
+      <ChatPlusCard />
 
       {/* ── Sound ──────────────────────────────────────────────── */}
       <SettingsCard
@@ -493,5 +498,42 @@ function SettingRow({
       </div>
       <div className="shrink-0">{children}</div>
     </div>
+  );
+}
+
+/* ─── Chat+ entry (upgrade / manage) ─────────────────────────────── */
+
+function ChatPlusCard() {
+  const [open, setOpen] = useState(false);
+  const { plus } = useChatPlus();
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center gap-4 rounded-lg border bg-card/70 px-4 py-3.5 text-left transition hover:bg-accent"
+      >
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-purple-600/10 text-lg">
+          💜
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2 font-semibold">
+            Chat+
+            {plus && (
+              <span className="rounded-full bg-purple-600/15 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-600 dark:text-purple-400">
+                Active
+              </span>
+            )}
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            {plus
+              ? "Manage your Chat+ subscription and chat settings."
+              : "₹99/month · ₹499/year — files, long videos, ad-free chat & more."}
+          </span>
+        </span>
+        <span className="text-muted-foreground">›</span>
+      </button>
+      {open && <ChatPlusSheet onClose={() => setOpen(false)} />}
+    </>
   );
 }

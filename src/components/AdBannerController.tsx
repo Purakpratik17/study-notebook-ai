@@ -9,6 +9,7 @@ import {
   warmUpAds,
 } from "@/lib/ads";
 import { useSettings } from "@/hooks/use-settings";
+import { useChatPlus } from "@/hooks/use-chat-plus";
 
 /* ═══════════════════════════════════════════════════════════════════════
    AdBannerController — native (Android) bottom banner controller.
@@ -33,7 +34,8 @@ const BANNER_ALWAYS_FORBIDDEN = new Set([
 export function AdBannerController() {
   const { pathname } = useLocation();
   const { settings } = useSettings();
-  const adsEnabled = settings.adsEnabled !== false;
+  const { plus, isLoading: plusLoading } = useChatPlus();
+  const adsEnabled = settings.adsEnabled !== false && !plusLoading && !plus;
 
   useEffect(() => {
     if (!isAndroidNative() || !adsEnabled) return;
@@ -49,7 +51,7 @@ export function AdBannerController() {
     }
   }, [pathname, adsEnabled]);
 
-  // Respect the OFF toggle and clean up on unmount.
+  // Respect the OFF toggle, Chat+ entitlement, and clean up on unmount.
   useEffect(() => {
     if (!isAndroidNative()) return;
     if (!adsEnabled) void hideBannerAd();

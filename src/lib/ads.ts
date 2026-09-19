@@ -121,6 +121,29 @@ export function bannerRouteAllowed(pathname: string): boolean {
 }
 
 const AD_IDS = ADS_USE_TEST_ADS ? TEST_IDS : PRODUCTION_IDS;
+
+/**
+ * Live Chat+ ad-free check. Reads the verified entitlement straight from
+ * Convex (bypassing React) so ad decisions are never based on a stale or
+ * forged local flag. Safe to call anywhere; treats errors/no-auth as free.
+ */
+let convexClient: { query: (fn: unknown, ...args: unknown[]) => Promise<unknown> } | null = null;
+export function setChatPlusAdFreeClient(client: typeof convexClient) {
+  convexClient = client;
+}
+let cachedPlusUntil = 0;
+let cachedPlus = false;
+export function chatPlusAdFree(): boolean {
+  // Synchronous: used in ad paths. The React layer (useChatPlus) feeds
+  // fresh entitlement values via updateChatPlusAdFree; backend re-validates
+  // all premium actions independently.
+  return cachedPlusUntil > Date.now() && cachedPlus;
+}
+/** Cache the entitlement for 5 minutes (called by the React hook). */
+export function updateChatPlusAdFree(plus: boolean) {
+  cachedPlus = plus;
+  cachedPlusUntil = Date.now() + 5 * 60 * 1000;
+}
 // Note: with ADS_USE_TEST_ADS = true (current), AD_IDS is always the test
 // IDs above — test ads are used in EVERY placement: Dashboard, Notes,
 // Practice completion, Arcade menu, Friends, Timetable/Quests, Profile,
@@ -269,6 +292,8 @@ async function preloadInterstitial(): Promise<void> {
 export async function maybeShowInterstitial(
   placement: "practiceResultsInterstitial" | "quizResultsInterstitial" | "gameResultsInterstitial",
 ): Promise<void> {
+  // Chat+ users are completely ad-free — no interstitials either.
+  if (chatPlusAdFree()) return;
   if (!AD_PLACEMENTS[placement]) return;
   if (!isAndroidNative()) return;
   const now = Date.now();

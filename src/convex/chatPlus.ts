@@ -8,6 +8,9 @@ import { requireUserId } from "./identity";
 export const CHAT_PLUS_CONFIG = {
   productId: "chat_plus_monthly",
   priceDisplay: "₹99",
+  yearlyProductId: "chat_plus_yearly",
+  yearlyDisplay: "₹499",
+  yearlyMinorUnits: 49900, // ₹499.00 in paise
   priceMinorUnits: 9900, // ₹99.00 in paise
   billingPeriod: "1 month",
   currency: "INR",

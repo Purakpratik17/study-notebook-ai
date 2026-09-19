@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
+import { updateChatPlusAdFree } from "@/lib/ads";
 
 /**
  * Chat+ entitlement hook. The Convex backend (`chatPlus.getEntitlement`)
@@ -15,6 +16,11 @@ export const CHAT_PLUS_LIMITS = {
 
 export function useChatPlus() {
   const entitlement = useQuery(api.chatPlus.getEntitlement);
+
+  // Feed the ad-free cache used by the native ad controllers.
+  useEffect(() => {
+    if (entitlement !== undefined) updateChatPlusAdFree(Boolean(entitlement.plus));
+  }, [entitlement]);
 
   const plus = Boolean(entitlement?.plus);
   const limits = plus ? CHAT_PLUS_LIMITS.plus : CHAT_PLUS_LIMITS.free;
@@ -32,5 +38,6 @@ export function useChatPlus() {
     expiresAt: entitlement?.expiresAt ?? null,
     describeExpiry,
     priceDisplay: entitlement?.config.priceDisplay ?? "₹99",
+    yearlyDisplay: entitlement?.config.yearlyDisplay ?? "₹499",
   };
 }

@@ -141,7 +141,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen">
+    <div
+      className="flex min-h-dvh flex-col"
+      style={{
+        // Respect punch-hole / rounded corners on the sides too.
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
+      }}
+    >
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur md:flex">
         <Link to="/dashboard" className="flex items-center gap-2.5 px-5 py-5">
@@ -316,7 +323,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Page content */}
       <main
         style={bannerMargin ? { marginBottom: 64 } : undefined}
-        className="overflow-x-hidden px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8"
+        className="min-h-0 flex-1 overflow-x-hidden px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8"
       >
         <TabBackground />
         <div className="mx-auto w-full max-w-5xl">{children}</div>

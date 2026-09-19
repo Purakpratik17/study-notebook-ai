@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSounds } from "@/hooks/use-settings";
 import { useBannerMargin } from "@/hooks/use-banner-margin";
 import { useChatPlus } from "@/hooks/use-chat-plus";
+import { ChatPlusSheet } from "@/components/ChatPlusSheet";
 
 /** Fires a toast + (optional) system notification for new chat/group messages. */
 function useNewMessageNotifications(
@@ -929,8 +930,15 @@ function Thread({
         const duration = probe.duration;
         if (!Number.isFinite(duration) || duration > limits.videoSec + 1) {
           URL.revokeObjectURL(url);
-          setVideoError(plus ? "Videos must be 1 hour or shorter." : "Videos must be 3 minutes or shorter.");
-          toast.error(plus ? "Videos must be 1 hour or shorter." : "Videos must be 3 minutes or shorter.");
+          if (!plus) {
+            // Free user picked a >3-min video — offer the Chat+ upgrade
+            // instead of a dead-end error.
+            setShowPlus(true);
+            toast.info("Videos over 3 minutes need Chat+ 💜");
+          } else {
+            setVideoError("Videos must be 1 hour or shorter.");
+            toast.error("Videos must be 1 hour or shorter.");
+          }
           return;
         }
         setPreview({ kind: "video", file, url, durationSec: duration });
@@ -1216,146 +1224,8 @@ function Thread({
   );
 }
 
-/* ─── Chat+ upgrade / settings sheet ────────────────────────────── */
+/* Chat+ sheet moved to @/components/ChatPlusSheet (shared with Settings) */
 
-function ChatPlusSheet({ onClose }: { onClose: () => void }) {
-  const { plus, describeExpiry, priceDisplay } = useChatPlus();
-  const settings = useQuery(api.chatPlus.getSettings);
-  const setSettings = useMutation(api.chatPlus.setSettings);
-  const [saving, setSaving] = useState(false);
-
-  const save = async (patch: Record<string, unknown>) => {
-    setSaving(true);
-    try {
-      const r = await setSettings(patch as never);
-      if (r === "plus_required") toast.error("Chat+ is required for chat customizations 💜");
-      else toast.success("Saved 💜");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] sm:items-center">
-      <div
-        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border bg-background p-5 shadow-xl"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-lg font-extrabold">
-              💜 Chat+{" "}
-              {plus ? (
-                <span className="ml-1 rounded-full bg-purple-600/15 px-2 py-0.5 text-xs font-bold text-purple-600 dark:text-purple-400">
-                  Active{describeExpiry() ? ` until ${describeExpiry()}` : ""}
-                </span>
-              ) : (
-                <span className="ml-1 text-sm font-semibold text-muted-foreground">
-                  {priceDisplay}/month
-                </span>
-              )}
-            </p>
-            <p className="annotation mt-0.5 text-xs">
-              Premium chat for Cerevyn — billed via Google Play.
-            </p>
-          </div>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={onClose}
-            className="flex size-8 items-center justify-center rounded-full border"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
-
-        {!plus && (
-          <ul className="mb-4 space-y-1.5 rounded-xl border border-purple-600/25 bg-purple-600/5 p-3 text-sm">
-            <li>✓ Send any file in chat (up to 100 MB)</li>
-            <li>✓ Bigger photos &amp; videos — no 3-minute limit</li>
-            <li>✓ Chat+ badge next to your name</li>
-            <li>✓ Purple username</li>
-            <li>✓ Custom chat themes &amp; settings</li>
-          </ul>
-        )}
-
-        <div className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-            Chat settings
-          </p>
-          <label className="flex items-center justify-between gap-3 text-sm">
-            <span>Message sound</span>
-            <input
-              type="checkbox"
-              checked={settings?.messageSound ?? true}
-              disabled={saving}
-              onChange={(e) => void save({ messageSound: e.target.checked })}
-              className="size-4"
-            />
-          </label>
-          <label className="flex items-center justify-between gap-3 text-sm">
-            <span>New-message notifications</span>
-            <input
-              type="checkbox"
-              checked={settings?.notifyNewMessages ?? true}
-              disabled={saving}
-              onChange={(e) => void save({ notifyNewMessages: e.target.checked })}
-              className="size-4"
-            />
-          </label>
-          <label className="flex items-center justify-between gap-3 text-sm">
-            <span>Auto-download media</span>
-            <input
-              type="checkbox"
-              checked={settings?.autoDownloadMedia ?? true}
-              disabled={saving}
-              onChange={(e) => void save({ autoDownloadMedia: e.target.checked })}
-              className="size-4"
-            />
-          </label>
-
-          <div className={cn("rounded-xl border p-3", !plus && "opacity-60")}>
-            <p className="mb-2 text-sm font-semibold">
-              Chat theme {plus ? "" : "— Chat+ only 💜"}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: "default", label: "Default" },
-                { id: "violet", label: "🟣 Violet" },
-                { id: "ocean", label: "🌊 Ocean" },
-                { id: "forest", label: "🌲 Forest" },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  disabled={!plus || saving}
-                  onClick={() => void save({ bubbleColor: t.id })}
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                    settings?.bubbleColor === t.id
-                      ? "border-purple-600 bg-purple-600/10 text-purple-700 dark:text-purple-300"
-                      : "hover:bg-muted",
-                    !plus && "cursor-not-allowed",
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {!plus && (
-          <p className="mt-4 rounded-xl bg-muted p-3 text-xs text-muted-foreground">
-            To upgrade, open Cerevyn on Android and tap the 💜 Chat+ button in the
-            chat header — the purchase is handled securely by Google Play.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
 function ChatBubble({
   m,
   onOpenLightbox,
@@ -1620,6 +1490,7 @@ function GroupThread({
   } | null>(null);
   const [lightbox, setLightbox] = useState<{ kind: "image" | "video"; url: string } | null>(null);
   const { plus, limits } = useChatPlus();
+  const [showPlus, setShowPlus] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -1674,14 +1545,14 @@ function GroupThread({
     e.target.value = "";
     if (!file) return;
     if (file.type.startsWith("image/")) {
-      if (file.size > MAX_IMAGE_BYTES) {
-        toast.error("Images must be 5 MB or smaller.");
+      if (file.size > limits.image) {
+        toast.error(plus ? "Images must be 25 MB or smaller." : "Images must be 5 MB or smaller.");
         return;
       }
       setPreview({ kind: "image", file, url: URL.createObjectURL(file) });
     } else if (file.type.startsWith("video/")) {
-      if (file.size > MAX_VIDEO_BYTES) {
-        toast.error("Videos must be 100 MB or smaller.");
+      if (file.size > limits.video) {
+        toast.error(plus ? "Videos must be 500 MB or smaller." : "Videos must be 100 MB or smaller.");
         return;
       }
       const url = URL.createObjectURL(file);
@@ -1689,9 +1560,14 @@ function GroupThread({
       probe.preload = "metadata";
       probe.onloadedmetadata = () => {
         const duration = probe.duration;
-        if (!Number.isFinite(duration) || duration > MAX_VIDEO_SEC + 1) {
+        if (!Number.isFinite(duration) || duration > limits.videoSec + 1) {
           URL.revokeObjectURL(url);
-          toast.error("Videos must be 3 minutes or shorter.");
+          if (!plus) {
+            setShowPlus(true);
+            toast.info("Videos over 3 minutes need Chat+ 💜");
+          } else {
+            toast.error("Videos must be 1 hour or shorter.");
+          }
           return;
         }
         setPreview({ kind: "video", file, url, durationSec: duration });
@@ -1728,6 +1604,17 @@ function GroupThread({
           className="flex size-10 items-center justify-center rounded-full border"
         >
           <ArrowLeft className="size-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Chat+ settings"
+          onClick={() => {
+            sounds.click();
+            setShowPlus(true);
+          }}
+          className="flex size-10 shrink-0 items-center justify-center rounded-full border text-purple-600 dark:text-purple-400"
+        >
+          💜
         </button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold">👥 {info?.name ?? "Group"}</p>
@@ -1821,6 +1708,8 @@ function GroupThread({
         )}
         <div ref={bottomRef} />
       </div>
+
+      {showPlus && <ChatPlusSheet onClose={() => setShowPlus(false)} />}
 
       {showEmoji && (
         <div className="mb-2 rounded-xl border bg-background p-3 shadow-sm">

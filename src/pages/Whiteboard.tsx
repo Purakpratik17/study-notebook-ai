@@ -658,11 +658,24 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
             ? "fixed inset-0 z-[70]"
             : "fixed inset-0 z-30",
       )}
+      style={
+        fullscreen
+          ? {
+              // Real device viewport + keep controls out of notch/gesture bar.
+              height: "100dvh",
+              paddingTop: "env(safe-area-inset-top, 0px)",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              paddingLeft: "env(safe-area-inset-left, 0px)",
+              paddingRight: "env(safe-area-inset-right, 0px)",
+            }
+          : undefined
+      }
     >
       {fullscreen && (
         <button
           onClick={() => setFullscreen(false)}
-          className="absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full border bg-card/95 px-3 py-2 text-xs font-bold shadow-lg backdrop-blur transition active:scale-95"
+          className="absolute right-3 z-20 flex items-center gap-1.5 rounded-full border bg-card/95 px-3 py-2 text-xs font-bold shadow-lg backdrop-blur transition active:scale-95"
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
           aria-label="Exit fullscreen"
         >
           <Minimize2 className="size-4" /> Exit fullscreen
