@@ -1,6 +1,10 @@
 import { useClerk } from "@clerk/react-router";
 import { useEffect } from "react";
 import { isNative } from "@/lib/native";
+import {
+  claimAuthCallback,
+  transportOwnsCallback,
+} from "@/lib/native-oauth";
 
 /**
  * Mounted once inside <ClerkProvider> (web + native). On Android it:
@@ -31,9 +35,12 @@ export function NativeAuthBridge() {
 
       const urlOpen = await App.addListener("appUrlOpen", (event) => {
         // The OAuth transport (see src/lib/native-oauth.ts) consumes the
-        // primary auth callback. This listener is the safety net: it catches
-        // callbacks that arrive when the transport is not waiting (e.g. the
-        // app was killed mid-flow and relaunched via the deep link).
+        // primary auth callback while a sign-in window is open. This listener
+        // is the safety net: it only handles callbacks that arrive when the
+        // transport is NOT waiting (e.g. the app was killed mid-flow and
+        // relaunched via the deep link). Clerk's transfer token is single-use,
+        // so two consumers for the same URL would break sign-in — one would
+        // consume it and the session would never activate (infinite spinner).
         const url = new URL(event.url);
         const isAuthCallback =
           url.searchParams.has("transfer") ||
@@ -41,6 +48,8 @@ export function NativeAuthBridge() {
           url.searchParams.has("error_code") ||
           url.searchParams.has("error_description");
         if (!isAuthCallback) return;
+        if (transportOwnsCallback()) return; // transport will handle it
+        if (!claimAuthCallback(event.url)) return; // already processed
         void clerk
           .handleRedirectCallback({
             signInForceRedirectUrl: "/dashboard",
