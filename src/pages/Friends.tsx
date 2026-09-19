@@ -21,6 +21,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useSounds } from "@/hooks/use-settings";
+import { useBannerMargin } from "@/hooks/use-banner-margin";
 
 /** Fires a toast + (optional) system notification for new chat messages. */
 function useNewMessageNotifications(
@@ -637,6 +638,7 @@ function Thread({
   const convState = useQuery(api.chat.getConvState, {
     conversationId: conversationId as never,
   }) as { muted: boolean; blocked: boolean; blockedMe: boolean } | null | undefined;
+  const bannerVisible = useBannerMargin();
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -749,13 +751,10 @@ function Thread({
   };
 
   return (
-    <div
-      className="flex h-[calc(100dvh-11rem)] min-h-[420px] flex-col"
-      style={{ maxHeight: `calc(100dvh - var(--safe-top, 0px))` }}
-    >
+    <div className="fixed inset-0 z-40 flex flex-col bg-background">
       <div
-        className="flex items-center gap-2 border-b pb-3"
-        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+        className="flex items-center gap-2 border-b px-2 pb-3"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
       >
         <button
           type="button"
@@ -895,8 +894,13 @@ function Thread({
       )}
 
       <form
-        className="flex items-center gap-2 border-t pb-1 pt-3"
-        style={{ marginBottom: "env(safe-area-inset-bottom, 0px)" }}
+        className="flex items-center gap-2 border-t px-2 pt-3"
+        style={{
+          // Sit directly above the ad banner strip (64px when visible) and
+          // the Android gesture/navigation area — the lowest it can go.
+          marginBottom: `calc(${bannerVisible ? 64 : 0}px + env(safe-area-inset-bottom, 0px))`,
+          paddingBottom: "10px",
+        }}
         onSubmit={(e) => {
           e.preventDefault();
           void submit();
