@@ -370,12 +370,16 @@ const schema = defineSchema(
       senderId: v.string(),
       body: v.string(), // text content; "" for pure media messages
       readAt: v.optional(v.number()), // set when the OTHER participant reads it
-      // Optional chat attachment (image or ≤3-min video) in Convex storage.
+      // Optional chat attachment (image / video / Chat+ file) in Convex storage.
       // Access is mediated through chat.getMediaUrl — participants only.
-      kind: v.optional(v.union(v.literal("image"), v.literal("video"))),
+      kind: v.optional(
+        v.union(v.literal("image"), v.literal("video"), v.literal("file")),
+      ),
       storageId: v.optional(v.id("_storage")),
       mediaType: v.optional(v.string()), // MIME type, e.g. image/jpeg
       durationSec: v.optional(v.number()), // video duration (client-reported)
+      fileName: v.optional(v.string()), // Chat+ file attachments
+      fileSize: v.optional(v.number()),
       createdAt: v.number(),
     }).index("by_conversation", ["conversationId", "createdAt"]),
 
@@ -394,6 +398,42 @@ const schema = defineSchema(
       .index("by_user_unresolved", ["userId", "resolved"])
       .index("by_user", ["userId"]),
 
+    // ─── Chat+ subscription ─────────────────────────────────────
+
+    // One row per Google Play purchase. The backend verifies purchases via
+    // the Google Play Developer API (server credentials, never the client)
+    // before granting the entitlement. `expiresAt` drives expiry: benefits
+    // stop automatically once it passes, without deleting any chat data.
+    chatPurchases: defineTable({
+      userId: v.string(), // Clerk subject
+      productId: v.string(), // Google Play product id, e.g. "chat_plus_monthly"
+      purchaseToken: v.string(), // unique per purchase (idempotency key)
+      orderId: v.optional(v.string()),
+      status: v.union(
+        v.literal("active"),
+        v.literal("expired"),
+        v.literal("canceled"),
+      ),
+      expiresAt: v.number(),
+      verifiedAt: v.number(),
+      autoRenewing: v.optional(v.boolean()),
+    })
+      .index("by_user", ["userId"])
+      .index("by_token", ["purchaseToken"]),
+
+    // Per-user Chat+ customization (theme/wallpaper, sounds, notification,
+    // auto-download prefs). Rendered client-side; harmless to keep after
+    // expiry (free users keep their messages/conversations regardless).
+    chatSettings: defineTable({
+      userId: v.string(), // Clerk subject
+      bubbleColor: v.optional(v.string()), // "default" | purple shades | ...
+      wallpaper: v.optional(v.string()), // "none" | gradient id
+      messageSound: v.optional(v.boolean()),
+      notifyNewMessages: v.optional(v.boolean()),
+      autoDownloadMedia: v.optional(v.boolean()),
+      updatedAt: v.number(),
+    }).index("by_user", ["userId"]),
+
     // ─── Group chats ───────────────────────────────────────────
 
     // A group chat. `members` are Clerk subjects; owner created the group.
@@ -409,10 +449,14 @@ const schema = defineSchema(
       groupId: v.id("groups"),
       senderId: v.string(),
       body: v.string(), // "" for pure media messages
-      kind: v.optional(v.union(v.literal("image"), v.literal("video"))),
+      kind: v.optional(
+        v.union(v.literal("image"), v.literal("video"), v.literal("file")),
+      ),
       storageId: v.optional(v.id("_storage")),
       mediaType: v.optional(v.string()),
       durationSec: v.optional(v.number()),
+      fileName: v.optional(v.string()), // Chat+ file attachments
+      fileSize: v.optional(v.number()),
       readBy: v.optional(v.array(v.string())),
       createdAt: v.number(),
     }).index("by_group_created", ["groupId", "createdAt"]),

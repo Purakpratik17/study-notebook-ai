@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./identity";
+import { isChatPlus, MEDIA_LIMITS } from "./chatPlus";
 
 /* ─── Private 1:1 chat over accepted friendships ─────────────────────────── */
 
@@ -58,6 +59,7 @@ export const list = query({
         .query("profiles")
         .withIndex("by_user", (q) => q.eq("userId", friendId))
         .first();
+      const friendPlus = await isChatPlus(ctx, friendId);
       const msgs = await ctx.db
         .query("messages")
         .withIndex("by_conversation", (q) => q.eq("conversationId", conv._id))
@@ -76,6 +78,7 @@ export const list = query({
           (last?.kind === "image" ? "📷 Photo" : last?.kind === "video" ? "🎥 Video" : null),
         lastMessageAt: last?.createdAt ?? conv.createdAt,
         unread,
+        friendPlus,
       });
     }
     return out.sort((x, y) => (y.lastMessageAt ?? 0) - (x.lastMessageAt ?? 0));
@@ -96,6 +99,8 @@ export const getMessages = query({
       .withIndex("by_conversation", (q) => q.eq("conversationId", conv._id))
       .order("asc")
       .take(200);
+    const friendId = conv.userA === me ? conv.userB : conv.userA;
+    const friendPlus = await isChatPlus(ctx, friendId);
     return rows.map((m) => ({
       _id: m._id,
       senderId: m.senderId,
@@ -105,6 +110,9 @@ export const getMessages = query({
       kind: m.kind ?? null,
       mediaType: m.mediaType ?? null,
       durationSec: m.durationSec ?? null,
+      fileName: m.fileName ?? null,
+      fileSize: m.fileSize ?? null,
+      friendPlus,
     }));
   },
 });
@@ -114,10 +122,14 @@ export const send = mutation({
   args: {
     conversationId: v.id("conversations"),
     body: v.string(),
-    kind: v.optional(v.union(v.literal("image"), v.literal("video"))),
+    kind: v.optional(
+      v.union(v.literal("image"), v.literal("video"), v.literal("file")),
+    ),
     storageId: v.optional(v.id("_storage")),
     mediaType: v.optional(v.string()),
     durationSec: v.optional(v.number()),
+    fileName: v.optional(v.string()), // Chat+ file attachments
+    fileSize: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<"sent" | "not_friends" | "blocked"> => {
     const me = await requireUserId(ctx);
@@ -136,25 +148,44 @@ export const send = mutation({
     if (blocked || blockedMe) return "blocked";
 
     // Server-side media validation (cannot be bypassed by the frontend).
-    let kind: "image" | "video" | undefined;
+    let kind: "image" | "video" | "file" | undefined;
     if (hasMedia) {
       kind = args.kind!;
+      const plus = await isChatPlus(ctx, me);
+      const limits = plus ? MEDIA_LIMITS.plus : MEDIA_LIMITS.free;
       const meta = await ctx.storage.getMetadata(args.storageId!);
       if (!meta) throw new Error("Attachment upload not found.");
       const isImage = kind === "image";
       const isVideo = kind === "video";
+      const isFile = kind === "file";
       const mimeOk = isImage
         ? (meta.contentType ?? "").startsWith("image/")
-        : (meta.contentType ?? "").startsWith("video/");
+        : isVideo
+          ? (meta.contentType ?? "").startsWith("video/")
+          : true; // files: any type, size-checked
       if (!mimeOk) throw new Error("Invalid attachment type.");
-      const MAX_IMAGE = 5 * 1024 * 1024; // 5 MB
-      const MAX_VIDEO = 100 * 1024 * 1024; // 100 MB
-      const max = isImage ? MAX_IMAGE : MAX_VIDEO;
+      if (isFile && !plus) throw new Error("Chat+ is required to send files.");
+      const max = isImage ? limits.maxImage : isVideo ? limits.maxVideo : limits.maxFile;
       if (meta.size > max) {
-        throw new Error(isImage ? "Images must be 5 MB or smaller." : "Videos must be 100 MB or smaller.");
+        throw new Error(
+          isImage
+            ? plus
+              ? "Images must be 25 MB or smaller."
+              : "Images must be 5 MB or smaller."
+            : isVideo
+              ? plus
+                ? "Videos must be 500 MB or smaller."
+                : "Videos must be 100 MB or smaller."
+              : "Files must be 100 MB or smaller.",
+        );
       }
-      if (isVideo && (args.durationSec === undefined || args.durationSec > 180 + 1)) {
-        throw new Error("Videos must be 3 minutes or shorter.");
+      if (
+        isVideo &&
+        (args.durationSec === undefined || args.durationSec > limits.maxVideoDurationSec)
+      ) {
+        throw new Error(
+          plus ? "Videos must be 1 hour or shorter." : "Videos must be 3 minutes or shorter.",
+        );
       }
     }
 
@@ -166,6 +197,8 @@ export const send = mutation({
       storageId: hasMedia ? args.storageId : undefined,
       mediaType: hasMedia ? args.mediaType : undefined,
       durationSec: kind === "video" ? args.durationSec : undefined,
+      fileName: args.kind === "file" ? args.fileName : undefined,
+      fileSize: args.kind === "file" ? args.fileSize : undefined,
       createdAt: Date.now(),
     });
     return "sent";

@@ -1,12 +1,10 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./identity";
+import { isChatPlus, MEDIA_LIMITS } from "./chatPlus";
 import type { Id } from "./_generated/dataModel";
 
 /* ─── Group chats (members-only, server-enforced) ────────────────────────── */
-
-const MAX_IMAGE = 5 * 1024 * 1024;
-const MAX_VIDEO = 100 * 1024 * 1024;
 
 /** Create a group with the owner + selected members. */
 export const createGroup = mutation({
@@ -84,6 +82,8 @@ export const getMessages = query({
       kind: m.kind ?? null,
       mediaType: m.mediaType ?? null,
       durationSec: m.durationSec ?? null,
+      fileName: m.fileName ?? null,
+      fileSize: m.fileSize ?? null,
     }));
   },
 });
@@ -93,10 +93,14 @@ export const send = mutation({
   args: {
     groupId: v.id("groups"),
     body: v.string(),
-    kind: v.optional(v.union(v.literal("image"), v.literal("video"))),
+    kind: v.optional(
+      v.union(v.literal("image"), v.literal("video"), v.literal("file")),
+    ),
     storageId: v.optional(v.id("_storage")),
     mediaType: v.optional(v.string()),
     durationSec: v.optional(v.number()),
+    fileName: v.optional(v.string()),
+    fileSize: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<"sent" | "not_member"> => {
     const me = await requireUserId(ctx);
@@ -106,24 +110,44 @@ export const send = mutation({
     const hasMedia = !!args.kind && !!args.storageId;
     if (!body && !hasMedia) throw new Error("Message is empty.");
 
-    let kind: "image" | "video" | undefined;
+    let kind: "image" | "video" | "file" | undefined;
     if (hasMedia) {
       kind = args.kind!;
+      const plus = await isChatPlus(ctx, me);
+      const limits = plus ? MEDIA_LIMITS.plus : MEDIA_LIMITS.free;
       const meta = await ctx.storage.getMetadata(args.storageId!);
       if (!meta) throw new Error("Attachment upload not found.");
-      const mimeOk =
-        kind === "image"
-          ? (meta.contentType ?? "").startsWith("image/")
-          : (meta.contentType ?? "").startsWith("video/");
+      const isImage = kind === "image";
+      const isVideo = kind === "video";
+      const isFile = kind === "file";
+      const mimeOk = isImage
+        ? (meta.contentType ?? "").startsWith("image/")
+        : isVideo
+          ? (meta.contentType ?? "").startsWith("video/")
+          : true;
       if (!mimeOk) throw new Error("Invalid attachment type.");
-      const max = kind === "image" ? MAX_IMAGE : MAX_VIDEO;
+      if (isFile && !plus) throw new Error("Chat+ is required to send files.");
+      const max = isImage ? limits.maxImage : isVideo ? limits.maxVideo : limits.maxFile;
       if (meta.size > max) {
         throw new Error(
-          kind === "image" ? "Images must be 5 MB or smaller." : "Videos must be 100 MB or smaller.",
+          isImage
+            ? plus
+              ? "Images must be 25 MB or smaller."
+              : "Images must be 5 MB or smaller."
+            : isVideo
+              ? plus
+                ? "Videos must be 500 MB or smaller."
+                : "Videos must be 100 MB or smaller."
+              : "Files must be 100 MB or smaller.",
         );
       }
-      if (kind === "video" && (args.durationSec === undefined || args.durationSec > 181)) {
-        throw new Error("Videos must be 3 minutes or shorter.");
+      if (
+        isVideo &&
+        (args.durationSec === undefined || args.durationSec > limits.maxVideoDurationSec)
+      ) {
+        throw new Error(
+          plus ? "Videos must be 1 hour or shorter." : "Videos must be 3 minutes or shorter.",
+        );
       }
     }
 
@@ -135,6 +159,8 @@ export const send = mutation({
       storageId: hasMedia ? args.storageId : undefined,
       mediaType: hasMedia ? args.mediaType : undefined,
       durationSec: kind === "video" ? args.durationSec : undefined,
+      fileName: args.kind === "file" ? args.fileName : undefined,
+      fileSize: args.kind === "file" ? args.fileSize : undefined,
       readBy: [me],
       createdAt: Date.now(),
     });
@@ -207,7 +233,7 @@ export const memberInfo = query({
     if (!g || !g.members.includes(me)) return null;
     const infos: Record<
       string,
-      { username: string | null; displayName: string | null; avatar: string | null }
+      { username: string | null; displayName: string | null; avatar: string | null; plus: boolean }
     > = {};
     for (const id of g.members) {
       const p = await ctx.db
@@ -218,6 +244,7 @@ export const memberInfo = query({
         username: p?.username ?? null,
         displayName: p?.displayName ?? null,
         avatar: p?.avatar ?? null,
+        plus: await isChatPlus(ctx, id),
       };
     }
     return { name: g.name, ownerId: g.ownerId, members: infos, meId: me };
