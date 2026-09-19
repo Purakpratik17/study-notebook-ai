@@ -66,6 +66,34 @@ const MAX_VIDEO_SEC = 180;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
+/**
+ * POST a file to a Convex upload URL via XHR. More reliable than fetch() for
+ * File bodies inside the Android WebView, and reports real status codes.
+ */
+function uploadFile(uploadUrl: string, file: File): Promise<{ storageId: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", uploadUrl, true);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject(new Error("Upload returned an invalid response."));
+        }
+      } else {
+        reject(new Error(`Upload failed (HTTP ${xhr.status}).`));
+      }
+    };
+    xhr.onerror = () =>
+      reject(new Error("Upload failed — check your internet connection."));
+    xhr.ontimeout = () => reject(new Error("Upload timed out. Try a smaller file."));
+    xhr.timeout = 120_000; // Convex upload POST limit is 2 minutes
+    xhr.send(file);
+  });
+}
+
 const EMOJI_GROUPS: Array<{ label: string; emojis: string[] }> = [
   {
     label: "Smileys",
@@ -597,13 +625,7 @@ function Thread({
       } | undefined;
       if (preview) {
         const uploadUrl = await generateUploadUrl({});
-        const res = await fetch(uploadUrl, {
-          method: "POST",
-          headers: { "Content-Type": preview.file.type },
-          body: preview.file,
-        });
-        if (!res.ok) throw new Error("Upload failed.");
-        const { storageId } = (await res.json()) as { storageId: string };
+        const { storageId } = await uploadFile(uploadUrl, preview.file);
         media = {
           kind: preview.kind,
           storageId: storageId as never,
