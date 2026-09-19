@@ -28,11 +28,11 @@ const TEST_IDS = {
 } as const;
 
 /* ═══════════════════════════════════════════════════════════════════════
-   ⚠️ DEVELOPMENT / TEST ADS — ACTIVE CONFIGURATION ⚠️
+   ⚠️ PRODUCTION ADS — ACTIVE CONFIGURATION ⚠️
 
-   CURRENT STATE: Google's official TEST ad unit IDs are ACTIVE everywhere
-   (banner → banner test ID, interstitial → interstitial test ID).
-   No real/live AdMob ad-unit IDs are used for any placement right now.
+   CURRENT STATE: the real Cerevyn AdMob ad-unit IDs (PRODUCTION_IDS below)
+   are ACTIVE everywhere (banner + interstitial). Google's official TEST
+   ad-unit IDs are NOT used in any placement.
 
    The Android AdMob APP ID lives in ONE place only:
      android/app/src/main/AndroidManifest.xml
@@ -66,7 +66,7 @@ const PRODUCTION_IDS = {
  * No personal/live ad IDs are used in any placement while this is true.
  * Flip to false ONLY after replacing PRODUCTION_IDS with real IDs.
  */
-export const ADS_USE_TEST_ADS = true;
+export const ADS_USE_TEST_ADS = false;
 
 /* ═══════════════════════════════════════════════════════════════════════
    CENTRALIZED AD PLACEMENT CONFIG — the single place to enable/disable

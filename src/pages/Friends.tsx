@@ -1129,9 +1129,10 @@ function Thread({
       <form
         className="flex items-center gap-2 border-t px-2 pt-3"
         style={{
-          // Sit directly above the ad banner strip (64px when visible) and
-          // the Android gesture/navigation area — the lowest it can go.
-          marginBottom: `calc(${bannerVisible ? 64 : 0}px + env(safe-area-inset-bottom, 0px))`,
+          // When the banner is visible it already occupies the space above
+          // the Android nav/gesture area, so the input only clears the
+          // banner. With no banner, it clears only the gesture area.
+          marginBottom: bannerVisible ? "64px" : "env(safe-area-inset-bottom, 0px)",
           paddingBottom: "10px",
         }}
         onSubmit={(e) => {

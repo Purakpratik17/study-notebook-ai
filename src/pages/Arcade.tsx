@@ -1,6 +1,6 @@
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, FlaskConical, Gamepad2, Maximize2, Minimize2, Pause, Play, RefreshCw, RotateCcw, Trophy } from "lucide-react";
+import { ArrowLeft, Gamepad2, Maximize2, Minimize2, Pause, Play, RefreshCw, RotateCcw, Trophy } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -27,21 +27,12 @@ type Screen = "hub" | "blocks" | "bee";
 
 export default function Arcade() {
   const arcade = useQuery(api.arcade.getArcade);
-  const devUnlock = useMutation(api.arcade.devUnlockGame);
-  const devReset = useMutation(api.arcade.devResetArcade);
   const [screen, setScreen] = useState<Screen>("hub");
   const [justUnlocked, setJustUnlocked] = useState<GameRow["id"] | null>(null);
-  // Dev-only preview overlays: purely client-side, never written to the DB.
-  // import.meta.env.DEV is statically replaced, so this is false in prod
-  // builds and the whole panel below is dead-code-eliminated.
-  const [devPreview, setDevPreview] = useState<{ blocks: boolean; bee: boolean }>(
-    { blocks: false, bee: false },
-  );
-  const isDev = import.meta.env.DEV;
 
   const games: GameRow[] = (arcade?.games ?? []).map((g) => ({
     ...g,
-    unlocked: g.unlocked || (isDev && devPreview[g.id]),
+    unlocked: g.unlocked,
   }));
 
   // Detect newly unlocked games for the celebration modal.
@@ -133,87 +124,6 @@ export default function Arcade() {
           </article>
         ))}
       </div>
-
-      {/* ── DEV/TEST panel — compiled OUT of production builds entirely.
-          import.meta.env.DEV is statically false in `npm run build`, so
-          Vite tree-shakes this block and its handlers from the bundle. */}
-      {isDev && (
-        <section
-          aria-label="Developer test controls"
-          className="rounded-lg border-2 border-dashed border-red-400/70 bg-red-50/60 px-4 py-3 text-xs"
-        >
-          <summary className="flex cursor-pointer items-center gap-2 font-black uppercase tracking-wide text-red-700">
-            <FlaskConical className="size-4" /> DEV / TEST — not a real achievement
-          </summary>
-          <p className="mt-2 text-muted-foreground">
-            Development-only controls. Preview unlocks are client-side only
-            (nothing is written to Convex) and vanish on refresh. Server test
-            unlocks require the <code>ARCADE_DEV_UNLOCK=enabled</code> env var
-            on the deployment and write permanent flags — use for end-to-end
-            testing, then reset. Real XP and study/quest records are never
-            touched.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={() => setDevPreview((p) => ({ ...p, blocks: true }))}
-              className="rounded-lg border bg-card px-3 py-1.5 font-semibold hover:bg-accent"
-            >
-              Preview Study Blocks
-            </button>
-            <button
-              onClick={() => setDevPreview((p) => ({ ...p, bee: true }))}
-              className="rounded-lg border bg-card px-3 py-1.5 font-semibold hover:bg-accent"
-            >
-              Preview Study Bee
-            </button>
-            <button
-              onClick={() => setDevPreview({ blocks: false, bee: false })}
-              className="rounded-lg border bg-card px-3 py-1.5 font-semibold hover:bg-accent"
-            >
-              Clear Previews
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  await devUnlock({ gameId: "blocks" });
-                  toast.success("Study Blocks unlocked permanently (server test)");
-                } catch {
-                  toast.error("Set ARCADE_DEV_UNLOCK=enabled on the deployment first");
-                }
-              }}
-              className="rounded-lg border bg-card px-3 py-1.5 font-semibold hover:bg-accent"
-            >
-              Server Unlock Blocks
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  await devUnlock({ gameId: "bee" });
-                  toast.success("Study Bee unlocked permanently (server test)");
-                } catch {
-                  toast.error("Set ARCADE_DEV_UNLOCK=enabled on the deployment first");
-                }
-              }}
-              className="rounded-lg border bg-card px-3 py-1.5 font-semibold hover:bg-accent"
-            >
-              Server Unlock Bee
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  await devReset();
-                  toast.success("Server test unlocks cleared — real conditions restored");
-                } catch {
-                  toast.error("Set ARCADE_DEV_UNLOCK=enabled on the deployment first");
-                }
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 font-semibold hover:bg-accent"
-            >
-              <RotateCcw className="size-3.5" /> Reset Arcade Test State
-            </button>
-          </div>
-        </section>
-      )}
 
       {/* Unlock celebration modal */}
       {justUnlocked && (
