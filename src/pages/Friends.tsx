@@ -23,31 +23,35 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSounds } from "@/hooks/use-settings";
 import { useBannerMargin } from "@/hooks/use-banner-margin";
 
-/** Fires a toast + (optional) system notification for new chat messages. */
+/** Fires a toast + (optional) system notification for new chat/group messages. */
 function useNewMessageNotifications(
-  conversations: Conversation[] | undefined,
-  activeThreadId: string | null,
+  items: Array<{
+    key: string;
+    unread: number;
+    lastMessage: string | null;
+    name: string;
+    muted: boolean;
+    active: boolean;
+  }> | undefined,
 ) {
   const prevRef = useRef<Map<string, number> | null>(null);
-  const nameRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
-    if (!conversations) return;
-    for (const c of conversations) {
-      nameRef.current.set(c.conversationId, c.displayName ?? c.username ?? "someone");
-    }
+    if (!items) return;
     const prev = prevRef.current;
     if (prev) {
-      for (const c of conversations) {
-        const before = prev.get(c.conversationId) ?? 0;
-        if (c.unread > before && c.conversationId !== activeThreadId && !c.lastMessage?.startsWith("📷") ) {
-          const who = nameRef.current.get(c.conversationId) ?? "someone";
-          const text = c.lastMessage ?? "sent you a message";
-          toast(`${who}: ${text}`, { icon: "💬" });
-          // Best-effort system notification (web + Android WebView if granted)
+      for (const it of items) {
+        const before = prev.get(it.key) ?? 0;
+        if (it.unread > before && !it.active && !it.muted) {
+          const text = it.lastMessage ?? "sent you a message";
+          toast(`${it.name}: ${text}`, { icon: "💬" });
           try {
-            if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-              new Notification(`Cerevyn — ${who}`, { body: text });
+            if (
+              "Notification" in window &&
+              Notification.permission === "granted" &&
+              document.hidden
+            ) {
+              new Notification(`Cerevyn — ${it.name}`, { body: text });
             }
           } catch {
             /* notifications unsupported — toast is enough */
@@ -55,8 +59,8 @@ function useNewMessageNotifications(
         }
       }
     }
-    prevRef.current = new Map(conversations.map((c) => [c.conversationId, c.unread]));
-  }, [conversations, activeThreadId]);
+    prevRef.current = new Map(items.map((it) => [it.key, it.unread]));
+  }, [items]);
 
   // Ask once per session (silently ignores denial).
   useEffect(() => {
@@ -160,6 +164,7 @@ const EMOJI_GROUPS: Array<{ label: string; emojis: string[] }> = [
 
 type Tab = "friends" | "requests" | "search" | "chat";
 type ChatFilter = "all" | "unread" | "friends" | "recent";
+type ChatMode = "dm" | "groups";
 
 function Avatar({ user, size = 10 }: { user: PublicInfo | null; size?: number }) {
   const initials =
@@ -202,6 +207,9 @@ export default function Friends() {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [chatMode, setChatMode] = useState<ChatMode>("dm");
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const createGroup = useMutation(api.groupChat.createGroup);
 
   // Chat state
   const conversations = useQuery(api.chat.list) as Conversation[] | undefined;
@@ -231,7 +239,50 @@ export default function Friends() {
   ) as SearchResult[] | undefined;
 
   const incomingCount = requests?.incoming.length ?? 0;
-  useNewMessageNotifications(conversations, threadId);
+
+  // Group chat state
+  const groups = useQuery(api.groupChat.list) as
+    | Array<{
+        groupId: string;
+        name: string;
+        memberCount: number;
+        ownerId: string;
+        muted: boolean;
+        lastMessage: string | null;
+        lastMessageAt: number | null;
+        lastSender: string | null;
+        unread: number;
+      }>
+    | undefined;
+  const [groupThreadId, setGroupThreadId] = useState<string | null>(null);
+
+  useNewMessageNotifications(
+    useMemo(() => {
+      if (!conversations && !groups) return undefined;
+      const items = [];
+      for (const c of conversations ?? []) {
+        items.push({
+          key: `dm:${c.conversationId}`,
+          unread: c.unread,
+          lastMessage: c.lastMessage,
+          name: c.displayName ?? c.username ?? "someone",
+          muted: false,
+          active: threadId === c.conversationId,
+        });
+      }
+      for (const g of groups ?? []) {
+        items.push({
+          key: `group:${g.groupId}`,
+          unread: g.unread,
+          lastMessage: g.lastMessage,
+          name: g.name,
+          muted: g.muted,
+          active: groupThreadId === g.groupId,
+        });
+      }
+      return items;
+    }, [conversations, groups, threadId, groupThreadId]),
+  );
   const totalUnread = (conversations ?? []).reduce((n, c) => n + c.unread, 0);
 
   const filteredChats = useMemo(() => {
@@ -279,6 +330,18 @@ export default function Friends() {
     );
   }
 
+  if (groupThreadId) {
+    return (
+      <GroupThread
+        groupId={groupThreadId}
+        onBack={() => {
+          sounds.click();
+          setGroupThreadId(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
@@ -321,6 +384,101 @@ export default function Friends() {
 
       {tab === "chat" && (
         <>
+          {/* DM / Groups switch + create-group */}
+          <div className="flex items-center gap-2">
+            <div className="flex flex-1 gap-2">
+              {([
+                { key: "dm", label: "Direct" },
+                { key: "groups", label: "Groups" },
+              ] as Array<{ key: ChatMode; label: string }>).map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  onClick={() => {
+                    sounds.click();
+                    setChatMode(m.key);
+                  }}
+                  className={cn(
+                    "rounded-full border px-4 py-1.5 text-xs font-semibold",
+                    chatMode === m.key
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background",
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            {chatMode === "groups" && (
+              <button
+                type="button"
+                onClick={() => {
+                  sounds.click();
+                  setShowCreateGroup(true);
+                }}
+                className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+              >
+                <UserPlus className="size-3.5" /> New group
+              </button>
+            )}
+          </div>
+
+          {chatMode === "groups" && showCreateGroup && (
+            <CreateGroup
+              friends={friends ?? []}
+              onCancel={() => setShowCreateGroup(false)}
+              onCreated={(groupId) => {
+                setShowCreateGroup(false);
+                setGroupThreadId(groupId);
+              }}
+            />
+          )}
+
+          {chatMode === "groups" && !showCreateGroup &&
+            (groups === undefined ? (
+              <div className="shimmer h-20 rounded-lg" />
+            ) : groups.length === 0 ? (
+              <section className="paper-sheet flex flex-col items-center gap-2 px-6 py-10 text-center">
+                <span className="text-3xl">👥</span>
+                <p className="font-semibold">No group chats yet</p>
+                <p className="max-w-xs text-sm text-muted-foreground">
+                  Create a study group and add your friends!
+                </p>
+              </section>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {groups.map((g) => (
+                  <li key={g.groupId}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sounds.click();
+                        setGroupThreadId(g.groupId);
+                      }}
+                      className="paper-sheet flex w-full items-center gap-3 px-4 py-3 text-left transition-transform hover:-translate-y-0.5"
+                    >
+                      <span className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-lg">
+                        👥
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{g.name}</p>
+                        <p className="annotation truncate text-xs">
+                          {g.lastMessage ?? `group · ${g.memberCount} members`}
+                        </p>
+                      </div>
+                      {g.unread > 0 && (
+                        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+                          {g.unread}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ))}
+
+          {chatMode === "dm" && (
+          <>
           <div className="flex flex-wrap items-center gap-2">
             {(["all", "unread", "friends", "recent"] as ChatFilter[]).map((f) => (
               <button
@@ -390,8 +548,9 @@ export default function Friends() {
                     )}
                   </button>
                 </li>
-              ))}
-            </ul>
+              ))}            </ul>
+          )}
+          </>
           )}
         </>
       )}
@@ -1065,5 +1224,548 @@ function ChatBubble({
         </p>
       </div>
     </li>
+  );
+}
+
+/* ─── Create group ──────────────────────────────────────────────────── */
+
+function CreateGroup({
+  friends,
+  onCancel,
+  onCreated,
+}: {
+  friends: FriendRow[];
+  onCancel: () => void;
+  onCreated: (groupId: string) => void;
+}) {
+  const sounds = useSounds();
+  const createGroup = useMutation(api.groupChat.createGroup);
+  const [name, setName] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState(false);
+
+  const toggle = (id: string) => {
+    setSelected((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  };
+
+  const submit = async () => {
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    try {
+      const r = await createGroup({ name, memberIds: [...selected] });
+      if (r === "empty_name") {
+        toast.error("Give your group a name.");
+        return;
+      }
+      sounds.success();
+      toast.success("Group created! 🎉");
+      onCreated(r.groupId as string);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create group.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="paper-sheet mb-4 px-5 py-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-bold">Create a group 👥</h3>
+        <button
+          type="button"
+          aria-label="Cancel"
+          onClick={onCancel}
+          className="flex size-8 items-center justify-center rounded-full border"
+        >
+          <X className="size-3.5" />
+        </button>
+      </div>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Group name (e.g. Biology Squad)"
+        className="h-12 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+        maxLength={60}
+      />
+      {friends.length === 0 ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">
+          Add friends first to invite them to a group.
+        </p>
+      ) : (
+        <ul className="ruled-list mt-2 max-h-48 overflow-y-auto">
+          {friends.map((f) => (
+            <li key={f.userId} className="flex items-center gap-3 py-2">
+              <Avatar user={f.user} size={8} />
+              <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                @{f.user?.username ?? "user"}
+              </p>
+              <button
+                type="button"
+                aria-label={selected.has(f.userId) ? "Remove from group" : "Add to group"}
+                onClick={() => toggle(f.userId)}
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-full border text-sm font-bold",
+                  selected.has(f.userId)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "text-muted-foreground",
+                )}
+              >
+                {selected.has(f.userId) ? "✓" : "+"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button
+        type="button"
+        disabled={!name.trim() || busy}
+        onClick={() => void submit()}
+        className="mt-3 w-full rounded-lg bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+      >
+        Create group ({selected.size + 1} members)
+      </button>
+    </section>
+  );
+}
+
+/* ─── Group thread ──────────────────────────────────────────────────── */
+
+function GroupThread({
+  groupId,
+  onBack,
+}: {
+  groupId: string;
+  onBack: () => void;
+}) {
+  const sounds = useSounds();
+  const messages = useQuery(api.groupChat.getMessages, { groupId: groupId as never }) as
+    | ChatMessage[]
+    | null
+    | undefined;
+  const info = useQuery(api.groupChat.memberInfo, { groupId: groupId as never }) as
+    | {
+        name: string;
+        ownerId: string;
+        meId: string;
+        members: Record<string, { username: string | null; displayName: string | null; avatar: string | null }>;
+      }
+    | null
+    | undefined;
+  const markRead = useMutation(api.groupChat.markRead);
+  const send = useMutation(api.groupChat.send);
+  const setMuted = useMutation(api.groupChat.setMuted);
+  const leaveGroup = useMutation(api.groupChat.leave);
+  const generateUploadUrl = useMutation(api.groupChat.generateMediaUploadUrl);
+  const groups = useQuery(api.groupChat.list) as
+    | Array<{ groupId: string; muted: boolean }>
+    | undefined;
+  const myRow = groups?.find((g) => g.groupId === groupId);
+  const bannerVisible = useBannerMargin();
+
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [preview, setPreview] = useState<{
+    kind: "image" | "video";
+    file: File;
+    url: string;
+    durationSec?: number;
+  } | null>(null);
+  const [lightbox, setLightbox] = useState<{ kind: "image" | "video"; url: string } | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    void markRead({ groupId: groupId as never });
+  }, [groupId, markRead]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages?.length, preview]);
+
+  const submit = async () => {
+    const body = draft.trim();
+    if ((!body && !preview) || sending) return;
+    setSending(true);
+    try {
+      let media:
+        | { kind: "image" | "video"; storageId: never; mediaType: string; durationSec?: number }
+        | undefined;
+      if (preview) {
+        const uploadUrl = await generateUploadUrl({});
+        const { storageId } = await uploadFile(uploadUrl, preview.file);
+        media = {
+          kind: preview.kind,
+          storageId: storageId as never,
+          mediaType: preview.file.type,
+          durationSec: preview.durationSec,
+        };
+      }
+      const r = await send({
+        groupId: groupId as never,
+        body: body || (preview ? (preview.kind === "image" ? "📷 Photo" : "🎥 Video") : ""),
+        ...media,
+      });
+      if (r === "sent") {
+        setDraft("");
+        if (preview) URL.revokeObjectURL(preview.url);
+        setPreview(null);
+        sounds.success();
+      } else {
+        toast.error("You are no longer in this group.");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not send message.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const pickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.type.startsWith("image/")) {
+      if (file.size > MAX_IMAGE_BYTES) {
+        toast.error("Images must be 5 MB or smaller.");
+        return;
+      }
+      setPreview({ kind: "image", file, url: URL.createObjectURL(file) });
+    } else if (file.type.startsWith("video/")) {
+      if (file.size > MAX_VIDEO_BYTES) {
+        toast.error("Videos must be 100 MB or smaller.");
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      const probe = document.createElement("video");
+      probe.preload = "metadata";
+      probe.onloadedmetadata = () => {
+        const duration = probe.duration;
+        if (!Number.isFinite(duration) || duration > MAX_VIDEO_SEC + 1) {
+          URL.revokeObjectURL(url);
+          toast.error("Videos must be 3 minutes or shorter.");
+          return;
+        }
+        setPreview({ kind: "video", file, url, durationSec: duration });
+      };
+      probe.onerror = () => {
+        URL.revokeObjectURL(url);
+        toast.error("Could not read this video. Videos must be 3 minutes or shorter.");
+      };
+      probe.src = url;
+    } else {
+      toast.error("Only images and videos are supported.");
+    }
+  };
+
+  const senderName = (id: string) => {
+    const m = info?.members[id];
+    return m?.displayName ?? m?.username ?? "someone";
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 flex flex-col bg-background">
+      <div
+        className="flex items-center gap-2 border-b px-2 pb-3"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            sounds.click();
+            onBack();
+          }}
+          aria-label="Back"
+          className="flex size-10 items-center justify-center rounded-full border"
+        >
+          <ArrowLeft className="size-4" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold">👥 {info?.name ?? "Group"}</p>
+          <p className="annotation text-[10px]">
+            {info ? `${Object.keys(info.members).length} members` : " "}
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-label={myRow?.muted ? "Unmute" : "Mute"}
+          onClick={async () => {
+            const next = !myRow?.muted;
+            await setMuted({ groupId: groupId as never, muted: next });
+            toast.success(next ? "Group muted 🔕" : "Unmuted 🔔");
+            sounds.click();
+          }}
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-full border",
+            myRow?.muted && "bg-primary/10 border-primary",
+          )}
+        >
+          {myRow?.muted ? <BellOff className="size-4" /> : <Bell className="size-4" />}
+        </button>
+        <button
+          type="button"
+          aria-label="Leave group"
+          onClick={async () => {
+            if (!confirm("Leave this group?")) return;
+            await leaveGroup({ groupId: groupId as never });
+            toast.success("You left the group.");
+            onBack();
+          }}
+          className="flex size-10 shrink-0 items-center justify-center rounded-full border text-destructive"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto py-4">
+        {messages === undefined || messages === null ? (
+          <div className="shimmer h-20 rounded" />
+        ) : messages.length === 0 ? (
+          <p className="annotation py-10 text-center text-sm">
+            No messages yet — start the conversation! 👋
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {messages.map((m) => (
+              <li key={m._id} className={cn("flex", m.mine ? "justify-end" : "justify-start")}>
+                <div
+                  className={cn(
+                    "max-w-[80%] overflow-hidden rounded-2xl text-sm",
+                    m.kind ? "p-1.5" : "px-4 py-2.5",
+                    m.mine
+                      ? "rounded-br-sm bg-primary text-primary-foreground"
+                      : "rounded-bl-sm border bg-background",
+                  )}
+                >
+                  {!m.mine && (
+                    <p className="annotation mb-0.5 px-2 text-[10px] font-bold">
+                      {senderName(m.senderId)}
+                    </p>
+                  )}
+                  <GroupMedia
+                    m={m}
+                    onOpenLightbox={setLightbox}
+                  />
+                  {m.body && m.body !== "📷 Photo" && m.body !== "🎥 Video" && (
+                    <p className={cn("whitespace-pre-wrap break-words", m.kind && "px-2.5 pb-1 pt-1.5")}>
+                      {m.body}
+                    </p>
+                  )}
+                  <p
+                    className={cn(
+                      "mt-1 px-2 text-[10px]",
+                      m.mine ? "text-primary-foreground/70" : "text-muted-foreground",
+                    )}
+                  >
+                    {new Date(m.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {showEmoji && (
+        <div className="mb-2 rounded-xl border bg-background p-3 shadow-sm">
+          {EMOJI_GROUPS.map((g) => (
+            <div key={g.label} className="mb-2 last:mb-0">
+              <p className="annotation mb-1 text-[10px] uppercase tracking-wide">{g.label}</p>
+              <div className="flex flex-wrap gap-1">
+                {g.emojis.map((em, i) => (
+                  <button
+                    key={`${g.label}-${i}`}
+                    type="button"
+                    onClick={() => setDraft((d) => d + em)}
+                    className="rounded-lg p-1.5 text-xl leading-none transition hover:bg-muted"
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {preview && (
+        <div className="mb-2 flex items-center gap-3 rounded-xl border bg-background p-2">
+          {preview.kind === "image" ? (
+            <img src={preview.url} alt="" className="size-14 rounded-lg object-cover" />
+          ) : (
+            <video src={preview.url} className="size-14 rounded-lg object-cover" muted />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-semibold">
+              {preview.kind === "image" ? "Photo" : "Video"}
+              {preview.durationSec ? ` · ${Math.round(preview.durationSec)}s` : ""}
+            </p>
+            <p className="annotation truncate text-[10px]">
+              {(preview.file.size / 1024 / 1024).toFixed(1)} MB
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Remove attachment"
+            onClick={() => {
+              URL.revokeObjectURL(preview.url);
+              setPreview(null);
+              sounds.click();
+            }}
+            className="flex size-8 shrink-0 items-center justify-center rounded-full border text-muted-foreground"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+
+      <form
+        className="flex items-center gap-2 border-t px-2 pt-3"
+        style={{
+          marginBottom: `calc(${bannerVisible ? 64 : 0}px + env(safe-area-inset-bottom, 0px))`,
+          paddingBottom: "10px",
+        }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          void submit();
+        }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          className="hidden"
+          onChange={pickFile}
+        />
+        <button
+          type="button"
+          aria-label="Emoji"
+          onClick={() => {
+            sounds.click();
+            setShowEmoji((s) => !s);
+          }}
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-full border",
+            showEmoji && "bg-primary/10 border-primary",
+          )}
+        >
+          <Smile className="size-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Attach photo or video"
+          disabled={sending}
+          onClick={() => {
+            sounds.click();
+            fileInputRef.current?.click();
+          }}
+          className="flex size-11 shrink-0 items-center justify-center rounded-full border disabled:opacity-50"
+        >
+          <Paperclip className="size-4" />
+        </button>
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Message the group…"
+          className="h-12 min-w-0 flex-1 rounded-full border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-primary/40"
+          maxLength={1000}
+        />
+        <button
+          type="submit"
+          disabled={(!draft.trim() && !preview) || sending}
+          aria-label="Send"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50"
+        >
+          <Send className="size-4" />
+        </button>
+      </form>
+
+      {lightbox && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+        >
+          {lightbox.kind === "image" ? (
+            <img
+              src={lightbox.url}
+              alt=""
+              className="max-h-[85vh] max-w-full rounded-lg object-contain"
+            />
+          ) : (
+            <video
+              src={lightbox.url}
+              controls
+              autoPlay={false}
+              className="max-h-[85vh] max-w-full rounded-lg"
+            />
+          )}
+          <button
+            type="button"
+            aria-label="Close preview"
+            onClick={() => setLightbox(null)}
+            className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-white/15 text-white"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* Media bubble for group messages (members-only signed URL). */
+function GroupMedia({
+  m,
+  onOpenLightbox,
+}: {
+  m: ChatMessage;
+  onOpenLightbox: (v: { kind: "image" | "video"; url: string }) => void;
+}) {
+  const getMediaUrl = useQuery(
+    api.groupChat.getMediaUrl,
+    m.kind ? ({ messageId: m._id } as never) : "skip",
+  ) as string | null | undefined;
+
+  if (!m.kind) return null;
+  if (m.kind === "image") {
+    return getMediaUrl ? (
+      <img
+        src={getMediaUrl}
+        alt="Photo"
+        onClick={() => onOpenLightbox({ kind: "image", url: getMediaUrl })}
+        className="max-h-56 w-52 cursor-pointer rounded-xl object-cover"
+        loading="lazy"
+      />
+    ) : (
+      <div className="flex h-28 w-52 items-center justify-center rounded-xl bg-muted">
+        <ImageIcon className="size-5 text-muted-foreground" />
+      </div>
+    );
+  }
+  return getMediaUrl ? (
+    <div
+      className="cursor-pointer"
+      onClick={() => onOpenLightbox({ kind: "video", url: getMediaUrl })}
+    >
+      <video src={getMediaUrl} className="max-h-56 w-52 rounded-xl object-cover" muted preload="metadata" />
+      <span className="annotation mt-1 block px-2 text-[10px]">
+        ▶ {m.durationSec ? `${Math.round(m.durationSec)}s` : "Video"} — tap to play
+      </span>
+    </div>
+  ) : (
+    <div className="flex h-28 w-52 items-center justify-center rounded-xl bg-muted">
+      <span className="text-muted-foreground">🎥</span>
+    </div>
   );
 }

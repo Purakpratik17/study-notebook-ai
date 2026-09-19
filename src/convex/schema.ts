@@ -394,7 +394,28 @@ const schema = defineSchema(
       .index("by_user_unresolved", ["userId", "resolved"])
       .index("by_user", ["userId"]),
 
-    // ─── Admin audit log ─────────────────────────────────────────
+    // ─── Group chats ───────────────────────────────────────────
+
+    // A group chat. `members` are Clerk subjects; owner created the group.
+    groups: defineTable({
+      name: v.string(),
+      ownerId: v.string(),
+      members: v.array(v.string()),
+      mutedBy: v.optional(v.array(v.string())), // member ids who muted
+      createdAt: v.number(),
+    }).index("by_owner", ["ownerId"]),
+
+    groupMessages: defineTable({
+      groupId: v.id("groups"),
+      senderId: v.string(),
+      body: v.string(), // "" for pure media messages
+      kind: v.optional(v.union(v.literal("image"), v.literal("video"))),
+      storageId: v.optional(v.id("_storage")),
+      mediaType: v.optional(v.string()),
+      durationSec: v.optional(v.number()),
+      readBy: v.optional(v.array(v.string())),
+      createdAt: v.number(),
+    }).index("by_group_created", ["groupId", "createdAt"]),
     // Every admin XP action is journaled here: who did it, to whom,
     // what changed (previous → new), and when.
     adminAudit: defineTable({
