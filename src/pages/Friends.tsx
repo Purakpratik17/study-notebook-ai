@@ -3,8 +3,12 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
+  Ban,
+  Bell,
+  BellOff,
   Check,
   Image as ImageIcon,
+  Unlock,
   MessageCircle,
   Paperclip,
   Search,
@@ -17,6 +21,50 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useSounds } from "@/hooks/use-settings";
+
+/** Fires a toast + (optional) system notification for new chat messages. */
+function useNewMessageNotifications(
+  conversations: Conversation[] | undefined,
+  activeThreadId: string | null,
+) {
+  const prevRef = useRef<Map<string, number> | null>(null);
+  const nameRef = useRef<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    if (!conversations) return;
+    for (const c of conversations) {
+      nameRef.current.set(c.conversationId, c.displayName ?? c.username ?? "someone");
+    }
+    const prev = prevRef.current;
+    if (prev) {
+      for (const c of conversations) {
+        const before = prev.get(c.conversationId) ?? 0;
+        if (c.unread > before && c.conversationId !== activeThreadId && !c.lastMessage?.startsWith("📷") ) {
+          const who = nameRef.current.get(c.conversationId) ?? "someone";
+          const text = c.lastMessage ?? "sent you a message";
+          toast(`${who}: ${text}`, { icon: "💬" });
+          // Best-effort system notification (web + Android WebView if granted)
+          try {
+            if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+              new Notification(`Cerevyn — ${who}`, { body: text });
+            }
+          } catch {
+            /* notifications unsupported — toast is enough */
+          }
+        }
+      }
+    }
+    prevRef.current = new Map(conversations.map((c) => [c.conversationId, c.unread]));
+  }, [conversations, activeThreadId]);
+
+  // Ask once per session (silently ignores denial).
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      const t = setTimeout(() => void Notification.requestPermission().catch(() => undefined), 5000);
+      return () => clearTimeout(t);
+    }
+  }, []);
+}
 
 type PublicInfo = {
   userId: string;
@@ -182,6 +230,7 @@ export default function Friends() {
   ) as SearchResult[] | undefined;
 
   const incomingCount = requests?.incoming.length ?? 0;
+  useNewMessageNotifications(conversations, threadId);
   const totalUnread = (conversations ?? []).reduce((n, c) => n + c.unread, 0);
 
   const filteredChats = useMemo(() => {
@@ -582,7 +631,12 @@ function Thread({
     | undefined;
   const markRead = useMutation(api.chat.markRead);
   const send = useMutation(api.chat.send);
+  const setMuted = useMutation(api.chat.setMuted);
+  const setBlocked = useMutation(api.chat.setBlocked);
   const generateUploadUrl = useMutation(api.chat.generateMediaUploadUrl);
+  const convState = useQuery(api.chat.getConvState, {
+    conversationId: conversationId as never,
+  }) as { muted: boolean; blocked: boolean; blockedMe: boolean } | null | undefined;
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -643,6 +697,8 @@ function Thread({
         if (preview) URL.revokeObjectURL(preview.url);
         setPreview(null);
         sounds.success();
+      } else if (r === "blocked") {
+        toast.error("You can't message this person.");
       } else {
         toast.error("You can only message accepted friends.");
       }
@@ -694,8 +750,8 @@ function Thread({
 
   return (
     <div
-      className="flex h-[65vh] flex-col"
-      style={{ maxHeight: `calc(65vh - var(--safe-top, 0px))` }}
+      className="flex h-[calc(100dvh-11rem)] min-h-[420px] flex-col"
+      style={{ maxHeight: `calc(100dvh - var(--safe-top, 0px))` }}
     >
       <div
         className="flex items-center gap-2 border-b pb-3"
@@ -712,8 +768,54 @@ function Thread({
         >
           <ArrowLeft className="size-4" />
         </button>
-        <p className="text-sm font-bold">Conversation</p>
+        <p className="min-w-0 flex-1 truncate text-sm font-bold">Conversation</p>
+        <button
+          type="button"
+          aria-label={convState?.muted ? "Unmute notifications" : "Mute notifications"}
+          title={convState?.muted ? "Unmute" : "Mute"}
+          onClick={async () => {
+            const next = !convState?.muted;
+            await setMuted({ conversationId: conversationId as never, muted: next });
+            toast.success(next ? "Conversation muted 🔕" : "Unmuted 🔔");
+            sounds.click();
+          }}
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-full border",
+            convState?.muted && "bg-primary/10 border-primary",
+          )}
+        >
+          {convState?.muted ? <BellOff className="size-4" /> : <Bell className="size-4" />}
+        </button>
+        <button
+          type="button"
+          aria-label={convState?.blocked ? "Unblock" : "Block"}
+          title={convState?.blocked ? "Unblock" : "Block"}
+          onClick={async () => {
+            if (!convState) return;
+            if (!convState.blocked && !confirm("Block this person? The chat will be hidden and they won't be able to message you.")) return;
+            await setBlocked({ conversationId: conversationId as never, blocked: !convState.blocked });
+            if (!convState.blocked) {
+              toast.success("Blocked. The chat is now hidden.");
+              onBack();
+            } else {
+              toast.success("Unblocked.");
+            }
+            sounds.click();
+          }}
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-full border",
+            convState?.blocked ? "bg-primary/10 border-primary" : "text-destructive",
+          )}
+        >
+          {convState?.blocked ? <Unlock className="size-4" /> : <Ban className="size-4" />}
+        </button>
       </div>
+
+      {convState?.blockedMe && (
+        <p className="rounded-lg bg-muted px-4 py-2 text-center text-xs text-muted-foreground">
+          You can't send messages in this conversation.
+        </p>
+      )}
 
       <div className="flex-1 overflow-y-auto py-4">
         {messages === undefined ? (
@@ -842,7 +944,7 @@ function Thread({
         />
         <button
           type="submit"
-          disabled={(!draft.trim() && !preview) || sending || uploading}
+          disabled={(!draft.trim() && !preview) || sending || uploading || convState?.blockedMe}
           aria-label="Send"
           className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-50"
         >

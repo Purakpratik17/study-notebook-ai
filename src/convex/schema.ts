@@ -351,9 +351,14 @@ const schema = defineSchema(
       .index("by_userB", ["userB"]),
 
     // One private conversation per accepted friendship (same pair rule).
+    // Per-side preferences: userA's flags apply to userA's view, userB's to userB.
     conversations: defineTable({
       userA: v.string(),
       userB: v.string(),
+      mutedByUserA: v.optional(v.boolean()),
+      mutedByUserB: v.optional(v.boolean()),
+      blockedByUserA: v.optional(v.boolean()), // userA blocked userB
+      blockedByUserB: v.optional(v.boolean()), // userB blocked userA
       createdAt: v.number(),
     })
       .index("by_pair", ["userA", "userB"])

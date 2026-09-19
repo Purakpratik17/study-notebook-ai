@@ -47,6 +47,10 @@ export const list = query({
     const out = [];
     for (const conv of [...a, ...b]) {
       const friendId = conv.userA === me ? conv.userB : conv.userA;
+      // Hide conversations I blocked (either direction still shows a hint? no —
+      // fully hidden for the blocker; the blocked user still sees it read-only).
+      const iBlocked = conv.userA === me ? conv.blockedByUserA : conv.blockedByUserB;
+      if (iBlocked) continue;
       // Live friendship check — removed friends keep history but are filtered
       // out of the chat list and cannot be messaged.
       if (!(await areFriends(ctx, me, friendId))) continue;
@@ -115,7 +119,7 @@ export const send = mutation({
     mediaType: v.optional(v.string()),
     durationSec: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<"sent" | "not_friends"> => {
+  handler: async (ctx, args): Promise<"sent" | "not_friends" | "blocked"> => {
     const me = await requireUserId(ctx);
     const body = args.body.trim().slice(0, 1000);
     const hasMedia = !!args.kind && !!args.storageId;
@@ -126,6 +130,10 @@ export const send = mutation({
     }
     const friendId = conv.userA === me ? conv.userB : conv.userA;
     if (!(await areFriends(ctx, me, friendId))) return "not_friends";
+    // Blocked conversations reject new messages (either side can block).
+    const blocked = conv.userA === me ? conv.blockedByUserA : conv.blockedByUserB;
+    const blockedMe = conv.userA === me ? conv.blockedByUserB : conv.blockedByUserA;
+    if (blocked || blockedMe) return "blocked";
 
     // Server-side media validation (cannot be bypassed by the frontend).
     let kind: "image" | "video" | undefined;
@@ -186,6 +194,49 @@ export const generateMediaUploadUrl = mutation({
   handler: async (ctx) => {
     await requireUserId(ctx);
     return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/** Mute or unmute a conversation (only affects your own notifications). */
+export const setMuted = mutation({
+  args: { conversationId: v.id("conversations"), muted: v.boolean() },
+  handler: async (ctx, args) => {
+    const me = await requireUserId(ctx);
+    const conv = await ctx.db.get(args.conversationId);
+    if (!conv || (conv.userA !== me && conv.userB !== me)) return;
+    await ctx.db.patch(conv._id, {
+      ...(conv.userA === me ? { mutedByUserA: args.muted } : { mutedByUserB: args.muted }),
+    });
+  },
+});
+
+/** Block or unblock the other participant. Blocking hides the chat and rejects sends. */
+export const setBlocked = mutation({
+  args: { conversationId: v.id("conversations"), blocked: v.boolean() },
+  handler: async (ctx, args): Promise<"ok" | "not_found"> => {
+    const me = await requireUserId(ctx);
+    const conv = await ctx.db.get(args.conversationId);
+    if (!conv || (conv.userA !== me && conv.userB !== me)) return "not_found";
+    await ctx.db.patch(conv._id, {
+      ...(conv.userA === me ? { blockedByUserA: args.blocked } : { blockedByUserB: args.blocked }),
+    });
+    return "ok";
+  },
+});
+
+/** My per-conversation mute/block state (for thread header + chat list). */
+export const getConvState = query({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, args) => {
+    const me = await requireUserId(ctx);
+    const conv = await ctx.db.get(args.conversationId);
+    if (!conv || (conv.userA !== me && conv.userB !== me)) return null;
+    const mine = conv.userA === me;
+    return {
+      muted: Boolean(mine ? conv.mutedByUserA : conv.mutedByUserB),
+      blocked: Boolean(mine ? conv.blockedByUserA : conv.blockedByUserB),
+      blockedMe: Boolean(mine ? conv.blockedByUserB : conv.blockedByUserA),
+    };
   },
 });
 
