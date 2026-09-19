@@ -840,9 +840,21 @@ function Thread({
     void markRead({ conversationId: conversationId as never });
   }, [conversationId, markRead]);
 
+  // Track whether the user is reading near the bottom — only auto-scroll
+  // for new messages when they are (never yank them while reading history).
+  const atBottomRef = useRef(true);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages?.length, preview]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages?.length]);
+  const maybeScrollToBottom = () => {
+    if (atBottomRef.current) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  // Attachments change the composer height — keep newest visible when near bottom.
+  useEffect(() => {
+    maybeScrollToBottom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preview]);
 
   useEffect(() => {
     return () => {
@@ -963,7 +975,14 @@ function Thread({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-background">
+    <div
+      className="fixed inset-0 z-40 flex h-[100dvh] flex-col overflow-hidden bg-background"
+      style={{
+        // Dynamic viewport: the composer hugs the Android gesture/nav area
+        // (or the ad banner) at the true visual bottom of the screen.
+        height: "100dvh",
+      }}
+    >
       <div
         className="flex items-center gap-2 border-b px-2 pb-3"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
@@ -1041,7 +1060,13 @@ function Thread({
 
       {showPlus && <ChatPlusSheet onClose={() => setShowPlus(false)} />}
 
-      <div className="flex-1 overflow-y-auto py-4">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-4"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        }}
+      >
         {messages === undefined ? (
           <div className="shimmer h-20 rounded" />
         ) : messages.length === 0 ? (
@@ -1499,9 +1524,16 @@ function GroupThread({
     void markRead({ groupId: groupId as never });
   }, [groupId, markRead]);
 
+  // Track whether the user is reading near the bottom — only auto-scroll
+  // for new messages when they are (never yank them while reading history).
+  const atBottomRef = useRef(true);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages?.length, preview]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages?.length]);
+  const maybeScrollToBottom = () => {
+    if (atBottomRef.current) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const submit = async () => {
     const body = draft.trim();
@@ -1590,7 +1622,14 @@ function GroupThread({
   const senderPlus = (id: string) => Boolean(info?.members[id]?.plus);
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-background">
+    <div
+      className="fixed inset-0 z-40 flex h-[100dvh] flex-col overflow-hidden bg-background"
+      style={{
+        // Dynamic viewport: the composer hugs the Android gesture/nav area
+        // (or the ad banner) at the true visual bottom of the screen.
+        height: "100dvh",
+      }}
+    >
       <div
         className="flex items-center gap-2 border-b px-2 pb-3"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
@@ -1654,7 +1693,13 @@ function GroupThread({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-4">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-4"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+        }}
+      >
         {messages === undefined || messages === null ? (
           <div className="shimmer h-20 rounded" />
         ) : messages.length === 0 ? (
