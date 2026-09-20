@@ -2,7 +2,7 @@ import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { useMutation } from "convex/react";
 import { Pause, Play, Square, Timer as TimerIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useSounds } from "@/hooks/use-settings";
 
@@ -29,49 +29,17 @@ export default function FocusMode() {
   useEffect(() => {
     if (!running) return;
     intervalRef.current = window.setInterval(() => {
-      setRemaining((r) => {
-        if (r <= 1) {
-          window.clearInterval(intervalRef.current!);
-          setRunning(false);
-          runningRef.current = false;
-          void finish(true);
-          return 0;
-        }
-        return r - 1;
-      });
+      // Pure updater only — completion is handled by the effect below
+      // (side effects inside a state updater can double-fire).
+      setRemaining((r) => (r > 0 ? r - 1 : 0));
     }, 1000);
     return () => {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running]);
 
-  // Stop the timer if the user leaves the page mid-session (no XP farming
-  // by navigating away — completion is judged against the server start time).
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  const begin = async (minutes: number) => {
-    if (running || finishing) return;
-    try {
-      const ts = await startSession({ plannedMinutes: minutes });
-      startedAtRef.current = ts;
-      setStartedAt(ts);
-      setPlanned(minutes);
-      setRemaining(minutes * 60);
-      setXpEarned(null);
-      sounds.click();
-      setRunning(true);
-      runningRef.current = true;
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not start session.");
-    }
-  };
-
-  const finish = async (auto: boolean) => {
+  const finish = useCallback(
+    async (auto: boolean) => {
     if (finishing || startedAt === null || planned === null) return;
     setFinishing(true);
     setRunning(false);
@@ -106,7 +74,43 @@ export default function FocusMode() {
       setRemaining(0);
       if (!auto) setSubject("");
     }
+    },
+    [finishing, startedAt, planned, subject, completeSession, sounds],
+  );
+
+  // Session completes when the timer hits zero.
+  useEffect(() => {
+    if (running && remaining === 0) {
+      void finish(true); // finish stops the interval and resets running/refs
+    }
+  }, [running, remaining, finish]);
+
+  // Stop the timer if the user leaves the page mid-session (no XP farming
+  // by navigating away — completion is judged against the server start time).
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) window.clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const begin = async (minutes: number) => {
+    if (running || finishing) return;
+    try {
+      const ts = await startSession({ plannedMinutes: minutes });
+      startedAtRef.current = ts;
+      setStartedAt(ts);
+      setPlanned(minutes);
+      setRemaining(minutes * 60);
+      setXpEarned(null);
+      sounds.click();
+      setRunning(true);
+      runningRef.current = true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not start session.");
+    }
   };
+
+
 
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");

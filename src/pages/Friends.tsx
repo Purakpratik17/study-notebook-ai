@@ -227,7 +227,6 @@ export default function Friends() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [chatMode, setChatMode] = useState<ChatMode>("dm");
   const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const createGroup = useMutation(api.groupChat.createGroup);
 
   // Chat state
   const conversations = useQuery(api.chat.list) as Conversation[] | undefined;
@@ -848,8 +847,16 @@ function Thread({
   // Track whether the user is reading near the bottom — only auto-scroll
   // for new messages when they are (never yank them while reading history).
   const atBottomRef = useRef(true);
+  const lastLenRef = useRef<number | null>(null);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // First load: always jump to newest. After that, only auto-scroll when
+    // the user is reading near the bottom (never yank while reading history).
+    if (lastLenRef.current === null) {
+      bottomRef.current?.scrollIntoView();
+    } else if (atBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    lastLenRef.current = messages?.length ?? null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages?.length]);
   const maybeScrollToBottom = () => {
@@ -1534,13 +1541,18 @@ function GroupThread({
   // Track whether the user is reading near the bottom — only auto-scroll
   // for new messages when they are (never yank them while reading history).
   const atBottomRef = useRef(true);
+  const lastLenRef = useRef<number | null>(null);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // First load: always jump to newest. After that, only auto-scroll when
+    // the user is reading near the bottom (never yank while reading history).
+    if (lastLenRef.current === null) {
+      bottomRef.current?.scrollIntoView();
+    } else if (atBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    lastLenRef.current = messages?.length ?? null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages?.length]);
-  const maybeScrollToBottom = () => {
-    if (atBottomRef.current) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
 
   const submit = async () => {
     const body = draft.trim();
