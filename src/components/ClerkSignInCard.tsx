@@ -1,12 +1,15 @@
 import { SignIn } from "@clerk/react-router";
 
 /**
- * Clerk's prebuilt <SignIn> handles Google OAuth and email sign-in/sign-up
+ * Clerk's prebuilt <SignIn> handles email sign-in/sign-up
  * with persistent sessions out of the box.
+ *
+ * Google OAuth is removed from the UI: social buttons and the "or" divider
+ * are hidden via Clerk's stable element classes, leaving email/password only.
  *
  * The appearance object is declared at module scope: a new object identity
  * each render would remount Clerk's internal flow and could cancel in-flight
- * button interactions (e.g. the Google button).
+ * button interactions.
  */
 const clerkAppearance = {
   variables: {
@@ -21,9 +24,9 @@ const clerkAppearance = {
   elements: {
     card: "bg-transparent shadow-none border-0",
     rootBox: "w-full",
-    socialButtonsBlockButton: "border bg-paper hover:bg-accent",
-    socialButtonsBlockButtonText: "font-medium",
-    dividerLine: "bg-border",
+    socialButtonsBlockButton: "hidden",
+    socialButtonsBlockButtonText: "hidden",
+    dividerRow: "hidden",
     formFieldInput: "bg-paper",
     footerActionLink: "text-primary",
   },

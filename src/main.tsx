@@ -222,8 +222,9 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="/sso-callback" element={<SsoCallback />} />
                 {/* Clerk's <SignIn> (path-based routing at /auth) builds its
                     OAuth callback URL as signInPath + "/sso-callback", i.e.
-                    /auth/sso-callback — this route must exist or Google login
-                    lands on NotFound after the provider redirect. */}
+                    /auth/sso-callback — this route must exist or Clerk
+                    email-verification/native redirects land on NotFound.
+                    Kept even with Google removed. */}
                 <Route path="/auth/sso-callback" element={<SsoCallback />} />
                 <Route
                   path="/dashboard"

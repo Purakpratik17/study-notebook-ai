@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { useNavigate } from "react-router";
 
 /**
- * Clerk's prebuilt <SignUp> — Google + email registration, themed to match
+ * Clerk's prebuilt <SignUp> — email registration, themed to match
  * the notebook palette via the shared clerkAppearance. On success Clerk
  * redirects to /dashboard (forceRedirectUrl).
  */
@@ -51,7 +51,7 @@ function SignUpInner() {
         </div>
       </div>
       <footer className="pb-6 text-center text-xs text-muted-foreground">
-        Secured by Clerk · Google & email sign-in
+        Secured by Clerk · email sign-in
       </footer>
     </div>
   );

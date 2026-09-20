@@ -111,7 +111,7 @@ export default function Landing() {
               </Link>
             </Button>
             <span className="annotation text-sm">
-              free · sign in with Google or email
+              free · sign in with email
             </span>
           </div>
 

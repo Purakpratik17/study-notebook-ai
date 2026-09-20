@@ -127,7 +127,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
         </div>
       </div>
       <footer className="pb-6 text-center text-xs text-muted-foreground">
-        Secured by Clerk · Google & email sign-in
+        Secured by Clerk · email sign-in
       </footer>
     </div>
   );
