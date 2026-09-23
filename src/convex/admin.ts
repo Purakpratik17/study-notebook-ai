@@ -231,3 +231,145 @@ export const adjustXp = mutation({
     return { previousXp, newXp, level: lvl.level, levelName: lvl.name };
   },
 });
+
+/* ─── Subscription management (admin-granted Premium) ─────────────────── */
+
+/** Admin view of a user's subscription status. */
+export const getSubscription = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    await assertAdmin(ctx);
+    const now = Date.now();
+    const rows = await ctx.db
+      .query("chatPurchases")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    // Active = paid (verified Google Play) OR admin-granted, not expired.
+    const active = rows
+      .filter((r) => r.status === "active" && r.expiresAt > now)
+      .sort((a, b) => b.expiresAt - a.expiresAt)[0];
+    if (!active) return { active: false as const };
+    const grantedByProfile = active.grantedBy
+      ? await ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q) => q.eq("userId", active.grantedBy as string))
+          .first()
+      : null;
+    return {
+      active: true as const,
+      plan: active.productId.includes("yearly") ? "Premium (yearly)" : "Premium",
+      productId: active.productId,
+      source: active.source ?? "payment", // legacy rows are real purchases
+      grantedBy: active.grantedBy ?? null,
+      grantedByName: grantedByProfile?.username ?? "—",
+      grantedAt: active.verifiedAt,
+      expiresAt: active.expiresAt,
+      lifetime: active.expiresAt > now + 100 * 365 * 86_400_000,
+    };
+  },
+});
+
+const DAY = 86_400_000;
+
+/** Grant Premium to a user. Admin-allowlist enforced; audited. */
+export const grantSubscription = mutation({
+  args: {
+    userId: v.string(),
+    plan: v.union(v.literal("free"), v.literal("premium")),
+    // Duration in days; 0 = lifetime. Custom dates are resolved client-side
+    // into a days count so the backend stays simple.
+    durationDays: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const adminId = await assertAdmin(ctx);
+    if (args.durationDays < 0 || !Number.isFinite(args.durationDays)) {
+      throw new Error("Invalid duration");
+    }
+
+    if (args.plan === "free") {
+      // "Free" plan = revoke any active subscription, same as removal.
+      return await revokeRows(ctx, adminId, args.userId);
+    }
+
+    const now = Date.now();
+    const expiresAt =
+      args.durationDays === 0
+        ? now + 100 * 365 * DAY // lifetime
+        : now + Math.round(args.durationDays) * DAY;
+
+    // Deactivate any current admin-granted rows, then insert the new grant.
+    const rows = await ctx.db
+      .query("chatPurchases")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+    for (const r of rows) {
+      if (r.source === "admin" && r.status === "active") {
+        await ctx.db.patch(r._id, { status: "canceled" });
+      }
+    }
+
+    await ctx.db.insert("chatPurchases", {
+      userId: args.userId,
+      productId: "admin_premium",
+      // Unique synthetic token = idempotency key (re-grant creates a new row,
+      // never collides with a real Play purchase).
+      purchaseToken: `admin:${adminId}:${args.userId}:${now}`,
+      status: "active",
+      expiresAt,
+      autoRenewing: false,
+      verifiedAt: now,
+      grantedBy: adminId,
+      source: "admin",
+    });
+
+    await ctx.db.insert("adminAudit", {
+      adminId,
+      targetUserId: args.userId,
+      action: "subscription_granted",
+      amount: Math.round(args.durationDays),
+      previousXp: 0,
+      newXp: 0,
+      createdAt: now,
+    });
+
+    return { expiresAt };
+  },
+});
+
+/** Remove admin-granted Premium. Paid rows are never touched. */
+export const removeSubscription = mutation({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const adminId = await assertAdmin(ctx);
+    const changed = await revokeRows(ctx, adminId, args.userId);
+    return changed;
+  },
+});
+
+async function revokeRows(
+  ctx: MutationCtx,
+  adminId: string,
+  userId: string,
+): Promise<{ removed: number }> {
+  const rows = await ctx.db
+    .query("chatPurchases")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+  let removed = 0;
+  for (const r of rows) {
+    // Only admin-granted rows are revocable — real payments expire on their own.
+    if (r.source === "admin" && r.status === "active") {
+      await ctx.db.patch(r._id, { status: "canceled" });
+      removed++;
+    }
+  }
+  await ctx.db.insert("adminAudit", {
+    adminId,
+    targetUserId: userId,
+    action: "subscription_removed",
+    previousXp: 0,
+    newXp: 0,
+    createdAt: Date.now(),
+  });
+  return { removed };
+}

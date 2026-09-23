@@ -47,6 +47,8 @@ export default function AdminPanel() {
     searchTerm.trim() ? { query: searchTerm } : "skip",
   );
   const adjustXp = useMutation(api.admin.adjustXp);
+  const grantSub = useMutation(api.admin.grantSubscription);
+  const removeSub = useMutation(api.admin.removeSubscription);
   const { userId: myClerkId } = useAuth();
 
   const [searchInput, setSearchInput] = useState("");
@@ -331,6 +333,15 @@ export default function AdminPanel() {
             </div>
           )}
         </section>
+      )}
+
+      {/* ── Subscription management ──────────────────────────────── */}
+      {selected && (
+        <SubscriptionSection
+          target={selected}
+          grantSub={grantSub}
+          removeSub={removeSub}
+        />
       )}
 
       {/* ── Audit log ────────────────────────────────────────────────── */}

@@ -417,6 +417,10 @@ const schema = defineSchema(
       expiresAt: v.number(),
       verifiedAt: v.number(),
       autoRenewing: v.optional(v.boolean()),
+      // Admin-granted subscriptions (source = "admin"). Payment rows omit
+      // these — source lets future payment/promo flows coexist cleanly.
+      grantedBy: v.optional(v.string()), // Clerk subject of granting admin
+      source: v.optional(v.string()), // "admin" | "payment" | "promotional"
     })
       .index("by_user", ["userId"])
       .index("by_token", ["purchaseToken"]),
