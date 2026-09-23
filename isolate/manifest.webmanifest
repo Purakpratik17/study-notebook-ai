@@ -1,0 +1,23 @@
+{
+  "name": "Cerevyn",
+  "short_name": "Cerevyn",
+  "description": "Cerevyn — AI-powered study companion: notes, quizzes, timetable, quests and XP.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf7ef",
+  "theme_color": "#f8f4e8",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
