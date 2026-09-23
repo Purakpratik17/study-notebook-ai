@@ -183,7 +183,7 @@ export default function EssayWriter() {
         <button
           type="submit"
           disabled={loading || topic.trim().length < 3}
-          className="mt-5 inline-flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:px-8"
+          className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:px-8"
         >
           {loading ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />}
           {loading ? "Writing your essay…" : "Write My Essay"}

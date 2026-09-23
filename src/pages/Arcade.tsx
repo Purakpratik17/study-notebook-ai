@@ -111,7 +111,7 @@ export default function Arcade() {
                 </p>
                 <button
                   onClick={() => setScreen(g.id)}
-                  className="mt-auto inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98]"
+                  className="mt-auto inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98]"
                 >
                   <Play className="size-4" /> Play now
                 </button>
@@ -668,7 +668,7 @@ function StudyBee() {
       <div className="mx-auto flex w-full max-w-xs gap-2">
         <button
           onClick={() => (!running || gameOver ? start() : setPaused((p) => !p))}
-          className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-md active:scale-[0.98]"
+          className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-md active:scale-[0.98]"
         >
           {gameOver ? <><RefreshCw className="size-4" /> Restart</> : paused ? <><Play className="size-4" /> Resume</> : running ? <><Pause className="size-4" /> Pause</> : <><Play className="size-4" /> Start</>}
         </button>

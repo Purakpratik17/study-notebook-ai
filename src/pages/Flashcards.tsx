@@ -268,7 +268,7 @@ export default function Flashcards() {
                   type="button"
                   onClick={() => void runGenerate()}
                   disabled={!genNoteId || busy}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-primary-foreground disabled:opacity-50"
                 >
                   {busy ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
                   Generate 8 cards
@@ -482,7 +482,7 @@ function ReviewSession({
               type="button"
               onClick={() => onRate(b.key)}
               className={cn(
-                "flex min-h-14 items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-sm transition active:scale-[0.97]",
+                "flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-sm transition active:scale-[0.97]",
                 b.className,
               )}
             >

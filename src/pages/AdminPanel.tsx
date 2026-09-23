@@ -273,28 +273,28 @@ export default function AdminPanel() {
             <button
               disabled={busy}
               onClick={() => void run("add", Number(amount))}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-xp/15 font-bold text-xp transition hover:bg-xp/25 disabled:opacity-50"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-xp/15 font-bold text-xp transition hover:bg-xp/25 disabled:opacity-50"
             >
               <Plus className="size-4" /> Add XP
             </button>
             <button
               disabled={busy}
               onClick={() => void run("remove", Number(amount))}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-destructive/10 font-bold text-destructive transition hover:bg-destructive/20 disabled:opacity-50"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-destructive/10 font-bold text-destructive transition hover:bg-destructive/20 disabled:opacity-50"
             >
               <Minus className="size-4" /> Remove XP
             </button>
             <button
               disabled={busy}
               onClick={() => void run("set", Number(amount))}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border bg-card font-bold transition hover:bg-accent disabled:opacity-50"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border bg-card font-bold transition hover:bg-accent disabled:opacity-50"
             >
               Set to amount
             </button>
             <button
               disabled={busy}
               onClick={() => setConfirmReset(true)}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-destructive/50 bg-destructive/5 font-bold text-destructive transition hover:bg-destructive/15 disabled:opacity-50"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-destructive/50 bg-destructive/5 font-bold text-destructive transition hover:bg-destructive/15 disabled:opacity-50"
             >
               <RotateCcw className="size-4" /> Reset XP
             </button>

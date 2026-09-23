@@ -19,7 +19,7 @@ import { Link } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSettings, useSounds } from "@/hooks/use-settings";
-import { AiLoadingCard } from "@/components/loading";
+import { AiProgressCard } from "@/components/loading";
 import { TranslateButton } from "@/components/TranslateButton";
 import { maybeShowInterstitial } from "@/lib/ads";
 
@@ -139,19 +139,19 @@ export default function AiStudy() {
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder='e.g. "Photosynthesis" or "Binomial Distribution"'
-            className="h-14 flex-1 rounded-lg border bg-background/60 px-4 text-base outline-none ring-ring/40 transition focus:ring-2"
+            className="h-11 flex-1 rounded-lg border bg-background/60 px-3.5 text-sm outline-none ring-ring/40 transition focus:ring-2"
             disabled={loading}
             maxLength={120}
           />
           <button
             type="submit"
             disabled={loading || topic.trim().length < 2}
-            className="inline-flex h-14 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 sm:px-8"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
           >
             {loading ? (
-              <Loader2 className="size-5 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <GraduationCap className="size-5" />
+              <GraduationCap className="size-4" />
             )}
             {loading ? "Writing your notes…" : "Generate Curated Notes"}
           </button>
@@ -211,7 +211,7 @@ export default function AiStudy() {
       )}
 
       {/* AI generation loading — animated notebook + rotating study phrases */}
-      {loading && <AiLoadingCard topic={topic} />}
+      {loading && <AiProgressCard topic={topic} />}
 
       {/* Notes + quiz */}
       {activeNote && !loading ? (
@@ -586,7 +586,7 @@ function ImportantQuestions({ topic }: { topic: string }) {
       </div>
 
       {busy && (
-        <AiLoadingCard topic={topic} detail="picking the exam essentials" />
+        <AiProgressCard topic={topic} detail="picking the exam essentials" />
       )}
       {error && (
         <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>

@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { useSounds, useSettings } from "@/hooks/use-settings";
 import { TranslateButton } from "@/components/TranslateButton";
 import { maybeShowInterstitial } from "@/lib/ads";
-import { AiLoadingCard } from "@/components/loading";
+import { AiProgressCard } from "@/components/loading";
 import SnapSolve from "@/components/tutor/SnapSolve";
 import TutorChat from "@/components/tutor/TutorChat";
 import { Bookmark, Camera, MessageCircleQuestion } from "lucide-react";
@@ -240,7 +240,7 @@ export default function Practice() {
       )}
 
       {mode === "drills" && screen === "loading" && (
-        <AiLoadingCard
+        <AiProgressCard
           topic={topic}
           detail={`writing ${count} ${difficulty} questions`}
         />
@@ -398,7 +398,7 @@ function SetupForm(props: {
 
       <button
         type="submit"
-        className="mt-5 inline-flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+        className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
       >
         <Target className="size-5" />
         Start Practice
@@ -501,7 +501,7 @@ function PracticeRunner(props: {
               onClick={() => choose(oi)}
               disabled={revealed || submitting}
               className={cn(
-                "flex min-h-14 items-center gap-3 rounded-lg border px-4 py-3 text-left text-base transition active:scale-[0.99]",
+                "flex h-11 items-center gap-3 rounded-lg border px-4 py-3 text-left text-base transition active:scale-[0.99]",
                 !revealed && "bg-card/70 hover:bg-accent",
                 showState &&
                   isCorrectOpt &&
@@ -550,7 +550,7 @@ function PracticeRunner(props: {
       <button
         onClick={next}
         disabled={!revealed || submitting}
-        className="mt-5 inline-flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
+        className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
       >
         {submitting && <Loader2 className="size-5 animate-spin" />}
         {submitting
@@ -628,13 +628,13 @@ function Results(props: {
       <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
         <button
           onClick={props.onPracticeAgain}
-          className="inline-flex h-14 flex-1 items-center justify-center gap-2 rounded-lg border bg-card px-6 text-base font-bold shadow-sm transition hover:bg-accent active:scale-[0.98]"
+          className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border bg-card px-6 text-sm font-semibold shadow-sm transition hover:bg-accent active:scale-[0.98]"
         >
           <RotateCcw className="size-5" /> Practice Again
         </button>
         <button
           onClick={props.onTryAnotherTopic}
-          className="inline-flex h-14 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98]"
+          className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98]"
         >
           <Shuffle className="size-5" /> Try Another Topic
         </button>

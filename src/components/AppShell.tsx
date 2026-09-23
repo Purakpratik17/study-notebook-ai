@@ -11,7 +11,7 @@ import {
   Home,
   Layers,
   LogOut,
-  MoreHorizontal,
+  Menu,
   NotebookPen,
   Palette,
   PenLine,
@@ -55,24 +55,26 @@ const TABS = [
 
 /** Mobile bottom bar keeps the 4 highest-traffic destinations; the rest
  *  live in a compact "More" sheet so nothing feels overcrowded. */
-const MOBILE_TABS = [
-  { to: "/dashboard", label: "Home", icon: Home },
-  { to: "/ai-study", label: "AI Study", icon: Sparkles },
-  { to: "/quests", label: "Quests", icon: Swords },
-  { to: "/leaderboard", label: "Ranks", icon: Trophy },
-] as const;
-
 const MORE_TABS = [
   { to: "/essay", label: "Essay Writer", icon: PenLine },
   { to: "/projects", label: "Projects", icon: FileStack },
   { to: "/flashcards", label: "Flashcards", icon: Layers },
   { to: "/revision", label: "Revision", icon: RefreshCw },
-  { to: "/timetable", label: "Timetable", icon: CalendarDays },
   { to: "/focus", label: "Focus", icon: TimerIcon },
+] as const;
+
+const MENU_STUDY = [
+  { to: "/dashboard", label: "Dashboard", icon: Home },
+  { to: "/ai-study", label: "Curated Notes", icon: Sparkles },
+  { to: "/practice", label: "Practice", icon: Target },
+  { to: "/timetable", label: "Timetable", icon: CalendarDays },
+  { to: "/quests", label: "Quests", icon: Swords },
+  { to: "/arcade", label: "Arcade", icon: Gamepad2 },
+  ...MORE_TABS,
   { to: "/whiteboard", label: "Whiteboard", icon: Palette },
 ] as const;
 
-const MORE_SOCIAL = [
+const MENU_YOU = [
   { to: "/friends", label: "Friends", icon: Users },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { to: "/profile", label: "Profile", icon: User },
@@ -87,8 +89,7 @@ function MoreGroup({
   title: string;
   tabs: ReadonlyArray<{ to: string; label: string; icon: React.ComponentType<{ className?: string }> }>;
   pathname: string;
-}) {
-  return (
+}) {  return (
     <div className="mb-2">
       <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint">
         {title}
@@ -122,8 +123,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const inMore =
-    MORE_TABS.some((t) => location.pathname === t.to) ||
-    MORE_SOCIAL.some((t) => location.pathname === t.to);
+    MENU_STUDY.some((t) => location.pathname === t.to) ||
+    MENU_YOU.some((t) => location.pathname === t.to);
   // Global Whiteboard drawer — hidden/collapsed by default so it never takes
   // space in the normal study UI. Opens as a smooth bottom sheet; the editor
   // itself can go fullscreen from inside.
@@ -244,8 +245,62 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile top bar — padded below the status bar / notch via safe-area */}
-      <header style={{ paddingTop: "env(safe-area-inset-top, 0px)" }} className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/85 px-4 py-3 backdrop-blur md:hidden">
+      {/* Mobile top bar — padded below the status bar / notch via safe-area.
+          Navigation lives in a compact top-LEFT dropdown (☰), no bottom bar. */}
+      <header style={{ paddingTop: "env(safe-area-inset-top, 0px)" }} className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/85 px-3 py-2.5 backdrop-blur md:hidden">
+        <div className="relative">
+          <button
+            onClick={() => {
+              sounds.click();
+              setMoreOpen((v) => !v);
+            }}
+            aria-expanded={moreOpen}
+            aria-label="Open navigation menu"
+            className={cn(
+              "flex min-h-9 items-center gap-2 rounded-lg border bg-card px-3 py-1.5 text-sm font-semibold shadow-sm transition active:scale-[0.98]",
+              (moreOpen || inMore) && "bg-primary/10 text-primary",
+            )}
+          >
+            {moreOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+            Menu
+          </button>
+          {moreOpen && (
+            <>
+              {/* tap-outside overlay */}
+              <button
+                aria-hidden="true"
+                tabIndex={-1}
+                onClick={() => setMoreOpen(false)}
+                className="fixed inset-0 z-40 cursor-default bg-black/20"
+              />
+              <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top,0px)+3.4rem)] z-50 max-h-[70dvh] overflow-y-auto overscroll-contain rounded-xl border bg-popover p-2 shadow-xl">
+                <MoreGroup title="Study" tabs={MENU_STUDY} pathname={location.pathname} />
+                <MoreGroup title="You" tabs={MENU_YOU} pathname={location.pathname} />
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setMoreOpen(false)}
+                    className={cn(
+                      "flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground",
+                      location.pathname === "/admin" ? "bg-primary/10 text-primary" : "hover:bg-accent",
+                    )}
+                  >
+                    <ShieldCheck className="size-4" /> Admin
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    setMoreOpen(false);
+                    signOut();
+                  }}
+                  className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="size-4" /> Sign out
+                </button>
+              </div>
+            </>
+          )}
+        </div>
         <Link to="/dashboard" className="flex items-center gap-2">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <NotebookPen className="size-4" />
@@ -254,7 +309,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Cerevyn
           </span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button asChild variant="ghost" size="icon" className="size-8">
             <Link to="/profile" aria-label="Profile">
               <User className="size-4" />
@@ -320,80 +375,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Page content */}
+      {/* Page content — no bottom bar anymore; compact bottom padding only. */}
       <main
         style={bannerMargin ? { marginBottom: 64 } : undefined}
-        className="min-h-0 flex-1 overflow-x-hidden px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8"
+        className="min-h-0 flex-1 overflow-x-hidden px-4 pb-10 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8"
       >
         <TabBackground />
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
-
-      {/* Mobile bottom navigation: 4 primary tabs + More sheet.
-          Lifted above the Android gesture/navigation area via safe-area inset,
-          and further above the native AdMob banner (which sits at the very
-          bottom edge) so the ad can never cover the menu. */}
-      <nav
-        style={bannerMargin ? { bottom: 64 } : undefined}
-        className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur md:hidden"
-      >
-        <div className="grid grid-cols-5">
-          {MOBILE_TABS.map((tab) => {
-            const active = location.pathname === tab.to;
-            return (
-              <NavLink
-                key={tab.to}
-                to={tab.to}
-                className={cn(
-                  "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors",
-                  active && "text-primary",
-                )}
-              >
-                <tab.icon className={cn("size-5", active && "scale-110")} />
-                {tab.label}
-              </NavLink>
-            );
-          })}
-          <button
-            onClick={() => setMoreOpen((v) => !v)}
-            aria-expanded={moreOpen}
-            className={cn(
-              "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-muted-foreground transition-colors",
-              (moreOpen || inMore) && "text-primary",
-            )}
-          >
-            <MoreHorizontal className="size-5" />
-            More
-          </button>
-        </div>
-        {moreOpen && (
-          <div className="max-h-[60dvh] overflow-y-auto overscroll-contain border-t bg-card px-3 py-3">
-            <MoreGroup
-              title="Study"
-              tabs={[
-                { to: "/practice", label: "Practice", icon: Target },
-                { to: "/arcade", label: "Arcade", icon: Gamepad2 },
-                ...MORE_TABS,
-              ]}
-              pathname={location.pathname}
-            />
-            <MoreGroup title="You" tabs={MORE_SOCIAL} pathname={location.pathname} />
-            {isAdmin && (
-              <Link
-                to="/admin"
-                className={cn(
-                  "mt-1 flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground",
-                  location.pathname === "/admin"
-                    ? "bg-primary/10 text-primary"
-                    : "hover:bg-accent",
-                )}
-              >
-                <ShieldCheck className="size-4" /> Admin
-              </Link>
-            )}
-          </div>
-        )}
-      </nav>
     </div>
   );
 }

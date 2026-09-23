@@ -64,9 +64,9 @@ const PRODUCTION_IDS = {
  * ⚠️ DEVELOPMENT / TEST ADS — MASTER SWITCH ⚠️
  * true (current) = serve Google's official TEST ad unit IDs everywhere.
  * No personal/live ad IDs are used in any placement while this is true.
- * Flip to false ONLY after replacing PRODUCTION_IDS with real IDs.
+ * Flip to false ONLY when going live with PRODUCTION_IDS.
  */
-export const ADS_USE_TEST_ADS = false;
+export const ADS_USE_TEST_ADS = true;
 
 /* ═══════════════════════════════════════════════════════════════════════
    CENTRALIZED AD PLACEMENT CONFIG — the single place to enable/disable
@@ -186,13 +186,15 @@ export async function initAds(): Promise<void> {
 /* ─── Banner ──────────────────────────────────────────────────────────── */
 
 let bannerShown = false;
+let bannerFailedOnce = false;
 
 /**
  * Show the bottom adaptive banner (Android only). Safe to call repeatedly:
  * on first call it creates the banner; if the banner already exists but was
  * hidden (e.g. after visiting Settings/Practice), it is resumed instead of
- * re-created — this is what makes the banner reappear when navigating back
- * to ad-allowed screens.
+ * re-created. If a previous create attempt FAILED, we retry — otherwise a
+ * single transient failure (network, no-fill) would leave ads dead for the
+ * whole session.
  */
 export async function showBannerAd(): Promise<void> {
   if (!isAndroidNative() || bannerShown) return;
@@ -207,18 +209,33 @@ export async function showBannerAd(): Promise<void> {
       margin: 0,
     });
     bannerShown = true;
+    bannerFailedOnce = false;
   } catch {
-    // Banner failure never breaks the page.
+    // Banner failure never breaks the page. Mark it so the next route
+    // change retries (only once per failure, to avoid request spam).
+    if (!bannerFailedOnce) {
+      bannerFailedOnce = true;
+      setTimeout(() => {
+        bannerFailedOnce = false;
+      }, 60_000);
+    }
   }
 }
 
 /**
  * Resume a hidden banner without re-creating it (cheap, no new ad request).
  * Called by AdBannerController when navigating to an ad-allowed screen after
- * the banner was hidden elsewhere. Web/no-banner: safe no-op.
+ * the banner was hidden elsewhere. If the banner was never successfully
+ * created, fall through to a (possibly retrying) show instead. Web/no-banner:
+ * safe no-op.
  */
 export async function resumeBannerAd(): Promise<void> {
-  if (!isAndroidNative() || !bannerShown) return;
+  if (!isAndroidNative()) return;
+  if (!bannerShown) {
+    // Never created (or a previous create failed) — try to create it.
+    await showBannerAd();
+    return;
+  }
   try {
     await AdMob.resumeBanner();
   } catch {

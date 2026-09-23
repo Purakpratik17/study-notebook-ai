@@ -209,7 +209,7 @@ export default function ProjectCreator() {
           <textarea id="pinstr" value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={2} placeholder="anything the teacher asked for…" className="mt-1.5 w-full rounded-lg border bg-background/60 p-3 text-sm outline-none ring-ring/40 focus:ring-2" disabled={loading} />
         </div>
 
-        <button type="submit" disabled={loading || topic.trim().length < 3} className="mt-5 inline-flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-base font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:px-8">
+        <button type="submit" disabled={loading || topic.trim().length < 3} className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50 sm:w-auto sm:px-8">
           {loading ? <Loader2 className="size-5 animate-spin" /> : <GraduationCap className="size-5" />}
           {loading ? "Building your project…" : "Generate Project"}
         </button>

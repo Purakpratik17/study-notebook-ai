@@ -13,6 +13,9 @@ import {
   Zap,
 } from "lucide-react";
 import { Link } from "react-router";
+import { useAuth } from "@clerk/react-router";
+import { Navigate } from "react-router";
+import { LoadingScreen } from "@/components/loading";
 
 const FEATURES = [
   {
@@ -63,6 +66,19 @@ const RANKS = [
 ] as const;
 
 export default function Landing() {
+  // Kill the "landing flash" for signed-in users: while Clerk resolves the
+  // session show a small branded splash; if the user IS authenticated, go
+  // straight to the dashboard — the landing page never renders for them.
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background">
+        <LoadingScreen message="warming up your notebook…" />
+      </div>
+    );
+  }
+  if (isSignedIn) return <Navigate to="/dashboard" replace />;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

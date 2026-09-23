@@ -241,7 +241,7 @@ export default function Revision() {
               type="button"
               onClick={() => void finish()}
               disabled={finishing}
-              className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-primary text-base font-bold text-primary-foreground shadow-md transition hover:bg-primary/90 disabled:opacity-50"
+              className="flex h-11 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-primary/90 disabled:opacity-50"
             >
               {finishing ? <Loader2 className="size-5 animate-spin" /> : <BookOpenCheck className="size-5" />}
               Finish revision
