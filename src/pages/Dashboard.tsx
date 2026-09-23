@@ -773,6 +773,9 @@ export default function Dashboard() {
         </section>
       </div>
 
+      {/* Weekly Report Card — compact summary with link to the full report */}
+      <WeeklyReportCard />
+
       {/* Revision + flashcards shortcut */}
       {revQueue !== undefined && revQueue.total > 0 && (
         <Link
@@ -878,6 +881,32 @@ export default function Dashboard() {
         </p>
       )}
     </div>
+  );
+}
+
+/** Compact Weekly Report Card — real numbers from api.weekly, no fakes. */
+function WeeklyReportCard() {
+  const report = useQuery(api.weekly.getWeeklyReport, { weekOffset: 0 });
+  if (!report) return null; // undefined (loading) or empty week — stay quiet
+  return (
+    <Link
+      to="/weekly-report"
+      className="paper-sheet flex items-center justify-between gap-3 px-5 py-4 transition-transform hover:-translate-y-0.5"
+    >
+      <div className="min-w-0">
+        <p className="text-sm font-bold">📊 Your Week in Review</p>
+        <p className="annotation truncate text-xs">
+          {report.rangeLabel} · {report.xpEarned.toLocaleString()} XP ·{" "}
+          {report.studyDays > 0
+            ? `${report.studyDays} study day${report.studyDays === 1 ? "" : "s"}`
+            : "no activity yet"}
+          {report.accuracy !== null ? ` · ${report.accuracy}% accuracy` : ""}
+        </p>
+      </div>
+      <span className="shrink-0 rounded-md border bg-card px-2.5 py-1.5 text-xs font-semibold text-primary">
+        View Full Report
+      </span>
+    </Link>
   );
 }
 

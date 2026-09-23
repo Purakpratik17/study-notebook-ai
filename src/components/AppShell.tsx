@@ -5,6 +5,7 @@ import { useAuth, useClerkSignOut } from "@/hooks/use-auth";
 import { useSounds } from "@/hooks/use-settings";
 import { cn } from "@/lib/utils";
 import {
+  BarChart3,
   CalendarDays,
   FileStack,
   Gamepad2,
@@ -49,6 +50,7 @@ const TABS = [
   { to: "/friends", label: "Friends", icon: Users },
   { to: "/quests", label: "Quests", icon: Swords },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { to: "/weekly-report", label: "Weekly Report", icon: BarChart3 },
   { to: "/profile", label: "Profile", icon: User },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
@@ -77,6 +79,7 @@ const MENU_STUDY = [
 const MENU_YOU = [
   { to: "/friends", label: "Friends", icon: Users },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { to: "/weekly-report", label: "Weekly Report", icon: BarChart3 },
   { to: "/profile", label: "Profile", icon: User },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;

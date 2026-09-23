@@ -27,6 +27,7 @@ const Timetable = lazy(() => import("./pages/Timetable.tsx"));
 const Quests = lazy(() => import("./pages/Quests.tsx"));
 const Profile = lazy(() => import("./pages/Profile.tsx"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard.tsx"));
+const WeeklyReport = lazy(() => import("./pages/WeeklyReport.tsx"));
 const EssayWriter = lazy(() => import("./pages/EssayWriter.tsx"));
 const ProjectCreator = lazy(() => import("./pages/ProjectCreator.tsx"));
 const Arcade = lazy(() => import("./pages/Arcade.tsx"));
@@ -271,6 +272,14 @@ createRoot(document.getElementById("root")!).render(
                   element={
                     <RequireAuth>
                       <Leaderboard />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/weekly-report"
+                  element={
+                    <RequireAuth>
+                      <WeeklyReport />
                     </RequireAuth>
                   }
                 />
