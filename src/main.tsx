@@ -141,15 +141,15 @@ class RootErrorBoundary extends React.Component<
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
-function MissingClerkKey({ malformed }: { malformed?: boolean }) {
+function MissingClerkKey() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
         <p className="font-bold">Sign-in is not configured</p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {malformed
-            ? "The Clerk publishable key in this environment is invalid (it should start with pk_test_ or pk_live_). Correct the key, then reload the app."
-            : "The Clerk publishable key is missing from this environment. Add VITE_CLERK_PUBLISHABLE_KEY in the project's Keys/API keys settings, then reload the app."}
+          The Clerk publishable key is missing from this environment. Add
+          VITE_CLERK_PUBLISHABLE_KEY in the project&apos;s Keys/API keys
+          settings, then reload the app.
         </p>
         <Button className="mt-4" onClick={() => window.location.reload()}>
           Reload
@@ -171,12 +171,18 @@ const clerkKey = clerkKeyRaw
   ? clerkKeyRaw.trim().replace(/^["']+/, "").replace(/["']+$/, "")
   : undefined;
 
-/** A key present but malformed produces a cryptic Clerk bootstrap error and
- *  an endless spinner; catch it up-front with an actionable screen. Clerk
- *  keys are base64url (so `-` and `_` are legal) with a trailing `$` on
- *  test keys. Only reject keys that clearly can't be valid. */
-const clerkKeyMalformed =
-  !!clerkKey && !/^pk_(test|live)_[A-Za-z0-9_-]+\$?$/.test(clerkKey);
+/** Log (never block) when the key doesn't look like a Clerk publishable
+ *  key. An over-strict local validator previously hard-blocked a VALID key
+ *  with an "invalid" screen, so validation here is advisory only — Clerk
+ *  remains the real validator at bootstrap. */
+const clerkKeyLooksSuspicious =
+  !!clerkKey && !/^pk_(test|live)_/.test(clerkKey);
+if (clerkKeyLooksSuspicious) {
+  console.warn(
+    "[Cerevyn] VITE_CLERK_PUBLISHABLE_KEY does not start with pk_test_/pk_live_ — " +
+      "sign-in may fail. Still attempting Clerk bootstrap.",
+  );
+}
 
 // On Android, route Clerk OAuth through the system browser with the
 // `studynotebook://sso-callback` deep link (see src/lib/native-oauth.ts).
@@ -229,7 +235,6 @@ function RouteSyncer() {
  *  skipped cleanly when the Clerk key is missing (see MissingClerkKey). */
 function AuthRoot() {
   if (!clerkKey) return <MissingClerkKey />;
-  if (clerkKeyMalformed) return <MissingClerkKey malformed />;
   return (
     <ClerkProvider
       publishableKey={clerkKey}
