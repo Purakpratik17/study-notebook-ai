@@ -159,9 +159,17 @@ function MissingClerkKey({ malformed }: { malformed?: boolean }) {
   );
 }
 
-const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as
+const clerkKeyRaw = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as
   | string
   | undefined;
+
+// Env values pasted into platform key UIs sometimes arrive wrapped in quotes
+// or with stray whitespace/newlines, which breaks both our shape check and
+// Clerk's own parsing. Trim + unwrap before validating; the key value itself
+// is never altered beyond that. Clerk remains the final validator.
+const clerkKey = clerkKeyRaw
+  ? clerkKeyRaw.trim().replace(/^["']+/, "").replace(/["']+$/, "")
+  : undefined;
 
 /** A key present but malformed produces a cryptic Clerk bootstrap error and
  *  an endless spinner; catch it up-front with an actionable screen. Clerk
