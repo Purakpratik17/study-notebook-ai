@@ -279,20 +279,23 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Hero: greeting + level */}
-      <section className="paper-sheet paper-margin px-5 py-5 pl-12 md:px-8 md:pl-20">
-        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+      {/* Hero: greeting + level — emerald gradient card */}
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-[oklch(0.38_0.075_195)] p-5 text-primary-foreground shadow-lg md:p-7">
+        {/* decorative gold + coral glows */}
+        <div aria-hidden className="pointer-events-none absolute -right-10 -top-14 size-44 rounded-full bg-highlight/25 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-16 -left-8 size-40 rounded-full bg-marker/20 blur-3xl" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <p className="annotation text-sm">{greeting().toLowerCase()},</p>
-            <h1 className="truncate text-2xl font-bold tracking-tight md:text-3xl">
+            <p className="text-sm font-medium text-primary-foreground/75">{greeting()},</p>
+            <h1 className="truncate text-2xl font-extrabold tracking-tight md:text-3xl">
               {name}!
             </h1>
             {summary && (
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-primary-foreground/85">
                 <Flame
                   className={cn(
                     "size-4",
-                    summary.studiedToday ? "text-marker" : "text-ink-faint",
+                    summary.studiedToday ? "text-highlight" : "text-primary-foreground/50",
                   )}
                 />
                 {summary.studiedToday
@@ -305,22 +308,22 @@ export default function Dashboard() {
           {stats && (
             <div className="w-full max-w-xs">
               <div className="flex items-end justify-between">
-                <span className="level-chip rounded-lg bg-card px-2.5 py-1 text-xs font-bold text-primary">
+                <span className="level-chip rounded-lg bg-white/15 px-2.5 py-1 text-xs font-bold backdrop-blur">
                   Lv {stats.level} · {stats.levelName}
                 </span>
-                <span className="text-xs font-semibold text-muted-foreground">
+                <span className="text-xs font-semibold text-primary-foreground/80">
                   {stats.maxLevel
                     ? "Max level"
                     : `${stats.xpNeeded} XP to Lv ${stats.nextLevel}`}
                 </span>
               </div>
-              <div className="mt-2 h-3 overflow-hidden rounded-full border border-border/70 bg-paper-deep">
+              <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/20">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-xp/80 to-xp transition-all duration-700"
+                  className="h-full rounded-full bg-gradient-to-r from-highlight to-[oklch(0.9_0.12_95)] transition-all duration-700"
                   style={{ width: `${Math.round(stats.progress * 100)}%` }}
                 />
               </div>
-              <p className="mt-1 text-right text-[11px] text-muted-foreground">
+              <p className="mt-1 text-right text-[11px] text-primary-foreground/70">
                 {stats.xp.toLocaleString()} XP total
               </p>
             </div>

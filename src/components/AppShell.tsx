@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils";
 import {
   BarChart3,
   CalendarDays,
+  Ellipsis,
   FileStack,
   Gamepad2,
   Home,
   Layers,
   LogOut,
-  Menu,
   NotebookPen,
   Palette,
   PenLine,
@@ -55,8 +55,15 @@ const TABS = [
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
-/** Mobile bottom bar keeps the 4 highest-traffic destinations; the rest
- *  live in a compact "More" sheet so nothing feels overcrowded. */
+/** Mobile bottom bar: 5 primary destinations. Everything else lives in
+ *  the "More" sheet so nothing is lost. */
+const BOTTOM_TABS = [
+  { to: "/dashboard", label: "Home", icon: Home },
+  { to: "/ai-study", label: "Notes", icon: Sparkles },
+  { to: "/practice", label: "Practice", icon: Target },
+  { to: "/timetable", label: "Planner", icon: CalendarDays },
+] as const;
+
 const MORE_TABS = [
   { to: "/essay", label: "Essay Writer", icon: PenLine },
   { to: "/projects", label: "Projects", icon: FileStack },
@@ -163,7 +170,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-bold tracking-tight">
               Cerevyn
             </span>
-            <span className="annotation text-[11px]">ai study companion</span>
+            <span className="annotation text-[11px]">learn • play • level up</span>
           </span>
         </Link>
 
@@ -248,87 +255,143 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile top bar — padded below the status bar / notch via safe-area.
-          Navigation lives in a compact top-LEFT dropdown (☰), no bottom bar. */}
-      <header style={{ paddingTop: "env(safe-area-inset-top, 0px)" }} className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/85 px-3 py-2.5 backdrop-blur md:hidden">
-        <div className="relative">
+      {/* Mobile top bar — branding + profile; navigation lives in the
+          bottom nav below (native-app pattern). */}
+      <header style={{ paddingTop: "env(safe-area-inset-top, 0px)" }} className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/85 px-4 py-2.5 backdrop-blur md:hidden">
+        <Link to="/dashboard" className="flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <NotebookPen className="size-4" />
+          </span>
+          <span className="flex flex-col leading-tight">
+            <span className="text-sm font-extrabold tracking-tight">Cerevyn</span>
+            <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+              learn • play • level up
+            </span>
+          </span>
+        </Link>
+        <div className="flex items-center gap-1">
+          <Button asChild variant="ghost" size="icon" className="size-9">
+            <Link to="/profile" aria-label="Profile">
+              <User className="size-5" />
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 text-muted-foreground"
+            onClick={signOut}
+            aria-label="Sign out"
+          >
+            <LogOut className="size-5" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Mobile bottom navigation — blurred, 5 items. */}
+      <nav
+        className={cn(
+          "bottom-nav md:hidden",
+          bannerMargin ? "bottom-16" : "bottom-0",
+        )}
+        aria-label="Primary"
+      >
+        <div className="mx-auto flex w-full max-w-md items-stretch px-2">
+          {BOTTOM_TABS.map((tab) => {
+            const active =
+              location.pathname === tab.to ||
+              (tab.to === "/ai-study" &&
+                location.pathname.startsWith("/ai-study"));
+            return (
+              <Link
+                key={tab.to}
+                to={tab.to}
+                onClick={sounds.click}
+                className={cn("bottom-nav-item", active && "active")}
+                aria-current={active ? "page" : undefined}
+              >
+                <span className="bottom-nav-icon">
+                  <tab.icon className="size-5" />
+                </span>
+                {tab.label}
+              </Link>
+            );
+          })}
           <button
             onClick={() => {
               sounds.click();
               setMoreOpen((v) => !v);
             }}
             aria-expanded={moreOpen}
-            aria-label="Open navigation menu"
-            className={cn(
-              "flex min-h-9 items-center gap-2 rounded-lg border bg-card px-3 py-1.5 text-sm font-semibold shadow-sm transition active:scale-[0.98]",
-              (moreOpen || inMore) && "bg-primary/10 text-primary",
-            )}
+            className={cn("bottom-nav-item", inMore && "active")}
           >
-            {moreOpen ? <X className="size-4" /> : <Menu className="size-4" />}
-            Menu
+            <span className="bottom-nav-icon">
+              <Ellipsis className="size-5" />
+            </span>
+            More
           </button>
-          {moreOpen && (
-            <>
-              {/* tap-outside overlay */}
-              <button
-                aria-hidden="true"
-                tabIndex={-1}
-                onClick={() => setMoreOpen(false)}
-                className="fixed inset-0 z-40 cursor-default bg-black/20"
-              />
-              <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top,0px)+3.4rem)] z-50 max-h-[70dvh] overflow-y-auto overscroll-contain rounded-xl border bg-popover p-2 shadow-xl">
-                <MoreGroup title="Study" tabs={MENU_STUDY} pathname={location.pathname} />
-                <MoreGroup title="You" tabs={MENU_YOU} pathname={location.pathname} />
-                {isAdmin && (
+        </div>
+      </nav>
+
+      {/* "More" bottom sheet — every remaining destination. */}
+      {moreOpen && (
+        <>
+          <button
+            aria-hidden="true"
+            tabIndex={-1}
+            onClick={() => setMoreOpen(false)}
+            className="fixed inset-0 z-40 cursor-default bg-black/30 md:hidden"
+          />
+          <div
+            role="dialog"
+            aria-label="More navigation"
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[78dvh] overflow-y-auto overscroll-contain rounded-t-3xl border-t bg-popover px-3 pt-3 shadow-2xl md:hidden"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2rem)" }}
+          >
+            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border" />
+            <div className="grid grid-cols-3 gap-1.5">
+              {[...MENU_STUDY, ...MENU_YOU].map((tab) => {
+                const active = location.pathname === tab.to;
+                return (
                   <Link
-                    to="/admin"
-                    onClick={() => setMoreOpen(false)}
+                    key={tab.to}
+                    to={tab.to}
                     className={cn(
-                      "flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground",
-                      location.pathname === "/admin" ? "bg-primary/10 text-primary" : "hover:bg-accent",
+                      "flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-center text-[11px] font-semibold text-muted-foreground card-lift",
+                      active
+                        ? "border-primary/30 bg-primary/10 text-primary"
+                        : "bg-card",
                     )}
                   >
-                    <ShieldCheck className="size-4" /> Admin
+                    <tab.icon className="size-5" />
+                    {tab.label}
                   </Link>
+                );
+              })}
+            </div>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setMoreOpen(false)}
+                className={cn(
+                  "mt-2 flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-muted-foreground",
+                  location.pathname === "/admin" ? "bg-primary/10 text-primary" : "bg-card",
                 )}
-                <button
-                  onClick={() => {
-                    setMoreOpen(false);
-                    signOut();
-                  }}
-                  className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-destructive hover:bg-destructive/10"
-                >
-                  <LogOut className="size-4" /> Sign out
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-        <Link to="/dashboard" className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <NotebookPen className="size-4" />
-          </span>
-          <span className="text-sm font-bold tracking-tight">
-            Cerevyn
-          </span>
-        </Link>
-        <div className="flex items-center gap-1">
-          <Button asChild variant="ghost" size="icon" className="size-8">
-            <Link to="/profile" aria-label="Profile">
-              <User className="size-4" />
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-muted-foreground"
-            onClick={signOut}
-            aria-label="Sign out"
-          >
-            <LogOut className="size-4" />
-          </Button>
-        </div>
-      </header>
+              >
+                <ShieldCheck className="size-4" /> Admin
+              </Link>
+            )}
+            <button
+              onClick={() => {
+                setMoreOpen(false);
+                signOut();
+              }}
+              className="mt-1 flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="size-4" /> Sign out
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Global Whiteboard handle — a slim chevron on the right edge.
           Hidden while already inside the Whiteboard or Arcade (fullscreen-ish
@@ -378,10 +441,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Page content — no bottom bar anymore; compact bottom padding only. */}
+      {/* Page content — bottom padding reserves space for the fixed nav. */}
       <main
         style={bannerMargin ? { marginBottom: 64 } : undefined}
-        className="min-h-0 flex-1 overflow-x-hidden px-4 pb-10 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8"
+        className="min-h-0 flex-1 overflow-x-hidden px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8"
       >
         <TabBackground />
         <div className="mx-auto w-full max-w-5xl">{children}</div>
