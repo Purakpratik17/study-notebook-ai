@@ -141,15 +141,15 @@ class RootErrorBoundary extends React.Component<
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
-function MissingClerkKey() {
+function MissingClerkKey({ undecodable }: { undecodable?: boolean }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
         <p className="font-bold">Sign-in is not configured</p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          The Clerk publishable key is missing from this environment. Add
-          VITE_CLERK_PUBLISHABLE_KEY in the project&apos;s Keys/API keys
-          settings, then reload the app.
+          {undecodable
+            ? "The Clerk publishable key in this environment can't be read — it may be a secret key (sk_test_…) or an incomplete paste. Copy the Publishable key (pk_test_…, ends with $) from Clerk Dashboard → API Keys into the project's Keys settings, then reload."
+            : "The Clerk publishable key is missing from this environment. Add VITE_CLERK_PUBLISHABLE_KEY in the project's Keys/API keys settings, then reload the app."}
         </p>
         <Button className="mt-4" onClick={() => window.location.reload()}>
           Reload
@@ -169,6 +169,25 @@ const clerkKeyRaw = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as
 // it tries to load clerk-js from "https:///npm/..." with no host).
 // Publishable keys never contain whitespace or quotes, so strip them all.
 const clerkKey = clerkKeyRaw ? clerkKeyRaw.replace(/[\s"']+/g, "") : undefined;
+
+/** Verify the key actually decodes to a Clerk frontend domain. Clerk builds
+ *  its script URL from this decoded value; when decoding fails it requests
+ *  "https:///npm/..." and crash-loops the app. Keys look like
+ *  pk_(test|live)_<base64url-domain>[$], where the middle part decodes to
+ *  e.g. "my-instance.clerk.accounts.dev". */
+function keyDecodesToDomain(key: string): boolean {
+  const m = /^pk_(?:test|live)_([A-Za-z0-9_-]+)\$?$/.exec(key);
+  if (!m) return false;
+  try {
+    const b64 = m[1].replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
+    // The decoded payload contains the instance domain.
+    return /\.[a-z]/i.test(decoded);
+  } catch {
+    return false;
+  }
+}
+const clerkKeyUndecodable = !!clerkKey && !keyDecodesToDomain(clerkKey);
 
 /** Log (never block) when the key doesn't look like a Clerk publishable
  *  key. An over-strict local validator previously hard-blocked a VALID key
@@ -234,6 +253,7 @@ function RouteSyncer() {
  *  skipped cleanly when the Clerk key is missing (see MissingClerkKey). */
 function AuthRoot() {
   if (!clerkKey) return <MissingClerkKey />;
+  if (clerkKeyUndecodable) return <MissingClerkKey undecodable />;
   return (
     <ClerkProvider
       publishableKey={clerkKey}
