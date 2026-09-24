@@ -3,7 +3,7 @@ import { useConvexAuth } from "convex/react";
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router";
 import { AppShell } from "./AppShell";
-import { LoadingScreen } from "@/components/loading";
+import { AuthGate } from "./AuthGate";
 
 /**
  * Route guard for authenticated pages. Auth is Clerk; useConvexAuth() only
@@ -15,12 +15,10 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const location = useLocation();
 
+  // Bounded wait for Clerk init + Convex token hydration; a hung/failing
+  // auth network call shows a retry screen instead of spinning forever.
   if (!isLoaded || isLoading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background">
-        <LoadingScreen message="checking your notebook…" />
-      </main>
-    );
+    return <AuthGate ready={false} />;
   }
 
   if (!isSignedIn || !isAuthenticated) {

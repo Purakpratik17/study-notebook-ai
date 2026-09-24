@@ -15,7 +15,7 @@ import {
 import { Link } from "react-router";
 import { useAuth } from "@clerk/react-router";
 import { Navigate } from "react-router";
-import { LoadingScreen } from "@/components/loading";
+import { AuthGate } from "@/components/AuthGate";
 
 const FEATURES = [
   {
@@ -70,16 +70,14 @@ export default function Landing() {
   // session show a small branded splash; if the user IS authenticated, go
   // straight to the dashboard — the landing page never renders for them.
   const { isLoaded, isSignedIn } = useAuth();
-  if (!isLoaded) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-background">
-        <LoadingScreen message="warming up your notebook…" />
-      </div>
-    );
-  }
-  if (isSignedIn) return <Navigate to="/dashboard" replace />;
+  if (isLoaded && isSignedIn) return <Navigate to="/dashboard" replace />;
+  // Bounded wait: if Clerk's session bootstrap hangs (transient network
+  // failure, blocked request in the preview iframe), show a retry screen
+  // instead of spinning forever.
+  return <AuthGate ready={isLoaded}>{renderLanding()}</AuthGate>;
 
-  return (
+  function renderLanding() {
+    return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -243,5 +241,6 @@ export default function Landing() {
         Cerevyn — study smart, level up daily.
       </footer>
     </motion.div>
-  );
+    );
+  }
 }
