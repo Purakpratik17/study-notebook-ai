@@ -173,9 +173,10 @@ const clerkKey = clerkKeyRaw
 
 /** A key present but malformed produces a cryptic Clerk bootstrap error and
  *  an endless spinner; catch it up-front with an actionable screen. Clerk
- *  test keys are base64 with a trailing `$`, so allow that char. */
+ *  keys are base64url (so `-` and `_` are legal) with a trailing `$` on
+ *  test keys. Only reject keys that clearly can't be valid. */
 const clerkKeyMalformed =
-  !!clerkKey && !/^pk_(test|live)_[A-Za-z0-9]+\$?$/.test(clerkKey);
+  !!clerkKey && !/^pk_(test|live)_[A-Za-z0-9_-]+\$?$/.test(clerkKey);
 
 // On Android, route Clerk OAuth through the system browser with the
 // `studynotebook://sso-callback` deep link (see src/lib/native-oauth.ts).
