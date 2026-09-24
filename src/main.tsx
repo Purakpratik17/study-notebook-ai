@@ -164,9 +164,10 @@ const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as
   | undefined;
 
 /** A key present but malformed produces a cryptic Clerk bootstrap error and
- *  an endless spinner; catch it up-front with an actionable screen. */
+ *  an endless spinner; catch it up-front with an actionable screen. Clerk
+ *  test keys are base64 with a trailing `$`, so allow that char. */
 const clerkKeyMalformed =
-  !!clerkKey && !/^pk_(test|live)_[A-Za-z0-9]+$/.test(clerkKey);
+  !!clerkKey && !/^pk_(test|live)_[A-Za-z0-9]+\$?$/.test(clerkKey);
 
 // On Android, route Clerk OAuth through the system browser with the
 // `studynotebook://sso-callback` deep link (see src/lib/native-oauth.ts).
