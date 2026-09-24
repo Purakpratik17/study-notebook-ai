@@ -15,6 +15,7 @@ import { isNative } from "@/lib/native";
 import { createNativeOAuthTransport } from "@/lib/native-oauth";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 import { LoadingScreen } from "@/components/loading";
+import { Button } from "@/components/ui/button";
 
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
@@ -140,6 +141,33 @@ class RootErrorBoundary extends React.Component<
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
+/** Rendered instead of ClerkProvider when the environment has no publishable
+ *  key — Clerk itself would throw a cryptic error deep in its bootstrap; this
+ *  gives a clear, actionable screen instead. */
+function MissingClerkKey() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+        <p className="font-bold">Sign-in is not configured</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          The Clerk publishable key is missing from this environment. Add{" "}
+          <code className="rounded bg-paper px-1 py-0.5 text-xs">
+            VITE_CLERK_PUBLISHABLE_KEY
+          </code>{" "}
+          in the project&apos;s Keys/API keys settings, then reload the app.
+        </p>
+        <Button className="mt-4" onClick={() => window.location.reload()}>
+          Reload
+        </Button>
+      </div>
+    </main>
+  );
+}
+
+const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as
+  | string
+  | undefined;
+
 // On Android, route Clerk OAuth through the system browser with the
 // `studynotebook://sso-callback` deep link (see src/lib/native-oauth.ts).
 // Web builds keep Clerk's normal same-document redirect flow.
@@ -187,28 +215,22 @@ function RouteSyncer() {
   return null;
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <RootErrorBoundary>
-      {/* Floating debug/inspector widget — never on native Android or
-          production web builds; only inside the dev preview environment. */}
-      {!isNative() && import.meta.env.DEV && (
-        <ToolbarErrorBoundary>
-          <VlyToolbar />
-        </ToolbarErrorBoundary>
-      )}
-      <BrowserRouter>
-        <ClerkProvider
-          publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string}
-          appearance={clerkAppearance}
-          {...clerkProviderProps}
-        >
-          <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
-            <SettingsProvider>
-              <NativeAuthBridge />
-              <RouteSyncer />
-              <AdBannerController />
-            <RouteErrorBoundary>
+/** Whole authenticated provider tree, kept as one component so it can be
+ *  skipped cleanly when the Clerk key is missing (see MissingClerkKey). */
+function AuthRoot() {
+  if (!clerkKey) return <MissingClerkKey />;
+  return (
+    <ClerkProvider
+      publishableKey={clerkKey}
+      appearance={clerkAppearance}
+      {...clerkProviderProps}
+    >
+      <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
+        <SettingsProvider>
+          <NativeAuthBridge />
+          <RouteSyncer />
+          <AdBannerController />
+          <RouteErrorBoundary>
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Landing />} />
@@ -374,11 +396,26 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
-            </RouteErrorBoundary>
-              <Toaster />
-            </SettingsProvider>
-          </ConvexProviderWithClerk>
-        </ClerkProvider>
+          </RouteErrorBoundary>
+          <Toaster />
+        </SettingsProvider>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
+  );
+}
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <RootErrorBoundary>
+      {/* Floating debug/inspector widget — never on native Android or
+          production web builds; only inside the dev preview environment. */}
+      {!isNative() && import.meta.env.DEV && (
+        <ToolbarErrorBoundary>
+          <VlyToolbar />
+        </ToolbarErrorBoundary>
+      )}
+      <BrowserRouter>
+        <AuthRoot />
       </BrowserRouter>
     </RootErrorBoundary>
   </StrictMode>,
