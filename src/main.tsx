@@ -163,13 +163,12 @@ const clerkKeyRaw = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as
   | string
   | undefined;
 
-// Env values pasted into platform key UIs sometimes arrive wrapped in quotes
-// or with stray whitespace/newlines, which breaks both our shape check and
-// Clerk's own parsing. Trim + unwrap before validating; the key value itself
-// is never altered beyond that. Clerk remains the final validator.
-const clerkKey = clerkKeyRaw
-  ? clerkKeyRaw.trim().replace(/^["']+/, "").replace(/["']+$/, "")
-  : undefined;
+// Env values pasted into platform key UIs sometimes arrive wrapped in
+// quotes or with stray whitespace/newlines — even embedded mid-string —
+// which makes Clerk's base64 decode of the key fail entirely (symptom:
+// it tries to load clerk-js from "https:///npm/..." with no host).
+// Publishable keys never contain whitespace or quotes, so strip them all.
+const clerkKey = clerkKeyRaw ? clerkKeyRaw.replace(/[\s"']+/g, "") : undefined;
 
 /** Log (never block) when the key doesn't look like a Clerk publishable
  *  key. An over-strict local validator previously hard-blocked a VALID key
