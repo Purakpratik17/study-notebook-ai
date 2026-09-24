@@ -18,6 +18,21 @@ import { LoadingScreen } from "@/components/loading";
 
 const AUTH_TIMEOUT_MS = 12_000;
 
+/** Human-readable hint appended based on how long Clerk has been stuck. */
+function failureHint(attempt: number): string {
+  if (attempt >= 2) {
+    return (
+      "Still failing after " +
+      attempt +
+      " attempts. The sign-in key for this environment may be missing or misconfigured — check that the Clerk publishable key is set in this environment's API keys settings."
+    );
+  }
+  return (
+    "If this keeps happening, the sign-in service may be unreachable from " +
+    "this network, or this environment may be missing its sign-in key."
+  );
+}
+
 export function AuthGate({
   ready,
   children,
@@ -27,9 +42,26 @@ export function AuthGate({
   children?: React.ReactNode;
 }) {
   const [timedOut, setTimedOut] = useState(false);
+  // Persisted across reloads (Retry does a full page load) so the error hint
+  // can escalate after repeated failures.
+  const [attempt, setAttempt] = useState(() => {
+    try {
+      return Number(window.sessionStorage.getItem("cerevyn:auth-retries")) || 1;
+    } catch {
+      return 1;
+    }
+  });
 
   useEffect(() => {
-    if (ready) return;
+    if (ready) {
+      // Success — clear the retry counter for next time.
+      try {
+        window.sessionStorage.removeItem("cerevyn:auth-retries");
+      } catch {
+        // ignore
+      }
+      return;
+    }
     const t = window.setTimeout(() => setTimedOut(true), AUTH_TIMEOUT_MS);
     return () => window.clearTimeout(t);
   }, [ready]);
@@ -45,7 +77,23 @@ export function AuthGate({
             We couldn&apos;t load your sign-in session. This is usually a
             temporary network issue — check your connection and try again.
           </p>
-          <Button className="mt-4 w-full" onClick={() => window.location.reload()}>
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground/80">
+            {failureHint(attempt)}
+          </p>
+          <Button
+            className="mt-4 w-full"
+            onClick={() => {
+              try {
+                window.sessionStorage.setItem(
+                  "cerevyn:auth-retries",
+                  String(attempt + 1),
+                );
+              } catch {
+                // storage unavailable — hint just won't escalate
+              }
+              window.location.reload();
+            }}
+          >
             Retry
           </Button>
         </div>
