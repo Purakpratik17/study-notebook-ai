@@ -1,36 +1,34 @@
-import { useUser, useClerk } from "@clerk/react-router";
 import { useConvexAuth } from "convex/react";
 
 /**
- * Auth is Clerk-issued. Convex functions key all study data on the Clerk
- * identity's `sub` claim; this hook exposes display data for the UI.
+ * Auth surface (post-Clerk removal).
+ *
+ * Authentication is now Convex Auth's Anonymous provider: every device gets
+ * a persistent Convex identity automatically (no sign-in screen). All study
+ * data remains keyed on the Convex identity's `subject` claim — exactly the
+ * same id shape the backend's requireUserId() returns — so existing data
+ * isolation and authorization are unchanged.
+ *
+ * The fields Clerk used to fill (name/email/image) are null for anonymous
+ * sessions; UI that displays them falls back to defaults. When the new
+ * Clerk application is integrated later, this hook is the single place to
+ * re-attach richer identity info.
  */
 export function useAuth() {
-  const { isLoaded, isSignedIn, user } = useUser();
-  const { isAuthenticated } = useConvexAuth();
-
-  const name =
-    user?.firstName ??
-    user?.fullName ??
-    user?.username ??
-    user?.primaryEmailAddress?.emailAddress?.split("@")[0] ??
-    "Student";
+  const { isAuthenticated, isLoading } = useConvexAuth();
 
   return {
-    isLoading: !isLoaded,
-    isAuthenticated: Boolean(isSignedIn && isAuthenticated),
-    clerkUser: user,
-    userId: user?.id ?? null,
-    name,
-    imageUrl: user?.imageUrl,
-    email:
-      user?.primaryEmailAddress?.emailAddress ??
-      user?.emailAddresses?.[0]?.emailAddress ??
-      null,
+    isLoading,
+    isAuthenticated,
+    clerkUser: null, // legacy field — no Clerk user anymore
+    userId: null,
+    name: "Student",
+    imageUrl: undefined,
+    email: null,
   };
 }
 
+/** Sign-out is a no-op for anonymous sessions (kept so callers don't break). */
 export function useClerkSignOut() {
-  const clerk = useClerk();
-  return () => clerk.signOut({ redirectUrl: "/" });
+  return () => Promise.resolve();
 }

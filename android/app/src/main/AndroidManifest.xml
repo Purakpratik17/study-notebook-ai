@@ -24,16 +24,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Clerk OAuth (Google) / email verification deep link.
-                 Must match the Custom URL scheme registered on the app's
-                 "Native applications" page in the Clerk Dashboard and be
-                 added to Clerk's OAuth redirect allowlist (see README). -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="studynotebook" />
-            </intent-filter>
+            <!-- (Clerk OAuth deep link removed with the Clerk integration.)
+                 When the new auth system is integrated and needs a deep-link
+                 callback, re-add a BROWSABLE intent-filter here. -->
 
         </activity>
 

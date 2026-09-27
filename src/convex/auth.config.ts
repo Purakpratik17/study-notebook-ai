@@ -10,22 +10,14 @@ const freebuffIssuer =
 
 export default {
   providers: [
-    // Clerk (https://clerk.com) — validates the JWTs minted by
-    // ConvexProviderWithClerk using Clerk's built-in "convex" token template.
-    // The domain below is this app's Clerk Frontend API URL (public, not a
-    // secret). See: https://docs.convex.dev/auth/clerk
-    //
-    // PRODUCTION (Google Play release): after claiming the Clerk app and
-    // creating a production instance, hardcode your production Frontend API
-    // URL here (e.g. https://clerk.yourapp.com) and redeploy Convex. Convex
-    // auth configs cannot use optional env fallbacks — every referenced var
-    // must be set — so the value is a literal. See ENVIRONMENT.md.
-    {
-      // Must match the Clerk instance of VITE_CLERK_PUBLISHABLE_KEY
-      // (pk_test_c2hh… = sharing-mastodon-1734.clerk.accounts.dev).
-      domain: "https://sharing-mastodon-1734.clerk.accounts.dev",
-      applicationID: "convex",
-    },
+    // NOTE (Clerk removed): the previous Clerk provider entry
+    // (domain: https://sharing-mastodon-1734.clerk.accounts.dev) has been
+    // removed along with the Clerk frontend integration. When a NEW Clerk
+    // application is integrated later, re-add its provider here:
+    //   { domain: "https://<new-instance>.clerk.accounts.dev",
+    //     applicationID: "convex" }
+    // Existing user data is untouched — all study rows are keyed by the
+    // Convex identity `subject`, which the Anonymous provider now supplies.
 
     // Standard Convex Auth provider for this project's own sign-in ("Get
     // Started" email/guest, see src/convex/auth.ts). The deployment

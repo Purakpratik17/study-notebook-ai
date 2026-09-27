@@ -207,7 +207,7 @@ function Avatar({ user, size = 10 }: { user: PublicInfo | null; size?: number })
 
 export default function Friends() {
   const sounds = useSounds();
-  const { clerkUser, name: clerkName, imageUrl } = useAuth();
+  const { name: clerkName, imageUrl } = useAuth();
   const syncUsername = useMutation(api.friends.syncUsername);
   const meQ = useQuery(api.friends.me) as
     | (PublicInfo & { hasUsername: boolean })
@@ -233,17 +233,17 @@ export default function Friends() {
   const [chatFilter, setChatFilter] = useState<ChatFilter>("all");
   const [chatSearch, setChatSearch] = useState("");
 
-  // One-time username sync from Clerk per session.
+  // One-time profile sync per session (no Clerk — anonymous Convex identity).
   const syncedRef = useRef(false);
   useEffect(() => {
     if (syncedRef.current || meQ === undefined) return;
     syncedRef.current = true;
     void syncUsername({
-      clerkUsername: clerkUser?.username ?? undefined,
+      clerkUsername: undefined,
       displayName: clerkName ?? undefined,
       imageUrl: imageUrl ?? undefined,
     }).catch(() => undefined);
-  }, [meQ, clerkUser, clerkName, imageUrl, syncUsername]);
+  }, [meQ, clerkName, imageUrl, syncUsername]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search), 300);

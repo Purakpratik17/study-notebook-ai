@@ -316,7 +316,7 @@ export default function Settings() {
       <SettingsCard
         icon={ShieldAlert}
         title="👤 Account"
-        hint="Signed in with Clerk."
+        hint="Local study session — account features coming soon."
       >
         <div className="flex items-center justify-between gap-3 rounded-lg border bg-card/70 px-4 py-3">
           <div className="min-w-0">
@@ -348,7 +348,7 @@ export default function Settings() {
         </div>
 
         {/* Account deletion — warning + typed confirmation, no destructive
-            action wired until backend deletion exists (Clerk-managed). */}
+            action wired until account management returns. */}
         <details className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
           <summary className="cursor-pointer text-sm font-semibold text-destructive">
             Delete account
@@ -357,8 +357,7 @@ export default function Settings() {
             Deleting your account is <strong>permanent</strong>. All of your
             notes, XP, rank progress, quests, timetable and arcade records will
             be erased and cannot be recovered. Type <code>DELETE</code> below to
-            confirm — deletion itself is handled securely through your Clerk
-            account and our support flow.
+            confirm — deletion is handled securely through our support flow.
           </p>
           <Input
             value={deleteConfirm}
@@ -373,7 +372,7 @@ export default function Settings() {
             disabled={deleteConfirm !== "DELETE"}
             onClick={() => {
               toast.error(
-                "Account deletion requires email confirmation — contact support via your Clerk account settings.",
+                "Account deletion is temporarily unavailable while account features are being upgraded.",
               );
               setDeleteConfirm("");
             }}

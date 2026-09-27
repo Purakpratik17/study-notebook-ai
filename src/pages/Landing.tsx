@@ -13,9 +13,6 @@ import {
   Zap,
 } from "lucide-react";
 import { Link } from "react-router";
-import { useAuth } from "@clerk/react-router";
-import { Navigate } from "react-router";
-import { AuthGate } from "@/components/AuthGate";
 
 const FEATURES = [
   {
@@ -66,15 +63,7 @@ const RANKS = [
 ] as const;
 
 export default function Landing() {
-  // Kill the "landing flash" for signed-in users: while Clerk resolves the
-  // session show a small branded splash; if the user IS authenticated, go
-  // straight to the dashboard — the landing page never renders for them.
-  const { isLoaded, isSignedIn } = useAuth();
-  if (isLoaded && isSignedIn) return <Navigate to="/dashboard" replace />;
-  // Bounded wait: if Clerk's session bootstrap hangs (transient network
-  // failure, blocked request in the preview iframe), show a retry screen
-  // instead of spinning forever.
-  return <AuthGate ready={isLoaded}>{renderLanding()}</AuthGate>;
+  return renderLanding();
 
   function renderLanding() {
     return (
@@ -101,7 +90,7 @@ export default function Landing() {
           </span>
         </div>
         <Button asChild variant="outline" className="bg-card">
-          <Link to="/auth">Sign in</Link>
+          <Link to="/dashboard">Open app</Link>
         </Button>
       </header>
 
@@ -120,12 +109,12 @@ export default function Landing() {
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg" className="h-12 px-7 text-base font-bold">
-              <Link to="/auth">
+              <Link to="/dashboard">
                 Start your notebook <ArrowRight className="ml-1 size-4" />
               </Link>
             </Button>
             <span className="annotation text-sm">
-              free · sign in with email
+              free · start instantly
             </span>
           </div>
 
@@ -230,7 +219,7 @@ export default function Landing() {
             first 100 XP today.
           </p>
           <Button asChild size="lg" className="mt-6 h-12 px-8 text-base font-bold">
-            <Link to="/auth">
+            <Link to="/dashboard">
               Open my notebook <ArrowRight className="ml-1 size-4" />
             </Link>
           </Button>

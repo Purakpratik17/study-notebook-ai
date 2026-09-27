@@ -21,7 +21,7 @@ import { toast } from "sonner";
    Admin Panel — development/admin management (marked "Admin / Dev").
 
    SECURITY: visibility here is cosmetic. Every Convex function used by
-   this page re-checks the caller's Clerk user ID against the allowlist
+   this page re-checks the caller's user ID against the allowlist
    in src/lib/admin-config.ts on the backend (see src/convex/admin.ts).
    A normal user who somehow reaches this page gets authorization errors
    from every call and sees no data.
@@ -51,7 +51,6 @@ export default function AdminPanel() {
   const grantSub = useMutation(api.admin.grantSubscription);
   const removeSub = useMutation(api.admin.removeSubscription);
   const { userId: myClerkId } = useAuth();
-
   const [searchInput, setSearchInput] = useState("");
   const [selected, setSelected] = useState<SearchResult | null>(null);
   const [amount, setAmount] = useState("100");
@@ -127,10 +126,10 @@ export default function AdminPanel() {
         </p>
       </header>
 
-      {/* Who am I — helps the owner copy their Clerk ID into the allowlist. */}
+      {/* Who am I — helps the owner copy their user ID into the allowlist. */}
       {myClerkId && (
         <div className="rounded-lg border bg-card/70 px-4 py-3 text-sm">
-          <p className="font-semibold">Your Clerk user ID</p>
+          <p className="font-semibold">Your user ID</p>
           <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
             {myClerkId}
           </p>
