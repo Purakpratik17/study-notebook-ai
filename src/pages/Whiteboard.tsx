@@ -210,9 +210,11 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
   const panRef = useRef<{ sx: number; sy: number; vx: number; vy: number } | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const elementsRef = useRef<Element[]>([]);
-  elementsRef.current = elements;
   const viewRef = useRef(view);
-  viewRef.current = view;
+  useEffect(() => {
+    elementsRef.current = elements;
+    viewRef.current = view;
+  }, [elements, view]);
 
   const board = useQuery(
     api.whiteboards.get,

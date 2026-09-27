@@ -23,11 +23,14 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    if (isLoading) {
-      const t = window.setTimeout(() => setTimedOut(true), AUTH_TIMEOUT_MS);
-      return () => window.clearTimeout(t);
+    if (!isLoading) {
+      // Reset in a microtask — avoids synchronous setState in the effect
+      // body (cascading-render warning from the React compiler lint).
+      const r = window.setTimeout(() => setTimedOut(false), 0);
+      return () => window.clearTimeout(r);
     }
-    setTimedOut(false);
+    const t = window.setTimeout(() => setTimedOut(true), AUTH_TIMEOUT_MS);
+    return () => window.clearTimeout(t);
   }, [isLoading]);
 
   if (isLoading && !timedOut) {

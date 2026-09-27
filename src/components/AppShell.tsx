@@ -91,41 +91,6 @@ const MENU_YOU = [
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
-function MoreGroup({
-  title,
-  tabs,
-  pathname,
-}: {
-  title: string;
-  tabs: ReadonlyArray<{ to: string; label: string; icon: React.ComponentType<{ className?: string }> }>;
-  pathname: string;
-}) {  return (
-    <div className="mb-2">
-      <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint">
-        {title}
-      </p>
-      <div className="flex flex-col">
-        {tabs.map((tab) => {
-          const active = pathname === tab.to;
-          return (
-            <Link
-              key={tab.to}
-              to={tab.to}
-              className={cn(
-                "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground",
-                active ? "bg-primary/10 text-primary" : "hover:bg-accent",
-              )}
-            >
-              <tab.icon className="size-5" />
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { name, imageUrl } = useAuth();
   const signOut = useClerkSignOut();
@@ -148,7 +113,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Close the "More" sheet whenever the route changes.
   useEffect(() => {
-    setMoreOpen(false);
+    const t = window.setTimeout(() => setMoreOpen(false), 0);
+    return () => window.clearTimeout(t);
   }, [location.pathname]);
 
   return (

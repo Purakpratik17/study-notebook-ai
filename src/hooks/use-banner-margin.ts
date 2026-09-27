@@ -1,5 +1,4 @@
 import { useLocation } from "react-router";
-import { useEffect, useState } from "react";
 import {
   bannerRouteAllowed,
   isAndroidNative,
@@ -19,13 +18,7 @@ import { useChatPlus } from "@/hooks/use-chat-plus";
 export function useBannerMargin(): boolean {
   const { pathname } = useLocation();
   const { plus, isLoading } = useChatPlus();
-  const [bannerVisible, setBannerVisible] = useState(false);
-
-  useEffect(() => {
-    const native = isAndroidNative();
-    const allowed = bannerRouteAllowed(pathname);
-    setBannerVisible(native && allowed && !isLoading && !plus);
-  }, [pathname, plus, isLoading]);
-
-  return bannerVisible;
+  // Derived directly from inputs — no state/effect, so no cascading renders.
+  // isAndroidNative() is a stable platform check (constant per session).
+  return isAndroidNative() && bannerRouteAllowed(pathname) && !isLoading && !plus;
 }

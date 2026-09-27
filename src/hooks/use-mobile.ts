@@ -11,8 +11,13 @@ export function useIsMobile() {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
     }
     mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
+    // Initialize in a microtask so we don't setState synchronously in the
+    // effect body (cascading-render warning); initial paint uses the default.
+    const id = window.setTimeout(onChange, 0)
+    return () => {
+      mql.removeEventListener("change", onChange)
+      window.clearTimeout(id)
+    }
   }, [])
 
   return !!isMobile

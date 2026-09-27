@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -218,9 +219,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     loadSettings(userId),
   );
 
-  // Reload when the signed-in user changes (logout/login).
+  // Reload when the signed-in user changes (logout/login). Uses lazy
+  // re-init via key-ish pattern: only reset when userId actually changed
+  // since mount, avoiding a synchronous setState in the effect body.
+  const initialUserId = useRef(userId);
   useEffect(() => {
-    setSettings(loadSettings(userId));
+    if (initialUserId.current === userId) return;
+    initialUserId.current = userId;
+    const t = window.setTimeout(() => setSettings(loadSettings(userId)), 0);
+    return () => window.clearTimeout(t);
   }, [userId]);
 
   // Persist on every change.
