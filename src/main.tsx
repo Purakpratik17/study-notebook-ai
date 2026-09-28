@@ -146,7 +146,16 @@ const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 const clerkKeyRaw = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as
   | string
   | undefined;
-const clerkKey = clerkKeyRaw ? clerkKeyRaw.replace(/[\s"']+/g, "") : undefined;
+const sanitized = clerkKeyRaw
+  ? clerkKeyRaw.replace(/[\s"']+/g, "")
+  : undefined;
+// The publishable key is public by design, so a code fallback is safe. This
+// rescues the app when the env slot is empty OR was filled with the SECRET
+// key (sk_test_…) — a secret key decodes to no Clerk frontend API domain,
+// which makes Clerk build a script URL like "https:///npm/..." and crash.
+const FALLBACK_PUBLISHABLE_KEY =
+  "pk_test_dG91Z2gtbW91c2UtODAyNy5jbGVyay5hY2NvdW50cy5kZXYk";
+const clerkKey = sanitized?.startsWith("pk_") ? sanitized : FALLBACK_PUBLISHABLE_KEY;
 
 /**
  * Provider tree. Clerk is the identity provider (new "tough-mouse-8027"
