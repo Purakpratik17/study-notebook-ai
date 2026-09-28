@@ -10,14 +10,14 @@ const freebuffIssuer =
 
 export default {
   providers: [
-    // NOTE (Clerk removed): the previous Clerk provider entry
-    // (domain: https://sharing-mastodon-1734.clerk.accounts.dev) has been
-    // removed along with the Clerk frontend integration. When a NEW Clerk
-    // application is integrated later, re-add its provider here:
-    //   { domain: "https://<new-instance>.clerk.accounts.dev",
-    //     applicationID: "convex" }
-    // Existing user data is untouched — all study rows are keyed by the
-    // Convex identity `subject`, which the Anonymous provider now supplies.
+    // NEW Clerk application ("tough-mouse-8027") — validates the JWTs minted
+    // by ConvexProviderWithClerk using Clerk's built-in "convex" token
+    // template. The domain below is the Clerk Frontend API URL (public, not a
+    // secret); it must match the VITE_CLERK_PUBLISHABLE_KEY instance.
+    {
+      domain: "https://tough-mouse-8027.clerk.accounts.dev",
+      applicationID: "convex",
+    },
 
     // Standard Convex Auth provider for this project's own sign-in ("Get
     // Started" email/guest, see src/convex/auth.ts). The deployment

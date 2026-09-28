@@ -1,34 +1,43 @@
 import { useConvexAuth } from "convex/react";
+import { useUser, useClerk } from "@clerk/react-router";
 
 /**
- * Auth surface (post-Clerk removal).
+ * Auth surface for the Cerevyn app.
  *
- * Authentication is now Convex Auth's Anonymous provider: every device gets
- * a persistent Convex identity automatically (no sign-in screen). All study
- * data remains keyed on the Convex identity's `subject` claim — exactly the
- * same id shape the backend's requireUserId() returns — so existing data
- * isolation and authorization are unchanged.
+ * Authentication is Clerk-issued (new "tough-mouse-8027" application).
+ * Convex functions key all study data on the Clerk identity's `sub` claim
+ * (identity.subject); this hook exposes display data for the UI.
  *
- * The fields Clerk used to fill (name/email/image) are null for anonymous
- * sessions; UI that displays them falls back to defaults. When the new
- * Clerk application is integrated later, this hook is the single place to
- * re-attach richer identity info.
+ * `isAuthenticated` combines BOTH gates: Clerk must have an active session
+ * AND Convex must have validated the Clerk JWT. Backend data access keys
+ * off the Clerk identity subject, so data isolation is unchanged.
  */
 export function useAuth() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { isAuthenticated: convexAuthed } = useConvexAuth();
+
+  const name =
+    user?.firstName ??
+    user?.fullName ??
+    user?.username ??
+    user?.primaryEmailAddress?.emailAddress?.split("@")[0] ??
+    "Student";
 
   return {
-    isLoading,
-    isAuthenticated,
-    clerkUser: null, // legacy field — no Clerk user anymore
-    userId: null,
-    name: "Student",
-    imageUrl: undefined,
-    email: null,
+    isLoading: !isLoaded,
+    isAuthenticated: Boolean(isSignedIn && convexAuthed),
+    clerkUser: user,
+    userId: user?.id ?? null,
+    name,
+    imageUrl: user?.imageUrl,
+    email:
+      user?.primaryEmailAddress?.emailAddress ??
+      user?.emailAddresses?.[0]?.emailAddress ??
+      null,
   };
 }
 
-/** Sign-out is a no-op for anonymous sessions (kept so callers don't break). */
 export function useClerkSignOut() {
-  return () => Promise.resolve();
+  const clerk = useClerk();
+  return () => clerk.signOut({ redirectUrl: "/" });
 }

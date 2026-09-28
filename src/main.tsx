@@ -2,7 +2,8 @@ import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { RequireAuth } from "@/components/RequireAuth";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ClerkProvider, useAuth as useClerkAuth } from "@clerk/react-router";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient } from "convex/react";
 import React, { StrictMode, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
@@ -11,9 +12,12 @@ import "./index.css";
 import { SettingsProvider } from "@/hooks/use-settings";
 import { RouteErrorFallback } from "@/components/RouteErrorFallback";
 import { LoadingScreen } from "@/components/loading";
+import { MissingClerkKey } from "@/components/MissingClerkKey";
+import { ClerkSignInCard } from "@/components/ClerkSignInCard";
 
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
+const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const AiStudy = lazy(() => import("./pages/AiStudy.tsx"));
 const Practice = lazy(() => import("./pages/Practice.tsx"));
@@ -134,179 +138,191 @@ class RootErrorBoundary extends React.Component<
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
+// ─── Clerk publishable key (NEW application: tough-mouse-8027) ──────────────
+// Env values pasted into platform key UIs sometimes arrive wrapped in
+// quotes or with stray whitespace/newlines — even embedded mid-string —
+// which makes Clerk's base64 decode of the key fail entirely. Publishable
+// keys never contain whitespace or quotes, so strip them all.
+const clerkKeyRaw = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as
+  | string
+  | undefined;
+const clerkKey = clerkKeyRaw ? clerkKeyRaw.replace(/[\s"']+/g, "") : undefined;
+
 /**
- * Auth model (post-Clerk removal):
+ * Provider tree. Clerk is the identity provider (new "tough-mouse-8027"
+ * application); Convex validates the Clerk JWT via the "convex" token
+ * template. All Freebuff features, routes and styling are unchanged.
  *
- * The app uses Convex Auth's Anonymous provider (configured in
- * src/convex/auth.ts — unchanged, still READ ONLY). ConvexAuthProvider
- * establishes a persistent anonymous session per device on first load, so
- * every user still gets a real Convex identity (identity.subject) and ALL
- * backend authorization checks (requireUserId etc.) keep working exactly as
- * before. No sign-in screen is shown; no data is exposed publicly.
- *
- * When the new Clerk application is integrated later, the Clerk provider
- * can be layered back in alongside this one without touching the data model.
+ * If the key is missing, a clear actionable screen renders instead of a
+ * cryptic Clerk bootstrap crash.
  */
 function AuthRoot() {
+  if (!clerkKey) return <MissingClerkKey />;
   return (
-    <ConvexAuthProvider client={convex}>
-      <SettingsProvider>
-        <AdBannerController />
-        <RouteErrorBoundary>
-          <Suspense fallback={<RouteLoading />}>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <RequireAuth>
-                    <Dashboard />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/ai-study"
-                element={
-                  <RequireAuth>
-                    <AiStudy />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/practice"
-                element={
-                  <RequireAuth>
-                    <Practice />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/timetable"
-                element={
-                  <RequireAuth>
-                    <Timetable />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/quests"
-                element={
-                  <RequireAuth>
-                    <Quests />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/leaderboard"
-                element={
-                  <RequireAuth>
-                    <Leaderboard />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/weekly-report"
-                element={
-                  <RequireAuth>
-                    <WeeklyReport />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/essay"
-                element={
-                  <RequireAuth>
-                    <EssayWriter />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/projects"
-                element={
-                  <RequireAuth>
-                    <ProjectCreator />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/arcade"
-                element={
-                  <RequireAuth>
-                    <Arcade />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <RequireAuth>
-                    <Profile />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <RequireAuth>
-                    <Settings />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/flashcards"
-                element={
-                  <RequireAuth>
-                    <Flashcards />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/revision"
-                element={
-                  <RequireAuth>
-                    <Revision />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/focus"
-                element={
-                  <RequireAuth>
-                    <FocusMode />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/friends"
-                element={
-                  <RequireAuth>
-                    <Friends />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/whiteboard"
-                element={
-                  <RequireAuth>
-                    <Whiteboard />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <RequireAuth>
-                    <AdminPanel />
-                  </RequireAuth>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </RouteErrorBoundary>
-        <Toaster />
-      </SettingsProvider>
-    </ConvexAuthProvider>
+    <ClerkProvider publishableKey={clerkKey} appearance={{}}>
+      <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
+        <SettingsProvider>
+          <AdBannerController />
+          <RouteErrorBoundary>
+            <Suspense fallback={<RouteLoading />}>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route
+                  path="/auth/*"
+                  element={<AuthPage redirectAfterAuth="/dashboard" />}
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <RequireAuth>
+                      <Dashboard />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/ai-study"
+                  element={
+                    <RequireAuth>
+                      <AiStudy />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/practice"
+                  element={
+                    <RequireAuth>
+                      <Practice />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/timetable"
+                  element={
+                    <RequireAuth>
+                      <Timetable />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/quests"
+                  element={
+                    <RequireAuth>
+                      <Quests />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/leaderboard"
+                  element={
+                    <RequireAuth>
+                      <Leaderboard />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/weekly-report"
+                  element={
+                    <RequireAuth>
+                      <WeeklyReport />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/essay"
+                  element={
+                    <RequireAuth>
+                      <EssayWriter />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/projects"
+                  element={
+                    <RequireAuth>
+                      <ProjectCreator />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/arcade"
+                  element={
+                    <RequireAuth>
+                      <Arcade />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <RequireAuth>
+                      <Profile />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <RequireAuth>
+                      <Settings />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/flashcards"
+                  element={
+                    <RequireAuth>
+                      <Flashcards />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/revision"
+                  element={
+                    <RequireAuth>
+                      <Revision />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/focus"
+                  element={
+                    <RequireAuth>
+                      <FocusMode />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/friends"
+                  element={
+                    <RequireAuth>
+                      <Friends />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/whiteboard"
+                  element={
+                    <RequireAuth>
+                      <Whiteboard />
+                    </RequireAuth>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <RequireAuth>
+                      <AdminPanel />
+                    </RequireAuth>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </RouteErrorBoundary>
+          <Toaster />
+        </SettingsProvider>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
   );
 }
 

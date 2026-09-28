@@ -90,7 +90,7 @@ export default function Landing() {
           </span>
         </div>
         <Button asChild variant="outline" className="bg-card">
-          <Link to="/dashboard">Open app</Link>
+          <Link to="/auth">Sign in</Link>
         </Button>
       </header>
 
@@ -109,12 +109,12 @@ export default function Landing() {
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg" className="h-12 px-7 text-base font-bold">
-              <Link to="/dashboard">
+              <Link to="/auth">
                 Start your notebook <ArrowRight className="ml-1 size-4" />
               </Link>
             </Button>
             <span className="annotation text-sm">
-              free · start instantly
+              free · sign in with email
             </span>
           </div>
 
@@ -219,7 +219,7 @@ export default function Landing() {
             first 100 XP today.
           </p>
           <Button asChild size="lg" className="mt-6 h-12 px-8 text-base font-bold">
-            <Link to="/dashboard">
+            <Link to="/auth">
               Open my notebook <ArrowRight className="ml-1 size-4" />
             </Link>
           </Button>
