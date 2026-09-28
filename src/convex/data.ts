@@ -52,7 +52,15 @@ export function nextLevel(level: number) {
   return LEVELS.find((l) => l.level === level + 1) ?? null;
 }
 
-/** Validate the shape of a Clerk identity into typed user info. */
+/** Validate the shape of an auth identity into typed user info.
+ *
+ * Accepted issuers:
+ *  - Convex Auth self-issued tokens (the deployment's own CONVEX_SITE_URL,
+ *    used by the Anonymous provider that backs the current session flow).
+ *  - Clerk tokens (issuer contains "clerk") — kept so the NEW Clerk
+ *    application can be integrated later without touching this file.
+ * Anything else is rejected, preserving data isolation.
+ */
 export function clerkUserFromIdentity(
   identity: {
     subject: string;
@@ -64,8 +72,11 @@ export function clerkUserFromIdentity(
   } | null,
 ) {
   if (!identity || !identity.subject) return null;
-  const isClerk = !identity.issuer || identity.issuer.includes("clerk");
-  if (!isClerk) return null; // only accept our Clerk-issued identities
+  const issuer = identity.issuer;
+  const isSelfIssuedConvexAuth =
+    !!process.env.CONVEX_SITE_URL && issuer === process.env.CONVEX_SITE_URL;
+  const isClerk = !issuer || issuer.includes("clerk");
+  if (!isSelfIssuedConvexAuth && !isClerk) return null;
   return {
     externalId: identity.subject,
     name:
