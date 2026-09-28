@@ -32,7 +32,6 @@ export function ClerkSignInCard() {
   return (
     <div className="paper-sheet relative px-2 py-2 sm:px-3 sm:py-3">
       <SignIn
-        signUpUrl="/sign-up"
         fallbackRedirectUrl="/dashboard"
         appearance={clerkAppearance}
       />
