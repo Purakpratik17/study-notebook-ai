@@ -121,9 +121,9 @@ type ChatMessage = {
   friendPlus: boolean;
 };
 
-const MAX_VIDEO_SEC = 180;
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+// Upload size/duration limits come from useChatPlus().limits (server-mirrored
+// per plan) — the constants below were the old hardcoded free-tier values and
+// are intentionally removed to keep a single source of truth.
 
 /** Chat+ badge — small purple pill, distinct from moderator styling. */
 export function PlusBadge() {
@@ -826,7 +826,7 @@ function Thread({
   const { plus, limits } = useChatPlus();
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploading] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [preview, setPreview] = useState<{
     kind: "image" | "video" | "file";

@@ -1,6 +1,6 @@
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, Gamepad2, Maximize2, Minimize2, Pause, Play, RefreshCw, RotateCcw, Trophy } from "lucide-react";
+import { ArrowLeft, Gamepad2, Maximize2, Minimize2, Pause, Play, RefreshCw, Trophy } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

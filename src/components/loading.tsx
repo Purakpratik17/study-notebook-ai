@@ -72,8 +72,8 @@ export function useAiPhrases(active: boolean, intervalMs = 2600): string {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     if (!active) {
-      setIdx(0);
-      return;
+      const r = window.setTimeout(() => setIdx(0), 0);
+      return () => window.clearTimeout(r);
     }
     const id = setInterval(
       () => setIdx((i) => Math.min(i + 1, AI_PHASES.length - 1)),

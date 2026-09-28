@@ -65,10 +65,6 @@ export const getArcade = query({
 
     // Evaluate unlock conditions live so freshly-earned unlocks appear
     // even before the hook mutations run.
-    const stats = await ctx.db
-      .query("stats")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
     const questCompletions = await ctx.db
       .query("questCompletions")
       .withIndex("by_user", (q) => q.eq("userId", userId))

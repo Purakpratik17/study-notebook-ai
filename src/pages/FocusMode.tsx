@@ -78,11 +78,13 @@ export default function FocusMode() {
     [finishing, startedAt, planned, subject, completeSession, sounds],
   );
 
-  // Session completes when the timer hits zero.
+  // Session completes when the timer hits zero. Deferred one tick so the
+  // state commit completes before finish() triggers further setState calls
+  // (avoids the cascading-render warning; behavior unchanged).
   useEffect(() => {
-    if (running && remaining === 0) {
-      void finish(true); // finish stops the interval and resets running/refs
-    }
+    if (!running || remaining !== 0) return;
+    const t = window.setTimeout(() => void finish(true), 0);
+    return () => window.clearTimeout(t);
   }, [running, remaining, finish]);
 
   // Stop the timer if the user leaves the page mid-session (no XP farming

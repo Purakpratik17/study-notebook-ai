@@ -34,7 +34,7 @@ export default function EssayWriter() {
   const [keyPoints, setKeyPoints] = useState("");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [mode, setMode] = useState<string | null>(null);
+  const [, setMode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);

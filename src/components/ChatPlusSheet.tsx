@@ -14,7 +14,8 @@ import { Capacitor } from "@capacitor/core";
  * `playBilling.verifyPurchase`. Without it (web / before integration), we
  * clearly tell the user — we never fake an entitlement.
  */
-export async function startChatPlusPurchase(plan: "monthly" | "yearly"): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function startChatPlusPurchase(_plan: "monthly" | "yearly"): Promise<void> {
   if (!Capacitor.isNativePlatform()) {
     toast.info("Chat+ is purchased through Google Play on the Android app 💜");
     return;

@@ -80,7 +80,6 @@ export const verifyPurchase = action({
     const existing = await ctx.runQuery(internal.chatPlus.getPurchaseByToken, {
       token: args.purchaseToken,
     });
-    const now = Date.now();
     if (existing) {
       await ctx.runMutation(internal.chatPlus.patchPurchase, {
         purchaseId: existing._id,

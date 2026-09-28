@@ -127,8 +127,13 @@ const AD_IDS = ADS_USE_TEST_ADS ? TEST_IDS : PRODUCTION_IDS;
  * Convex (bypassing React) so ad decisions are never based on a stale or
  * forged local flag. Safe to call anywhere; treats errors/no-auth as free.
  */
-let convexClient: { query: (fn: unknown, ...args: unknown[]) => Promise<unknown> } | null = null;
-export function setChatPlusAdFreeClient(client: typeof convexClient) {
+type ConvexQueryClient = { query: (fn: unknown, ...args: unknown[]) => Promise<unknown> };
+// Registered but intentionally unused right now: the live entitlement flows
+// through updateChatPlusAdFree from the React layer instead. Kept so a
+// synchronous query path can be added later without changing call sites.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let convexClient: ConvexQueryClient | null = null;
+export function setChatPlusAdFreeClient(client: ConvexQueryClient) {
   convexClient = client;
 }
 let cachedPlusUntil = 0;
