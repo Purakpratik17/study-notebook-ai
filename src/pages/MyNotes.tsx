@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import {
   Copy,
+  Download,
   FilePlus2,
   Search,
   Trash2,
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSounds } from "@/hooks/use-settings";
 import { LoadingNotebook } from "@/components/loading";
+import { downloadNoteAsPdf } from "@/lib/pdf";
 
 /* ═══════════════════════════════════════════════════════════════════════
    MY NOTES — self-created rich-text notes.
@@ -317,6 +319,15 @@ function MyNoteEditor({ noteId, onBack }: { noteId: string; onBack: () => void }
         <span className="annotation ml-auto text-xs">
           {saveState === "saving" ? "Saving…" : saveState === "saved" ? "✓ Saved" : "autosaves"}
         </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            void downloadNoteAsPdf(note.title, editorRef.current?.innerHTML ?? "")
+          }
+        >
+          <Download className="size-4" /> PDF
+        </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-1 rounded-xl border bg-card p-1.5">

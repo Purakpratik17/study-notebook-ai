@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import {
   ArrowLeft,
   Bold,
+  Download,
   Italic,
   List,
   ListOrdered,
@@ -18,6 +19,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSounds } from "@/hooks/use-settings";
 import { LoadingNotebook } from "@/components/loading";
+import { downloadNoteAsPdf } from "@/lib/pdf";
 
 /* ═══════════════════════════════════════════════════════════════════════
    AI NOTE EDITOR — rich-text editing of AI-generated notes.
@@ -204,6 +206,18 @@ export default function AiNoteEditor() {
         <span className="mx-1 h-6 w-px bg-border" />
         <button title="Undo" onClick={() => { document.execCommand("undo"); scheduleSave(); }} className="rounded-lg p-2 hover:bg-accent" aria-label="Undo"><Undo2 className="size-4" /></button>
         <button title="Redo" onClick={() => { document.execCommand("redo"); scheduleSave(); }} className="rounded-lg p-2 hover:bg-accent" aria-label="Redo"><Redo2 className="size-4" /></button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            void downloadNoteAsPdf(
+              note.topic,
+              editorRef.current?.innerHTML ?? "",
+            )
+          }
+        >
+          <Download className="size-4" /> PDF
+        </Button>
         <Button
           variant="outline"
           size="sm"
