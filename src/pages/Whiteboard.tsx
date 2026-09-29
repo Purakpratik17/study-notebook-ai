@@ -163,6 +163,19 @@ function drawElement(
   ctx.restore();
 }
 
+function translateElement(el: Element, dx: number, dy: number): Element {
+  if (el.type === "path" && el.points) {
+    return { ...el, points: el.points.map(([x, y]) => [x + dx, y + dy]) };
+  }
+  return {
+    ...el,
+    x: (el.x ?? 0) + dx,
+    y: (el.y ?? 0) + dy,
+    x2: el.x2 !== undefined ? el.x2 + dx : undefined,
+    y2: el.y2 !== undefined ? el.y2 + dy : undefined,
+  };
+}
+
 function elementBBox(el: Element) {
   if (el.type === "path" && el.points) {
     const xs = el.points.map((p) => p[0]);
@@ -251,10 +264,8 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    // Background
-    ctx.fillStyle = getComputedStyle(document.documentElement)
-      .getPropertyValue("--canvas-bg")
-      .trim() || "#faf7ef";
+    // Background — always a clean white board
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, w, h);
 
     const v = viewRef.current;
@@ -289,7 +300,19 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
   useEffect(() => {
     const onResize = () => render();
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    // Re-render whenever the wrapper's box changes (fullscreen toggle,
+    // embedded layout shifts, soft keyboards) — a stale/zero-size canvas
+    // is what made the board look completely dead before.
+    const wrap = wrapRef.current;
+    let ro: ResizeObserver | null = null;
+    if (wrap && "ResizeObserver" in window) {
+      ro = new ResizeObserver(() => render());
+      ro.observe(wrap);
+    }
+    return () => {
+      window.removeEventListener("resize", onResize);
+      ro?.disconnect();
+    };
   }, [render]);
 
   /* ─── Autosave (debounced) ────────────────────────────────────────── */
@@ -400,8 +423,7 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
       const hit = hitTest(wx, wy);
       if (hit) {
         pushHistory(elementsRef.current);
-        setElements((els) => els.filter((el) => el.id !== hit.id));
-        draftRef.current = { ...hit, id: hit.id, _dragDX: wx - (hit.x ?? 0) } as never;
+        dragRef.current = { id: hit.id, dx: wx, dy: wy, original: hit };
       }
       return;
     }
@@ -468,6 +490,20 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
       }));
       return;
     }
+    // Drag an element with the select tool
+    if (dragRef.current) {
+      const [wx, wy] = toWorld(e);
+      const { id, dx, dy, original } = dragRef.current;
+      const ox = wx - dx;
+      const oy = wy - dy;
+      setElements((els) =>
+        els.map((el) =>
+          el.id === id ? translateElement(original, ox, oy) : el,
+        ),
+      );
+      render();
+      return;
+    }
     if (!draftRef.current) return;
     const [wx, wy] = toWorld(e);
     const d = draftRef.current;
@@ -485,6 +521,12 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
 
   const onPointerUp = () => {
     panRef.current = null;
+    if (dragRef.current) {
+      dragRef.current = null;
+      scheduleSave();
+      playClick();
+      return;
+    }
     const d = draftRef.current;
     draftRef.current = null;
     if (!d) return;
@@ -512,14 +554,15 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
   };
 
   /* ─── Element dragging (select tool) ──────────────────────────────── */
-  // Implemented via the draft mechanism: on select-down we lift the element
-  // out; on move we translate it; on up we put it back.
+  // dragRef holds the grabbed element, the grab origin and the untouched
+  // original so every move recomputes from a stable base (no drift).
 
-  const lastSelectPos = useRef<[number, number] | null>(null);
-  useEffect(() => {
-    if (draftRef.current && tool === "select") return;
-    lastSelectPos.current = null;
-  });
+  const dragRef = useRef<{
+    id: string;
+    dx: number;
+    dy: number;
+    original: Element;
+  } | null>(null);
 
   /* ─── Board management ────────────────────────────────────────────── */
 
@@ -652,7 +695,7 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
   return (
     <div
       className={cn(
-        "flex flex-col bg-[#faf7ef] dark:bg-background",
+        "flex flex-col bg-white",
         embedded && !fullscreen
           ? "h-[calc(78dvh-2.6rem)]"
           : fullscreen
@@ -681,9 +724,8 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
         >
           <Minimize2 className="size-4" /> Exit fullscreen
         </button>
-      )}
-      {/* Top bar */}
-      <div className="flex items-center gap-2 border-b px-3 py-2">
+      )}      {/* Top bar */}
+      <div className="flex items-center gap-2 border-b bg-card/60 px-3 py-2">
         <Button variant="ghost" size="sm" onClick={() => setActiveId(null)}>
           ← Boards
         </Button>
@@ -731,7 +773,7 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
       </div>
 
       {/* Toolbar */}
-      <div className="wb-toolbar flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
+      <div className="wb-toolbar flex flex-wrap items-center gap-1 border-b bg-card/60 px-2 py-1.5">
         {tools.map((t) => (
           <button
             key={t.id}
@@ -832,7 +874,11 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
         <canvas
           ref={canvasRef}
           className="absolute inset-0"
-          style={{ touchAction: "none", cursor: tool === "pan" ? "grab" : "crosshair" }}
+          style={{
+            touchAction: "none",
+            background: "#ffffff",
+            cursor: tool === "pan" ? "grab" : "crosshair",
+          }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
