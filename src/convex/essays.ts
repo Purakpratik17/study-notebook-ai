@@ -5,7 +5,7 @@ import { api } from "./_generated/api";
 
 /**
  * Essay Writer — reuses the exact same NVIDIA integration as AI Study
- * (`chatCompletion` in ai.ts, model deepseek-ai/deepseek-v4-flash-0731,
+ * (`chatCompletion` in ai.ts, model deepseek-ai/deepseek-v4.1-flash,
  * key from process.env.NVIDIA_API_KEY). No new providers or keys.
  */
 import { chatCompletion } from "./ai";

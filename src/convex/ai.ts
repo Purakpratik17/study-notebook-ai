@@ -5,8 +5,11 @@
 // bundled into the web/Android client.
 
 // NVIDIA NIM gateway — OpenAI-compatible chat completions endpoint.
+// deepseek-v4.1-flash verified live against GET /v1/models (it is the only
+// current-generation deepseek chat model served) and via probe: the retired
+// deepseek-v4-flash-0731 now returns 410 on this gateway.
 const AI_BASE_URL = "https://integrate.api.nvidia.com/v1";
-const AI_MODEL = "deepseek-ai/deepseek-v4-flash-0731";
+const AI_MODEL = "deepseek-ai/deepseek-v4.1-flash";
 
 type ChatContent =
   | string
