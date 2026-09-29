@@ -177,6 +177,24 @@
   [role="button"]:not([disabled]) {
     cursor: pointer;
   }
+  /* Global micro-interaction: every button gently presses down.
+     Transform-only (GPU), disabled by reduced-motion below. */
+  button:not([disabled]):active {
+    transition: transform 0.08s ease;
+  }
+  button:not([disabled]):active {
+    transform: scale(0.97);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    button:not([disabled]):active {
+      transform: none;
+      transition: none;
+    }
+  }
+  [data-animations="off"] button:not([disabled]):active {
+    transform: none;
+    transition: none;
+  }
   ::selection {
     background: var(--highlight);
     color: var(--foreground);
@@ -826,4 +844,260 @@ html {
       color-mix(in oklab, var(--marker) 4%, transparent) 0 12px,
       transparent 12px
     );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3D DEPTH SYSTEM — uses ONLY existing theme tokens. No new colors.
+   All effects are transform/opacity/box-shadow (GPU-friendly), respect
+   prefers-reduced-motion and [data-animations="off"], and never block
+   touch scrolling or taps.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Interactive 3D card: perspective + hover lift + realistic layered
+   shadows + a subtle top-edge light catch. Combine with <TiltCard/> for
+   cursor tilt, or use standalone on touch-only surfaces. */
+.card-3d {
+  transform-style: preserve-3d;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 4px 10px -4px color-mix(in oklab, var(--ink) 12%, transparent),
+    0 12px 28px -12px color-mix(in oklab, var(--ink) 16%, transparent);
+}
+@media (pointer: fine) {
+  .card-3d {
+    will-change: transform;
+  }
+  .card-3d--tilting {
+    transform: perspective(900px) rotateX(var(--tilt-rx, 0deg))
+      rotateY(var(--tilt-ry, 0deg)) translateZ(6px);
+    box-shadow:
+      0 2px 4px rgb(0 0 0 / 0.05),
+      0 10px 22px -6px color-mix(in oklab, var(--ink) 18%, transparent),
+      0 24px 44px -16px color-mix(in oklab, var(--ink) 22%, transparent);
+  }
+}
+.card-3d:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.05),
+    0 12px 26px -8px color-mix(in oklab, var(--ink) 20%, transparent),
+    0 24px 44px -18px color-mix(in oklab, var(--ink) 18%, transparent);
+}
+.card-3d:active {
+  transform: translateY(0) scale(0.985);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 4px 10px -4px color-mix(in oklab, var(--ink) 12%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-3d,
+  .card-3d:hover,
+  .card-3d:active,
+  .card-3d--tilting {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+[data-animations="off"] .card-3d,
+[data-animations="off"] .card-3d:hover,
+[data-animations="off"] .card-3d:active,
+[data-animations="off"] .card-3d--tilting {
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Elevated press-state for buttons (works alongside shadcn variants):
+   raised at rest, sinks into the surface when pressed. */
+.btn-3d {
+  transition:
+    transform 0.15s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.15s ease;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 3px 8px -2px color-mix(in oklab, var(--ink) 16%, transparent),
+    inset 0 1px 0 color-mix(in oklab, var(--card) 45%, transparent);
+}
+.btn-3d:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.07),
+    0 6px 14px -3px color-mix(in oklab, var(--ink) 22%, transparent),
+    inset 0 1px 0 color-mix(in oklab, var(--card) 45%, transparent);
+}
+.btn-3d:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.08),
+    inset 0 2px 4px color-mix(in oklab, var(--ink) 14%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-3d,
+  .btn-3d:hover:not(:disabled),
+  .btn-3d:active:not(:disabled) {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+[data-animations="off"] .btn-3d,
+[data-animations="off"] .btn-3d:hover:not(:disabled),
+[data-animations="off"] .btn-3d:active:not(:disabled) {
+  transform: none !important;
+  transition: none !important;
+}
+
+/* XP earn pulse — apply to the XP bar/badge when XP is granted */
+@keyframes xp-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--xp) 55%, transparent); }
+  70% { box-shadow: 0 0 0 12px color-mix(in oklab, var(--xp) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--xp) 0%, transparent); }
+}
+.xp-pulse {
+  animation: xp-pulse 0.9s ease-out 1;
+}
+
+/* Rank-up / achievement celebration — brief, tasteful, on-brand */
+@keyframes celebrate-pop {
+  0% { transform: scale(0.7); opacity: 0; }
+  45% { transform: scale(1.12) rotate(1.5deg); opacity: 1; }
+  70% { transform: scale(0.97) rotate(-0.5deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.animate-celebrate {
+  animation: celebrate-pop 0.7s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+
+/* Confetti-free sparkle ring for celebrations */
+@keyframes sparkle-ring {
+  0% { transform: scale(0.4); opacity: 0.7; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.sparkle-ring::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 2px solid color-mix(in oklab, var(--highlight) 70%, transparent);
+  animation: sparkle-ring 0.8s ease-out 1 forwards;
+  pointer-events: none;
+}
+
+/* Quest complete check flash */
+@keyframes quest-done {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.animate-quest-done {
+  animation: quest-done 0.5s cubic-bezier(0.22, 1.4, 0.4, 1) 1;
+}
+
+/* Ambient floating particles — theme-colored soft orbs drifting behind
+   content. Pure CSS, pointer-events:none, capped at 6 orbs for perf. */
+.ambient-depth {
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ambient-depth i {
+  position: absolute;
+  display: block;
+  border-radius: 9999px;
+  filter: blur(22px);
+  opacity: 0.5;
+  will-change: transform;
+}
+@keyframes ambient-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(14px, -22px, 0) scale(1.07); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+.ambient-depth i {
+  animation: ambient-drift var(--dur, 14s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ambient-depth i {
+    animation: none !important;
+  }
+}
+[data-animations="off"] .ambient-depth i {
+  animation: none !important;
+}
+
+/* Whiteboard toolbar elevation + tool selection transition */
+.wb-toolbar {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.05),
+    0 8px 20px -8px color-mix(in oklab, var(--ink) 22%, transparent),
+    0 2px 0 color-mix(in oklab, var(--card) 40%, transparent) inset;
+}
+.wb-tool {
+  transition:
+    transform 0.15s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+.wb-tool:active {
+  transform: scale(0.92);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-tool,
+  .wb-tool:active {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* Whiteboard canvas sheet: soft desk shadow so the board sits "on" the
+   surface like real paper (decorative only — no pointer interference) */
+.wb-canvas-depth {
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.05),
+    0 18px 44px -18px color-mix(in oklab, var(--ink) 28%, transparent);
+}
+
+/* Smooth expandable sidebar sections: animate the open/close of <details> */
+details.group\/section > summary {
+  transition: color 0.15s ease;
+}
+details.group\/section > div {
+  animation: section-reveal 0.22s ease-out both;
+  transform-origin: top;
+}
+@keyframes section-reveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  details.group\/section > div { animation: none; }
+}
+[data-animations="off"] details.group\/section > div { animation: none; }
+
+/* Active nav item: gentle elevation glow (desktop sidebar) */
+nav a[data-active="true"],
+nav .nav-elevated {
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 0.06),
+    0 4px 12px -4px color-mix(in oklab, var(--primary) 30%, transparent);
+}
+
+/* Reduced-motion / animations-off: freeze the new celebration + XP motion */
+@media (prefers-reduced-motion: reduce) {
+  .xp-pulse,
+  .animate-celebrate,
+  .sparkle-ring::after,
+  .animate-quest-done {
+    animation: none !important;
+  }
+}
+[data-animations="off"] .xp-pulse,
+[data-animations="off"] .animate-celebrate,
+[data-animations="off"] .sparkle-ring::after,
+[data-animations="off"] .animate-quest-done {
+  animation: none !important;
 }

@@ -615,7 +615,7 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
             {boards.map((b) => (
               <div
                 key={b._id}
-                className="group flex items-center justify-between rounded-xl border bg-card p-4 transition-shadow hover:shadow-md"
+                className="card-3d group flex items-center justify-between rounded-xl border bg-card p-4"
               >
                 <button
                   className="min-w-0 flex-1 text-left"
@@ -731,7 +731,7 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
+      <div className="wb-toolbar flex flex-wrap items-center gap-1 border-b px-2 py-1.5">
         {tools.map((t) => (
           <button
             key={t.id}
@@ -741,8 +741,9 @@ export default function Whiteboard({ embedded = false }: { embedded?: boolean })
               setTool(t.id);
             }}
             className={cn(
-              "rounded-lg p-2 text-foreground/70 transition-colors hover:bg-accent",
-              tool === t.id && "bg-primary text-primary-foreground hover:bg-primary",
+              "wb-tool rounded-lg p-2 text-foreground/70 transition-colors hover:bg-accent",
+              tool === t.id &&
+                "bg-primary text-primary-foreground shadow-sm hover:bg-primary",
             )}
           >
             {t.icon}

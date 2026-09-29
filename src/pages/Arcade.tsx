@@ -82,7 +82,7 @@ export default function Arcade() {
           <article
             key={g.id}
             className={cn(
-              "paper-sheet relative flex flex-col gap-3 px-5 py-5",
+              "card-3d paper-sheet relative flex flex-col gap-3 px-5 py-5",
               g.unlocked && "spiral-edge",
             )}
           >

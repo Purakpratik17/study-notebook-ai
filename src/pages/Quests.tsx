@@ -139,7 +139,7 @@ export default function Quests() {
               <article
                 key={q._id}
                 className={cn(
-                  "paper-sheet spiral-edge flex flex-col gap-3 px-5 py-4 transition-transform hover:-translate-y-0.5",
+                  "card-3d paper-sheet spiral-edge flex flex-col gap-3 px-5 py-4",
                   done && "border-xp/50",
                 )}
               >
@@ -176,7 +176,7 @@ export default function Quests() {
                     />
                   </div>
                   {done && (
-                    <p className="animate-pop-in text-xs font-bold text-xp">
+                    <p className="animate-celebrate text-xs font-bold text-xp">
                       ✓ Complete — XP claimed
                     </p>
                   )}

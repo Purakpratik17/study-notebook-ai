@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useBannerMargin } from "@/hooks/use-banner-margin";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { AmbientDepth } from "@/components/AmbientDepth";
 import { Link, NavLink, useLocation } from "react-router";
 import { ChevronLeft, X } from "lucide-react";
 
@@ -193,7 +194,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       className={cn(
                         "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                         location.pathname === tab.to &&
-                          "bg-primary/10 font-semibold text-primary",
+                          "bg-primary/10 font-semibold text-primary nav-elevated",
                       )}
                     >
                       <tab.icon className="size-4" />
@@ -215,7 +216,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className={cn(
                 "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 location.pathname === tab.to &&
-                  "bg-primary/10 font-semibold text-primary",
+                  "bg-primary/10 font-semibold text-primary nav-elevated",
               )}
             >
               <tab.icon className="size-4" />
@@ -228,7 +229,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className={cn(
                 "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 location.pathname === "/admin" &&
-                  "bg-primary/10 font-semibold text-primary",
+                  "bg-primary/10 font-semibold text-primary nav-elevated",
               )}
             >
               <ShieldCheck className="size-4" />
@@ -474,6 +475,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="min-h-0 flex-1 overflow-x-hidden px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-12 md:pt-8"
       >
         <TabBackground />
+        <AmbientDepth />
         <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
     </div>

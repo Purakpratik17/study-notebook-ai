@@ -191,7 +191,7 @@ export default function AiStudy() {
 
       {/* Library */}
       {notesList !== undefined && notesList.length > 0 && (
-        <section className="paper-sheet spiral-edge px-5 py-4 md:px-7">
+        <section className="card-3d paper-sheet spiral-edge px-5 py-4 md:px-7">
           <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
             <History className="size-4" /> Your saved topics
           </h2>
@@ -259,7 +259,7 @@ function NoteView({ noteId }: { noteId: string }) {
   return (
     <div className="flex flex-col gap-6">
       <ImportantQuestions topic={notes.topic} />
-      <article className="paper-sheet paper-margin px-5 py-6 pl-14 md:px-8 md:pl-20">
+      <article className="card-3d paper-sheet paper-margin px-5 py-6 pl-14 md:px-8 md:pl-20">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="annotation text-sm">topic notes</p>
@@ -412,7 +412,7 @@ function QuizCard({ noteId, quiz, topic }: { noteId: string; quiz: QuizQuestion[
   };
 
   return (
-    <article className="paper-sheet spiral-edge px-5 py-6 md:px-8">
+    <article className="card-3d paper-sheet spiral-edge px-5 py-6 md:px-8">
       <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
         <BookOpenCheck className="size-5 text-primary" /> Quiz yourself
       </h2>

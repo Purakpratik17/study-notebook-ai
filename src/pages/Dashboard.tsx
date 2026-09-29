@@ -29,6 +29,8 @@ import { Link } from "react-router";
 import { toast } from "sonner";
 import { useSounds } from "@/hooks/use-settings";
 import { Shimmer } from "@/components/loading";
+import { TiltCard } from "@/components/TiltCard";
+import { usePrevious } from "@/hooks/use-previous";
 
 type Stats = {
   xp: number;
@@ -110,6 +112,17 @@ export default function Dashboard() {
   const summary = useQuery(api.stats.getDashboardSummary) as
     | Summary
     | undefined;
+  // XP earn pulse: when total XP increases, flash the level bar.
+  const prevXp = usePrevious(stats?.xp);
+  const [xpPulse, setXpPulse] = useState(false);
+  useEffect(() => {
+    if (prevXp !== undefined && stats && stats.xp > prevXp) {
+      setXpPulse(true);
+      const t = window.setTimeout(() => setXpPulse(false), 1000);
+      return () => window.clearTimeout(t);
+    }
+  }, [prevXp, stats]);
+
   const insights = useQuery(api.progress.insights) as
     | {
         quizAccuracy: number | null;
@@ -279,8 +292,11 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Hero: greeting + level — emerald gradient card */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-[oklch(0.38_0.075_195)] p-5 text-primary-foreground shadow-lg md:p-7">
+      {/* Hero: greeting + level — emerald gradient card, subtle 3D tilt */}
+      <TiltCard
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-[oklch(0.38_0.075_195)] p-5 text-primary-foreground shadow-lg md:p-7"
+        maxTilt={3}
+      >
         {/* decorative gold + coral glows */}
         <div aria-hidden className="pointer-events-none absolute -right-10 -top-14 size-44 rounded-full bg-highlight/25 blur-3xl" />
         <div aria-hidden className="pointer-events-none absolute -bottom-16 -left-8 size-40 rounded-full bg-marker/20 blur-3xl" />
@@ -317,7 +333,12 @@ export default function Dashboard() {
                     : `${stats.xpNeeded} XP to Lv ${stats.nextLevel}`}
                 </span>
               </div>
-              <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/20">
+              <div
+                className={cn(
+                  "mt-2 h-3 overflow-hidden rounded-full bg-white/20",
+                  xpPulse && "xp-pulse",
+                )}
+              >
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-highlight to-[oklch(0.9_0.12_95)] transition-all duration-700"
                   style={{ width: `${Math.round(stats.progress * 100)}%` }}
@@ -329,7 +350,7 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-      </section>
+      </TiltCard>
 
       {/* Stat widgets — tighter on small screens */}
       <div className="grid grid-cols-4 gap-2 sm:grid-cols-4 sm:gap-3">
@@ -415,7 +436,7 @@ export default function Dashboard() {
 
       {/* Focus timer + log session */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="paper-sheet spiral-edge px-5 py-5 md:px-7">
+        <section className="card-3d paper-sheet spiral-edge px-5 py-5 md:px-7">
           <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
             <Timer className="size-4" /> Focus session
           </h2>
@@ -468,7 +489,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="paper-sheet px-5 py-5 md:px-7">
+        <section className="card-3d paper-sheet px-5 py-5 md:px-7">
           <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
             <Target className="size-4" /> Today's progress
           </h2>
@@ -610,7 +631,7 @@ export default function Dashboard() {
         </section>
 
         {/* Active quests */}
-        <section className="paper-sheet px-5 py-5 md:px-7">
+        <section className="card-3d paper-sheet px-5 py-5 md:px-7">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
               <Swords className="size-4" /> Active quests
@@ -659,7 +680,7 @@ export default function Dashboard() {
           )}
         </section>
         {/* Progress insights */}
-        <section className="paper-sheet px-5 py-5 md:px-7">
+        <section className="card-3d paper-sheet px-5 py-5 md:px-7">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
               <Target className="size-4" /> Progress insights
@@ -801,7 +822,7 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent notes */}
-        <section className="paper-sheet spiral-edge px-5 py-5 md:px-7">
+        <section className="card-3d paper-sheet spiral-edge px-5 py-5 md:px-7">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
               <NotebookPen className="size-4" /> Recent notes
@@ -840,7 +861,7 @@ export default function Dashboard() {
         </section>
 
         {/* Recent activity */}
-        <section className="paper-sheet spiral-edge px-5 py-5 md:px-7">
+        <section className="card-3d paper-sheet spiral-edge px-5 py-5 md:px-7">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
               <Zap className="size-4" /> Recent activity
@@ -925,7 +946,7 @@ function MiniStat({
   sub?: string;
 }) {
   return (
-    <div className="paper-sheet spiral-edge flex flex-col gap-0.5 px-2.5 py-2.5 sm:px-4 sm:py-3">
+    <div className="card-3d paper-sheet spiral-edge flex flex-col gap-0.5 px-2.5 py-2.5 sm:px-4 sm:py-3">
       <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-soft sm:text-[11px]">
         {icon}
         <span className="truncate">{label}</span>

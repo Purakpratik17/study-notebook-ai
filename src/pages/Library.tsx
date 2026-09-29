@@ -384,7 +384,7 @@ export default function Library() {
           {visible.map((row) => (
             <div
               key={row.key}
-              className="group flex flex-col rounded-xl border bg-card p-4 transition-shadow hover:shadow-md"
+              className="card-3d group flex flex-col rounded-xl border bg-card p-4"
             >
               <Link to={openLink(row)} className="min-w-0 flex-1">
                 <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">

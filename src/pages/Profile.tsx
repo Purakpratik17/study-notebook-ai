@@ -172,7 +172,7 @@ export default function Profile() {
   return (
     <div className="flex flex-col gap-6">
       {/* Identity card */}
-      <section className="paper-sheet paper-margin flex flex-col items-center gap-4 px-6 py-6 text-center sm:flex-row sm:text-left md:pl-20">
+      <section className="card-3d paper-sheet paper-margin flex flex-col items-center gap-4 px-6 py-6 text-center sm:flex-row sm:text-left md:pl-20">
         <Avatar className="size-20 border-2 border-primary/30 shadow-md">
           {avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
           <AvatarFallback className="bg-highlight-soft text-2xl font-bold">

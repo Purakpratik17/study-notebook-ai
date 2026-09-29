@@ -167,7 +167,7 @@ export default function Timetable() {
           </section>
 
           {upcoming.length > 0 && (
-            <section className="paper-sheet spiral-edge px-5 py-5 md:px-7">
+            <section className="card-3d paper-sheet spiral-edge px-5 py-5 md:px-7">
               <h2 className="text-sm font-bold uppercase tracking-wide text-ink-soft">
                 Coming up
               </h2>
@@ -310,7 +310,7 @@ function TaskForm({ onCreated }: { onCreated: () => void }) {
   return (
     <form
       onSubmit={submit}
-      className="paper-sheet spiral-edge px-5 py-4 md:px-7"
+      className="card-3d paper-sheet spiral-edge px-5 py-4 md:px-7"
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 sm:col-span-2">
