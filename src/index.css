@@ -1101,3 +1101,105 @@ nav .nav-elevated {
 [data-animations="off"] .animate-quest-done {
   animation: none !important;
 }
+
+/* ═════════════════════════════════════════════════════════════════════
+   LANDING PAGE — 3D hero stack, floating badges, glow cards
+   (all decorative; fully frozen under reduced motion / animations off)
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* Back sheets of the hero notebook stack — parallax depth on desktop */
+.hero-back-sheet {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hero-back-sheet {
+    will-change: transform;
+  }
+}
+
+/* Gentle bob for floating hero badges — GPU transform only */
+@keyframes hero-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-9px) rotate(1.2deg); }
+}
+.hero-float {
+  animation: hero-bob 5s ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.06),
+    0 10px 24px -8px color-mix(in oklab, var(--badge-glow, var(--primary)) 35%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-float { animation: none !important; }
+}
+[data-animations="off"] .hero-float { animation: none !important; }
+
+/* Feature card: themed glow + slight lift on hover */
+.feature-card {
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.feature-card:hover {
+  border-color: color-mix(in oklab, var(--feature-glow, var(--primary)) 45%, var(--border));
+  box-shadow:
+    0 2px 4px rgb(0 0 0 / 0.05),
+    0 16px 34px -14px color-mix(in oklab, var(--feature-glow, var(--primary)) 45%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .feature-card,
+  .feature-card:hover { transition: none; }
+}
+
+/* How-it-works steps slide slightly right on hover */
+.step-row {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), padding-left 0.2s ease;
+}
+.step-row:hover {
+  transform: translateX(6px);
+}
+.step-row:hover .text-marker {
+  text-shadow: 0 0 12px color-mix(in oklab, var(--marker) 50%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-row,
+  .step-row:hover { transform: none !important; transition: none; }
+}
+[data-animations="off"] .step-row,
+[data-animations="off"] .step-row:hover { transform: none !important; }
+
+/* Rank chips: gold rim + pop on hover, staggered sheen sweep */
+.rank-chip {
+  position: relative;
+  overflow: hidden;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+.rank-chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in oklab, var(--highlight) 30%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+.rank-chip:hover {
+  border-color: color-mix(in oklab, var(--highlight) 60%, var(--border));
+  box-shadow: 0 8px 20px -8px color-mix(in oklab, var(--highlight) 55%, transparent);
+}
+.rank-chip:hover::before {
+  transform: translateX(120%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rank-chip::before { display: none; }
+  .rank-chip,
+  .rank-chip:hover { transition: none; }
+}
+[data-animations="off"] .rank-chip::before { display: none; }
