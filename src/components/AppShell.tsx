@@ -7,16 +7,21 @@ import { cn } from "@/lib/utils";
 import {
   BarChart3,
   CalendarDays,
+  ChevronDown,
   Ellipsis,
   FileStack,
+  FolderOpen,
   Gamepad2,
   Home,
+  Inbox,
   Layers,
   LogOut,
+  MessageCircle,
   NotebookPen,
   Palette,
   PenLine,
   RefreshCw,
+  Send,
   Settings as SettingsIcon,
   Sparkles,
   Swords,
@@ -72,23 +77,50 @@ const MORE_TABS = [
   { to: "/focus", label: "Focus", icon: TimerIcon },
 ] as const;
 
-const MENU_STUDY = [
-  { to: "/dashboard", label: "Dashboard", icon: Home },
-  { to: "/ai-study", label: "Curated Notes", icon: Sparkles },
-  { to: "/practice", label: "Practice", icon: Target },
-  { to: "/timetable", label: "Timetable", icon: CalendarDays },
-  { to: "/quests", label: "Quests", icon: Swords },
-  { to: "/arcade", label: "Arcade", icon: Gamepad2 },
-  ...MORE_TABS,
-  { to: "/whiteboard", label: "Whiteboard", icon: Palette },
+/* ─── Sectioned navigation (desktop sidebar + mobile More sheet) ────── */
+
+const SECTION_STUDY = [
+  { to: "/ai-study", label: "AI Notes", icon: Sparkles },
+  { to: "/my-notes", label: "My Notes", icon: NotebookPen },
+  { to: "/whiteboard", label: "Whiteboards", icon: Palette },
+  { to: "/ai-study", label: "Quizzes", icon: Target },
+  { to: "/library", label: "Folders & Library", icon: FolderOpen },
 ] as const;
 
-const MENU_YOU = [
-  { to: "/friends", label: "Friends", icon: Users },
+const SECTION_SOCIAL = [
+  { to: "/friends", label: "Friends & Chats", icon: Users },
+  { to: "/friends", label: "Friend Requests", icon: MessageCircle },
+  { to: "/shared", label: "Shared With Me", icon: Inbox },
+  { to: "/shared", label: "Shared By Me", icon: Send },
+] as const;
+
+const SECTION_LEARNING = [
+  { to: "/ai-study", label: "AI Study Generator", icon: Sparkles },
+  { to: "/practice", label: "Practice", icon: Target },
+  { to: "/timetable", label: "Study Planner", icon: CalendarDays },
+  { to: "/arcade", label: "Arcade", icon: Gamepad2 },
+  { to: "/weekly-report", label: "Progress Dashboard", icon: BarChart3 },
+] as const;
+
+const SECTION_EXTRAS = [
+  { to: "/dashboard", label: "Dashboard", icon: Home },
+  { to: "/essay", label: "Essay Writer", icon: PenLine },
+  { to: "/projects", label: "Projects", icon: FileStack },
+  { to: "/flashcards", label: "Flashcards", icon: Layers },
+  { to: "/revision", label: "Revision", icon: RefreshCw },
+  { to: "/focus", label: "Focus", icon: TimerIcon },
+  { to: "/quests", label: "Quests", icon: Swords },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/weekly-report", label: "Weekly Report", icon: BarChart3 },
   { to: "/profile", label: "Profile", icon: User },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
+] as const;
+
+// Every sectioned route — used to highlight the More button on mobile.
+const ALL_SECTION_TABS = [
+  ...SECTION_STUDY,
+  ...SECTION_SOCIAL,
+  ...SECTION_LEARNING,
+  ...SECTION_EXTRAS,
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -97,9 +129,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sounds = useSounds();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
-  const inMore =
-    MENU_STUDY.some((t) => location.pathname === t.to) ||
-    MENU_YOU.some((t) => location.pathname === t.to);
+  const inMore = ALL_SECTION_TABS.some((t) => location.pathname === t.to);
   // Global Whiteboard drawer — hidden/collapsed by default so it never takes
   // space in the normal study UI. Opens as a smooth bottom sheet; the editor
   // itself can go fullscreen from inside.
@@ -140,38 +170,58 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
         </Link>
 
-        <nav className="mt-2 flex flex-col gap-1 px-3">
-          {TABS.map((tab) => {
-            const active =
-              location.pathname === tab.to ||
-              (tab.to === "/ai-study" &&
-                location.pathname.startsWith("/ai-study"));
-            return (
-              <NavLink
-                key={tab.to}
-                to={tab.to}
-                onClick={sounds.click}
-                className={cn(
-                  "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  active && "bg-primary/10 font-semibold text-primary",
-                )}
-              >
-                <tab.icon className="size-4" />
-                {tab.label}
-              </NavLink>
-            );
-          })}
-          <NavLink
-            to="/arcade"
-            className={cn(
-              "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              location.pathname === "/arcade" &&
-                "bg-primary/10 font-semibold text-primary",
-            )}
-          >
-            <Gamepad2 className="size-4" />
-            Arcade
-          </NavLink>
+        <nav className="mt-2 flex flex-1 flex-col gap-0.5 overflow-y-auto px-3">
+          {(
+            [
+              { title: "Study Space", tabs: SECTION_STUDY },
+              { title: "Social", tabs: SECTION_SOCIAL },
+              { title: "Learning", tabs: SECTION_LEARNING },
+            ] as const
+          ).map((section) => (
+            <div key={section.title} className="mb-1">
+              <details open className="group/section">
+                <summary className="flex cursor-pointer list-none items-center gap-1 px-3 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground">
+                  {section.title}
+                  <ChevronDown className="ml-auto size-3 transition-transform group-open/section:rotate-180" />
+                </summary>
+                <div className="mt-0.5 flex flex-col gap-0.5">
+                  {section.tabs.map((tab, i) => (
+                    <NavLink
+                      key={`${tab.to}-${i}`}
+                      to={tab.to}
+                      onClick={sounds.click}
+                      className={cn(
+                        "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        location.pathname === tab.to &&
+                          "bg-primary/10 font-semibold text-primary",
+                      )}
+                    >
+                      <tab.icon className="size-4" />
+                      {tab.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </details>
+            </div>
+          ))}
+          <p className="px-3 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50">
+            More
+          </p>
+          {SECTION_EXTRAS.map((tab) => (
+            <NavLink
+              key={tab.to}
+              to={tab.to}
+              onClick={sounds.click}
+              className={cn(
+                "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                location.pathname === tab.to &&
+                  "bg-primary/10 font-semibold text-primary",
+              )}
+            >
+              <tab.icon className="size-4" />
+              {tab.label}
+            </NavLink>
+          ))}
           {isAdmin && (
             <NavLink
               to="/admin"
@@ -314,26 +364,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2rem)" }}
           >
             <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border" />
-            <div className="grid grid-cols-3 gap-1.5">
-              {[...MENU_STUDY, ...MENU_YOU].map((tab) => {
-                const active = location.pathname === tab.to;
-                return (
-                  <Link
-                    key={tab.to}
-                    to={tab.to}
-                    className={cn(
-                      "flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-center text-[11px] font-semibold text-muted-foreground card-lift",
-                      active
-                        ? "border-primary/30 bg-primary/10 text-primary"
-                        : "bg-card",
-                    )}
-                  >
-                    <tab.icon className="size-5" />
-                    {tab.label}
-                  </Link>
-                );
-              })}
-            </div>
+            {(
+              [
+                { title: "📚 Study Space", tabs: SECTION_STUDY },
+                { title: "👥 Social", tabs: SECTION_SOCIAL },
+                { title: "🎓 Learning", tabs: SECTION_LEARNING },
+                { title: "✨ More", tabs: SECTION_EXTRAS },
+              ] as const
+            ).map((section) => (
+              <div key={section.title} className="mb-2">
+                <p className="annotation mb-1 px-1 text-[10px] font-bold uppercase tracking-wider">
+                  {section.title}
+                </p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {section.tabs.map((tab, i) => (
+                    <Link
+                      key={`${tab.to}-${i}`}
+                      to={tab.to}
+                      className={cn(
+                        "flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-center text-[11px] font-semibold text-muted-foreground card-lift",
+                        location.pathname === tab.to
+                          ? "border-primary/30 bg-primary/10 text-primary"
+                          : "bg-card",
+                      )}
+                    >
+                      <tab.icon className="size-5" />
+                      {tab.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
             {isAdmin && (
               <Link
                 to="/admin"
