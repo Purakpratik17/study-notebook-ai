@@ -99,6 +99,42 @@ export const save = mutation({
   },
 });
 
+export const setFolder = mutation({
+  args: { id: v.id("whiteboards"), folderId: v.optional(v.id("folders")) },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const board = await ctx.db.get(args.id);
+    if (!board || board.userId !== userId)
+      throw new Error("NOT_FOUND or not yours");
+    if (args.folderId) {
+      const folder = await ctx.db.get(args.folderId);
+      if (!folder || folder.userId !== userId)
+        throw new Error("Folder not found");
+    }
+    await ctx.db.patch(args.id, { folderId: args.folderId, updatedAt: Date.now() });
+  },
+});
+
+/** Duplicate a board — full element copy, owned by the same user. */
+export const duplicate = mutation({
+  args: { id: v.id("whiteboards") },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const board = await ctx.db.get(args.id);
+    if (!board || board.userId !== userId)
+      throw new Error("NOT_FOUND or not yours");
+    const now = Date.now();
+    return ctx.db.insert("whiteboards", {
+      userId,
+      title: `${board.title} (copy)`.slice(0, 120),
+      folderId: board.folderId,
+      elements: board.elements,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
 export const remove = mutation({
   args: { id: v.id("whiteboards") },
   handler: async (ctx, args) => {

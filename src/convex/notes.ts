@@ -83,6 +83,79 @@ export const get = query({
 });
 
 /**
+ * Save the user's edited rich-text version of an AI note. Writes ONLY the
+ * `editedContent` field — the original AI content (`notes`) is never touched,
+ * so editing can never trigger or corrupt regeneration.
+ */
+export const saveEdit = mutation({
+  args: { noteId: v.id("notes"), content: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const note = await ctx.db.get(args.noteId);
+    if (!note || note.userId !== userId) throw new Error("Note not found");
+    await ctx.db.patch(args.noteId, {
+      editedContent: args.content.slice(0, 200_000),
+    });
+  },
+});
+
+export const rename = mutation({
+  args: { noteId: v.id("notes"), topic: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const note = await ctx.db.get(args.noteId);
+    if (!note || note.userId !== userId) throw new Error("Note not found");
+    await ctx.db.patch(args.noteId, {
+      topic: args.topic.trim().slice(0, 120) || note.topic,
+    });
+  },
+});
+
+export const setFolder = mutation({
+  args: { noteId: v.id("notes"), folderId: v.optional(v.id("folders")) },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const note = await ctx.db.get(args.noteId);
+    if (!note || note.userId !== userId) throw new Error("Note not found");
+    if (args.folderId) {
+      const folder = await ctx.db.get(args.folderId);
+      if (!folder || folder.userId !== userId)
+        throw new Error("Folder not found");
+    }
+    await ctx.db.patch(args.noteId, { folderId: args.folderId });
+  },
+});
+
+/** Duplicate an AI note (with its quiz) — full copy owned by the same user. */
+export const duplicate = mutation({
+  args: { noteId: v.id("notes") },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const note = await ctx.db.get(args.noteId);
+    if (!note || note.userId !== userId) throw new Error("Note not found");
+    return ctx.db.insert("notes", {
+      userId,
+      topic: `${note.topic} (copy)`.slice(0, 120),
+      notes: note.notes,
+      quiz: note.quiz,
+      editedContent: note.editedContent,
+      folderId: note.folderId,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const remove = mutation({
+  args: { noteId: v.id("notes") },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const note = await ctx.db.get(args.noteId);
+    if (!note || note.userId !== userId) throw new Error("Note not found");
+    await ctx.db.delete(args.noteId);
+  },
+});
+
+/**
  * Record a completed quiz attempt. The XP ref is per note per calendar day
  * (quiz:<noteId>:<YYYY-MM-DD>) so the first finished quiz of a topic each day
  * is rewarded, while retries never double-reward.

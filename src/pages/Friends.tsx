@@ -1,11 +1,13 @@
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
+import { ShareMaterialSheet } from "@/components/ShareMaterialSheet";
 import {
   ArrowLeft,
   Ban,
   Bell,
   BellOff,
+  BookOpen,
   Check,
   Image as ImageIcon,
   Unlock,
@@ -18,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useSounds } from "@/hooks/use-settings";
@@ -114,6 +117,7 @@ type ChatMessage = {
   createdAt: number;
   mine: boolean;
   kind: "image" | "video" | "file" | null;
+  shareId?: string | null;
   mediaType: string | null;
   durationSec: number | null;
   fileName: string | null;
@@ -837,6 +841,7 @@ function Thread({
   const [lightbox, setLightbox] = useState<{ kind: "image" | "video"; url: string } | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [showPlus, setShowPlus] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -874,7 +879,7 @@ function Thread({
     };
   }, [preview]);
 
-  const submit = async () => {
+  const submit = async (shareId?: string) => {
     const body = draft.trim();
     if ((!body && !preview) || sending || uploading) return;
     setSending(true);
@@ -912,6 +917,7 @@ function Thread({
                 ? "🎥 Video"
                 : `📎 ${preview.file.name}`
             : ""),
+        ...(shareId ? { shareId: shareId as never } : {}),
         ...media,
       });
       if (r === "sent") {
@@ -1210,6 +1216,18 @@ function Thread({
         >
           <Paperclip className="size-4" />
         </button>
+        <button
+          type="button"
+          aria-label="Share study material"
+          disabled={sending}
+          onClick={() => {
+            sounds.click();
+            setShowShare(true);
+          }}
+          className="flex size-11 shrink-0 items-center justify-center rounded-full border disabled:opacity-50"
+        >
+          <BookOpen className="size-4" />
+        </button>
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -1226,6 +1244,17 @@ function Thread({
           <Send className="size-4" />
         </button>
       </form>
+
+      {showShare && (
+        <ShareMaterialSheet
+          conversationId={conversationId}
+          onClose={() => setShowShare(false)}
+          onSent={() => {
+            atBottomRef.current = true;
+            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      )}
 
       {lightbox && (
         <div
@@ -1353,8 +1382,9 @@ function ChatBubble({
               </span>
             </div>
           ))}
+        {m.shareId && <ShareCard messageId={m._id} />}
         {body && (
-          <p className={cn("whitespace-pre-wrap break-words", m.kind && "px-2.5 pb-1 pt-1.5")}>
+          <p className={cn("whitespace-pre-wrap break-words", (m.kind || m.shareId) && "px-2.5 pb-1 pt-1.5")}>
             {body}
           </p>
         )}
@@ -1371,6 +1401,75 @@ function ChatBubble({
         </p>
       </div>
     </li>
+  );
+}
+
+/* ─── Study-material share card (chat attachment) ───────────────────── */
+
+const SHARE_TYPE_META: Record<
+  string,
+  { label: string; emoji: string; open: (targetId: string) => string }
+> = {
+  ai_note: { label: "AI Note", emoji: "✨", open: (id) => `/ai-study?note=${id}` },
+  quiz: { label: "Quiz", emoji: "🧠", open: (id) => `/ai-study?note=${id}` },
+  my_note: { label: "My Note", emoji: "🗒️", open: (id) => `/my-notes?note=${id}` },
+  whiteboard: { label: "Whiteboard", emoji: "🎨", open: () => `/whiteboard` },
+};
+
+function ShareCard({ messageId }: { messageId: string }) {
+  const share = useQuery(api.shares.getByMessage, {
+    messageId: messageId as never,
+  }) as
+    | {
+        _id: string;
+        targetType: string;
+        targetId: string;
+        title: string;
+        senderName: string;
+        mine: boolean;
+      }
+    | null
+    | undefined;
+  const saveCopy = useMutation(api.shares.saveCopy);
+
+  if (share === undefined) {
+    return (
+      <div className="mx-1 mb-1 h-20 animate-pulse rounded-xl bg-black/5 dark:bg-white/10" />
+    );
+  }
+  if (share === null) return null;
+
+  const meta = SHARE_TYPE_META[share.targetType] ?? SHARE_TYPE_META.ai_note;
+
+  return (
+    <div className="mx-1 mb-1 rounded-xl border bg-background/90 p-2.5 dark:bg-black/20">
+      <p className="annotation mb-1 text-[10px] uppercase tracking-wide">
+        {meta.emoji} Shared {meta.label}
+      </p>
+      <p className="truncate text-sm font-bold">{share.title}</p>
+      <p className="annotation text-[10px]">from {share.senderName}</p>
+      <div className="mt-2 flex gap-1.5">
+        <Link
+          to={meta.open(share.targetId)}
+          className="flex h-8 flex-1 items-center justify-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground"
+        >
+          Open
+        </Link>
+        {!share.mine && (
+          <button
+            onClick={async () => {
+              const r = await saveCopy({ shareId: share._id as never });
+              if (r === "saved") toast.success("Saved a copy to your library 📚");
+              else if (r === "not_authorized") toast.error("Not authorized");
+              else toast.error("This material is no longer available.");
+            }}
+            className="flex h-8 flex-1 items-center justify-center rounded-lg border text-xs font-semibold"
+          >
+            Save to My Library
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

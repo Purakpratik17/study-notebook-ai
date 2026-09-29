@@ -37,6 +37,10 @@ const FocusMode = lazy(() => import("./pages/FocusMode.tsx"));
 const Friends = lazy(() => import("./pages/Friends.tsx"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel.tsx"));
 const Whiteboard = lazy(() => import("./pages/Whiteboard.tsx"));
+const Library = lazy(() => import("./pages/Library.tsx"));
+const MyNotesPage = lazy(() => import("./pages/MyNotes.tsx"));
+const AiNoteEditorPage = lazy(() => import("./pages/AiNoteEditor.tsx"));
+const SharedPage = lazy(() => import("./pages/Shared.tsx"));
 const AdBannerController = lazy(() =>
   import("./components/AdBannerController").then((m) => ({
     default: m.AdBannerController,
@@ -176,6 +180,10 @@ function AuthRoot() {
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Landing />} />
+                <Route path="/library" element={<RequireAuth><Library /></RequireAuth>} />
+                <Route path="/my-notes" element={<RequireAuth><MyNotesPage /></RequireAuth>} />
+                <Route path="/ai-notes/:noteId" element={<RequireAuth><AiNoteEditorPage /></RequireAuth>} />
+                <Route path="/shared" element={<RequireAuth><SharedPage /></RequireAuth>} />
                 <Route
                   path="/auth/*"
                   element={<AuthPage redirectAfterAuth="/dashboard" />}

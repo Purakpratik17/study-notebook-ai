@@ -15,7 +15,7 @@ import {
   Star,
   XCircle,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSettings, useSounds } from "@/hooks/use-settings";
@@ -75,11 +75,17 @@ export default function AiStudy() {
   const [error, setError] = useState<string | null>(null);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
 
+  // Deep link support: /ai-study?note=<id> opens a saved note directly
+  // (used by the Study Library and shared-material cards).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const linkedNoteId = searchParams.get("note");
+  const effectiveNoteId = activeNoteId ?? linkedNoteId;
+
   const generate = useAction(api.ai.generate);
   const notesList = useQuery(api.notes.list);
   const activeNote = useQuery(
     api.notes.get,
-    activeNoteId ? { noteId: activeNoteId as never } : "skip",
+    effectiveNoteId ? { noteId: effectiveNoteId as never } : "skip",
   );
 
   const handleGenerate = async (rawTopic: string) => {
@@ -193,10 +199,10 @@ export default function AiStudy() {
             {notesList.slice(0, 8).map((n) => (
               <li key={n._id}>
                 <button
-                  onClick={() => setActiveNoteId(n._id)}
+                  onClick={() => { setActiveNoteId(n._id); if (linkedNoteId) setSearchParams({}, { replace: true }); }}
                   className={cn(
                     "flex w-full items-center justify-between gap-3 py-2.5 text-left text-sm transition-colors hover:text-primary",
-                    activeNoteId === n._id && "font-semibold text-primary",
+                    effectiveNoteId === n._id && "font-semibold text-primary",
                   )}
                 >
                   <span className="truncate">{n.topic}</span>

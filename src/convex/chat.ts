@@ -130,6 +130,7 @@ export const send = mutation({
     durationSec: v.optional(v.number()),
     fileName: v.optional(v.string()), // Chat+ file attachments
     fileSize: v.optional(v.number()),
+    shareId: v.optional(v.id("shares")), // study-material share card
   },
   handler: async (ctx, args): Promise<"sent" | "not_friends" | "blocked"> => {
     const me = await requireUserId(ctx);
@@ -199,6 +200,7 @@ export const send = mutation({
       durationSec: kind === "video" ? args.durationSec : undefined,
       fileName: args.kind === "file" ? args.fileName : undefined,
       fileSize: args.kind === "file" ? args.fileSize : undefined,
+      shareId: args.shareId,
       createdAt: Date.now(),
     });
     return "sent";

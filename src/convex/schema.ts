@@ -169,6 +169,10 @@ const schema = defineSchema(
       userId: v.string(),
       topic: v.string(),
       notes: v.any(),
+      // User's edited rich-text version — kept SEPARATE from the original
+      // AI content so editing never regenerates or clobbers it.
+      editedContent: v.optional(v.string()),
+      folderId: v.optional(v.id("folders")),
       quiz: v.array(
         v.object({
           question: v.string(),
@@ -380,6 +384,7 @@ const schema = defineSchema(
       durationSec: v.optional(v.number()), // video duration (client-reported)
       fileName: v.optional(v.string()), // Chat+ file attachments
       fileSize: v.optional(v.number()),
+      shareId: v.optional(v.id("shares")), // study-material share card
       createdAt: v.number(),
     }).index("by_conversation", ["conversationId", "createdAt"]),
 
@@ -476,6 +481,53 @@ const schema = defineSchema(
       createdAt: v.number(),
     }).index("by_created", ["createdAt"]),
 
+    // ─── Study Library: folders, personal notes, sharing ─────────
+
+    // A user-created folder. Materials reference a folder by id — folders
+    // never copy content, and deleting a folder only clears the references.
+    folders: defineTable({
+      userId: v.string(), // Clerk subject — owner
+      name: v.string(),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    }).index("by_user", ["userId"]),
+
+    // Self-created personal notes (rich text authored from scratch).
+    // Content is an HTML string produced by the My Notes editor.
+    myNotes: defineTable({
+      userId: v.string(), // Clerk subject — owner
+      title: v.string(),
+      content: v.string(), // rich text (sanitized HTML)
+      folderId: v.optional(v.id("folders")),
+      template: v.optional(v.string()), // visual style/template id
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    })
+      .index("by_user_updated", ["userId", "updatedAt"])
+      .index("by_user", ["userId"]),
+
+    // A chat share of study material. The material content stays in its
+    // owner-scoped table (notes / whiteboards / myNotes); this row only
+    // records WHO shared WHAT into WHICH conversation/group. Access is
+    // granted exclusively to conversation participants / group members,
+    // checked server-side on every open.
+    shares: defineTable({
+      senderId: v.string(), // Clerk subject of the sharer
+      targetType: v.union(
+        v.literal("ai_note"),
+        v.literal("my_note"),
+        v.literal("whiteboard"),
+        v.literal("quiz"),
+      ),
+      targetId: v.string(), // _id in the owning table (string form)
+      title: v.string(), // denormalized for the card preview
+      conversationId: v.optional(v.id("conversations")),
+      groupId: v.optional(v.id("groups")),
+      messageId: v.optional(v.id("messages")), // chat message the card is attached to
+      createdAt: v.number(),
+    }).index("by_sender", ["senderId", "createdAt"])
+      .index("by_message", ["messageId"]),
+
     // ─── Whiteboards ─────────────────────────────────────────────
     // Infinite-canvas study boards. Each board belongs to exactly one
     // authenticated user (Clerk subject); elements are stored as a JSON
@@ -483,6 +535,7 @@ const schema = defineSchema(
     whiteboards: defineTable({
       userId: v.string(), // Clerk subject — owner
       title: v.string(),
+      folderId: v.optional(v.id("folders")),
       elements: v.array(
         v.object({
           id: v.string(),
