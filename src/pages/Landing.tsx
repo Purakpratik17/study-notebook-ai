@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { TiltCard } from "@/components/TiltCard";
 import { RainEffect } from "@/components/RainEffect";
-import cerevynLogo from "@/assets/cerevyn-logo.svg";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -255,12 +254,7 @@ export default function Landing() {
       {/* Nav */}
       <header className="relative z-10 mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5">
         <div className="flex items-center gap-2">
-          <img
-            src={cerevynLogo}
-            alt="Cerevyn logo"
-            className="hidden h-9 rounded-lg sm:block"
-          />
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm sm:hidden">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <NotebookPen className="size-5" />
           </span>
           <span className="text-base font-bold tracking-tight">
@@ -338,7 +332,7 @@ export default function Landing() {
                   </Link>
                 </Button>
                 <span className="annotation text-sm">
-                  free · sign in with email
+                  Free · sign in with email
                 </span>
               </div>
 
@@ -455,8 +449,8 @@ export default function Landing() {
           <PriceBars />
           <p className="mt-2 text-[11px] text-muted-foreground">
             Approximate advertised annual pricing for a single student account
-            (USD), from each app's public pricing page. Cerevyn is — and stays —
-            free.
+            (USD), from each app's public pricing page. Cerevyn is — and stays
+            — free.
           </p>
         </motion.section>
 
