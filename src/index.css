@@ -1203,3 +1203,18 @@ nav .nav-elevated {
   .rank-chip:hover { transition: none; }
 }
 [data-animations="off"] .rank-chip::before { display: none; }
+
+/* Comparison table: row hover highlight + Cerevyn column emphasis */
+.compare-table th,
+.compare-table td {
+  border-bottom: 1px solid var(--border);
+}
+.compare-row {
+  transition: background 0.2s ease;
+}
+.compare-row:hover {
+  background: color-mix(in oklab, var(--primary) 5%, transparent);
+}
+.compare-row:last-child td {
+  border-bottom: none;
+}

@@ -1,17 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { TiltCard } from "@/components/TiltCard";
+import { RainEffect } from "@/components/RainEffect";
 import cerevynLogo from "@/assets/cerevyn-logo.svg";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
   BookOpenCheck,
+  Brain,
   CalendarDays,
+  Check,
   CheckCircle2,
+  Eye,
   Flame,
+  Users,
+  Highlighter,
   NotebookPen,
+  PenTool,
   Sparkles,
   Swords,
+  Timer,
   Trophy,
+  X,
   Zap,
 } from "lucide-react";
 import { Link } from "react-router";
@@ -47,6 +56,55 @@ const FEATURES = [
   },
 ] as const;
 
+const EXTRA_FEATURES = [
+  {
+    icon: Brain,
+    title: "Flashcards",
+    body: "Auto-built from your study packs — flip, shuffle, and let spaced repetition decide what comes back.",
+  },
+  {
+    icon: Timer,
+    title: "Focus mode",
+    body: "A distraction-free timer that blocks the noise and banks the minutes into real, trackable study time.",
+  },
+  {
+    icon: PenTool,
+    title: "Infinite whiteboard",
+    body: "Sketch diagrams, mind-maps and worked solutions by hand — save them straight into your library.",
+  },
+  {
+    icon: Highlighter,
+    title: "AI notes you can edit",
+    body: "Every AI note is a living document — highlight, rewrite and annotate without losing the original.",
+  },
+  {
+    icon: Eye,
+    title: "Weekly reports",
+    body: "See exactly where your hours went, which subjects slipped, and what to fix next week.",
+  },
+  {
+    icon: Users,
+    title: "Study buddies",
+    body: "Share study packs with friends, compare XP on the leaderboard, and keep each other accountable.",
+  },
+] as const;
+
+const COMPARISON: {
+  feature: string;
+  cerevyn: boolean | string;
+  notebook: boolean | string;
+  generic: boolean | string;
+}[] = [
+  { feature: "AI notes, quizzes & flashcards from any topic", cerevyn: true, notebook: false, generic: "partial" },
+  { feature: "Timetable with sessions you can check off", cerevyn: true, notebook: "manual", generic: true },
+  { feature: "XP, levels & daily quests for studying", cerevyn: true, notebook: false, generic: false },
+  { feature: "Streaks that reward showing up daily", cerevyn: true, notebook: false, generic: "partial" },
+  { feature: "Hand-drawn whiteboards saved with your notes", cerevyn: true, notebook: true, generic: false },
+  { feature: "Share study packs with friends in-app", cerevyn: true, notebook: false, generic: "partial" },
+  { feature: "Works offline-first on your phone", cerevyn: "soon", notebook: true, generic: "partial" },
+  { feature: "Weekly report on where your time went", cerevyn: true, notebook: false, generic: "partial" },
+];
+
 const STEPS = [
   { n: "01", text: "Create your timetable" },
   { n: "02", text: "Study AI-generated notes" },
@@ -68,12 +126,33 @@ const RANKS = [
   { lvl: 10, name: "Cerevyn Legend", xp: "20,000 XP" },
 ] as const;
 
+/* Blur-in reveal — everything unloaded rises from a soft blur */
 const reveal = (delay = 0) => ({
-  initial: { opacity: 0, y: 22 },
-  whileInView: { opacity: 1, y: 0 },
+  initial: { opacity: 0, y: 22, filter: "blur(8px)" },
+  whileInView: { opacity: 1, y: 0, filter: "blur(0px)" },
   viewport: { once: true, margin: "-40px" as const },
-  transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
+  transition: {
+    duration: 0.6,
+    delay,
+    ease: [0.22, 1, 0.36, 1] as const,
+  },
 });
+
+function Cell({ v }: { v: boolean | string }) {
+  if (v === true)
+    return <Check className="mx-auto size-4 text-xp" aria-label="Yes" />;
+  if (v === false)
+    return <X className="mx-auto size-4 text-marker/60" aria-label="No" />;
+  return (
+    <span
+      className={`text-xs font-semibold ${
+        v === "manual" || v === "soon" ? "text-muted-foreground" : "text-ink-soft"
+      }`}
+    >
+      {v === "partial" ? "partial" : v}
+    </span>
+  );
+}
 
 export default function Landing() {
   return (
@@ -83,7 +162,8 @@ export default function Landing() {
       transition={{ duration: 0.5 }}
       className="relative min-h-screen overflow-x-clip"
     >
-      {/* Ambient floating orbs (skips itself on touch / reduced motion) */}
+      {/* Rain + ambient floating orbs (both self-skip on reduced motion) */}
+      <RainEffect />
       <AmbientLanding />
 
       {/* Nav */}
@@ -110,7 +190,6 @@ export default function Landing() {
       <main className="relative z-10 mx-auto w-full max-w-5xl px-4 pb-20">
         {/* ── Hero: layered 3D notebook ─────────────────────────────── */}
         <section className="relative mx-auto mt-8 max-w-3xl">
-          {/* back sheets — desk stack depth */}
           <div
             aria-hidden
             className="hero-back-sheet absolute inset-x-6 -bottom-3 top-8 rotate-[1.6deg] rounded-xl bg-card/70 shadow-lg"
@@ -120,7 +199,6 @@ export default function Landing() {
             className="hero-back-sheet absolute inset-x-3 -bottom-1.5 top-4 rotate-[-1.2deg] rounded-xl bg-card shadow-md"
           />
 
-          {/* floating badges (gentle bob, desktop-fine motion only) */}
           <FloatBadge
             className="-right-2 top-10 md:-right-10"
             delay="0s"
@@ -147,7 +225,12 @@ export default function Landing() {
           </FloatBadge>
 
           <TiltCard maxTilt={4} className="relative">
-            <section className="paper-sheet paper-margin relative px-6 py-10 pl-16 text-center md:py-14 md:pl-20">
+            <motion.section
+              initial={{ opacity: 0, y: 18, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="paper-sheet paper-margin relative px-6 py-10 pl-16 text-center md:py-14 md:pl-20"
+            >
               <span className="tape" aria-hidden />
               <p className="annotation text-base">dear future top student,</p>
               <h1 className="mx-auto mt-3 max-w-xl text-4xl font-black leading-tight tracking-tight md:text-5xl">
@@ -185,7 +268,7 @@ export default function Landing() {
                   quizzes
                 </span>
               </div>
-            </section>
+            </motion.section>
           </TiltCard>
         </section>
 
@@ -226,7 +309,93 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ── How it works: steps lift on hover ─────────────────────── */}
+        {/* ── More features: deeper toolbox ─────────────────────────── */}
+        <section className="mt-16">
+          <motion.h2
+            {...reveal()}
+            className="text-center text-2xl font-bold tracking-tight"
+          >
+            …and a full toolbox underneath
+          </motion.h2>
+          <p className="annotation mt-1 text-center text-sm">
+            every tool a semester demands
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {EXTRA_FEATURES.map((f, i) => (
+              <motion.article key={f.title} {...reveal(i * 0.05)}>
+                <TiltCard maxTilt={6} className="h-full">
+                  <div className="feature-card paper-sheet h-full px-5 py-5">
+                    <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-sm">
+                      <f.icon className="size-4" />
+                    </span>
+                    <span className="mt-3 block font-bold">{f.title}</span>
+                    <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">
+                      {f.body}
+                    </span>
+                  </div>
+                </TiltCard>
+              </motion.article>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Comparison ────────────────────────────────────────────── */}
+        <motion.section
+          {...reveal()}
+          className="paper-sheet spiral-edge mt-16 overflow-hidden px-6 py-8 md:px-8"
+        >
+          <h2 className="text-center text-2xl font-bold tracking-tight">
+            Why not just use a notebook app?
+          </h2>
+          <p className="annotation mt-1 text-center text-sm">
+            Cerevyn vs the rest
+          </p>
+          <div className="mt-6 overflow-x-auto">
+            <table className="compare-table w-full min-w-[560px] border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th className="w-[46%] py-3 text-left font-bold"></th>
+                  <th className="py-3 text-center font-black text-primary">
+                    <span className="inline-flex flex-col items-center gap-1">
+                      <NotebookPen className="size-4" />
+                      Cerevyn
+                    </span>
+                  </th>
+                  <th className="py-3 text-center text-xs font-semibold text-muted-foreground">
+                    Plain notebook
+                  </th>
+                  <th className="py-3 text-center text-xs font-semibold text-muted-foreground">
+                    Generic AI apps
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON.map((row) => (
+                  <tr key={row.feature} className="compare-row">
+                    <td className="py-2.5 pr-3 text-left leading-snug">
+                      {row.feature}
+                    </td>
+                    <td className="bg-primary/5 py-2.5 text-center">
+                      <Cell v={row.cerevyn} />
+                    </td>
+                    <td className="py-2.5 text-center">
+                      <Cell v={row.notebook} />
+                    </td>
+                    <td className="py-2.5 text-center">
+                      <Cell v={row.generic} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Check = built in · Partial = possible with workarounds · Minus = not
+            supported · “Soon” = native mobile in progress
+          </p>
+        </motion.section>
+
+        {/* ── How it works ──────────────────────────────────────────── */}
         <motion.section
           {...reveal()}
           className="paper-sheet paper-margin mt-16 px-6 py-8 pl-16 md:pl-20"
@@ -249,8 +418,11 @@ export default function Landing() {
           </ol>
         </motion.section>
 
-        {/* ── Level ladder: interactive 3D chips ────────────────────── */}
-        <motion.section {...reveal()} className="paper-sheet spiral-edge mt-8 px-6 py-8">
+        {/* ── Level ladder ──────────────────────────────────────────── */}
+        <motion.section
+          {...reveal()}
+          className="paper-sheet spiral-edge mt-8 px-6 py-8"
+        >
           <h2 className="text-2xl font-bold tracking-tight">
             Climb the level ladder
           </h2>
@@ -258,19 +430,16 @@ export default function Landing() {
             {RANKS.map((l, i) => (
               <motion.li
                 key={l.lvl}
-                initial={{ opacity: 0, scale: 0.85 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, scale: 0.85, filter: "blur(6px)" }}
+                whileInView={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                 viewport={{ once: true, margin: "-20px" }}
                 transition={{
-                  duration: 0.35,
+                  duration: 0.4,
                   delay: i * 0.03,
                   ease: [0.22, 1.2, 0.36, 1],
                 }}
                 whileHover={{ y: -4, scale: 1.04 }}
                 className="rank-chip flex cursor-default items-center gap-2.5 rounded-lg border bg-card px-3.5 py-2.5"
-                style={
-                  { "--rank-delay": `${i * 0.25}s` } as React.CSSProperties
-                }
               >
                 <span className="level-chip flex size-8 items-center justify-center rounded-full bg-highlight-soft text-sm font-black text-foreground">
                   {l.lvl}
@@ -289,7 +458,10 @@ export default function Landing() {
         </motion.section>
 
         {/* ── Final CTA ─────────────────────────────────────────────── */}
-        <motion.section {...reveal()} className="relative mx-auto mt-16 max-w-2xl">
+        <motion.section
+          {...reveal()}
+          className="relative mx-auto mt-16 max-w-2xl"
+        >
           <TiltCard maxTilt={3}>
             <section className="paper-sheet paper-margin relative px-6 py-10 pl-16 text-center md:pl-20">
               <span className="tape" aria-hidden />
@@ -335,9 +507,9 @@ function FloatBadge({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.7 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, delay: 0.7, ease: [0.22, 1.4, 0.36, 1] }}
+      initial={{ opacity: 0, scale: 0.7, filter: "blur(6px)" }}
+      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+      transition={{ duration: 0.6, delay: 0.7, ease: [0.22, 1.4, 0.36, 1] }}
       className={`hero-float absolute z-20 ${className ?? ""}`}
       style={
         { "--float-delay": delay, "--badge-glow": glow } as React.CSSProperties
