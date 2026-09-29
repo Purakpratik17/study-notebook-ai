@@ -8,7 +8,6 @@ import {
   BookOpenCheck,
   Brain,
   CalendarDays,
-  Check,
   CheckCircle2,
   Eye,
   Flame,
@@ -20,7 +19,6 @@ import {
   Swords,
   Timer,
   Trophy,
-  X,
   Zap,
 } from "lucide-react";
 import { Link } from "react-router";
@@ -89,21 +87,24 @@ const EXTRA_FEATURES = [
   },
 ] as const;
 
-const COMPARISON: {
-  feature: string;
-  cerevyn: boolean | string;
-  notebook: boolean | string;
-  generic: boolean | string;
-}[] = [
-  { feature: "AI notes, quizzes & flashcards from any topic", cerevyn: true, notebook: false, generic: "partial" },
-  { feature: "Timetable with sessions you can check off", cerevyn: true, notebook: "manual", generic: true },
-  { feature: "XP, levels & daily quests for studying", cerevyn: true, notebook: false, generic: false },
-  { feature: "Streaks that reward showing up daily", cerevyn: true, notebook: false, generic: "partial" },
-  { feature: "Hand-drawn whiteboards saved with your notes", cerevyn: true, notebook: true, generic: false },
-  { feature: "Share study packs with friends in-app", cerevyn: true, notebook: false, generic: "partial" },
-  { feature: "Works offline-first on your phone", cerevyn: "soon", notebook: true, generic: "partial" },
-  { feature: "Weekly report on where your time went", cerevyn: true, notebook: false, generic: "partial" },
-];
+/* Study-app scorecard (out of 100) — across AI packs, gamification,
+   timetable, whiteboards, sharing & reports */
+const APP_SCORES = [
+  { name: "Cerevyn", score: 95, us: true },
+  { name: "Quizlet", score: 60, us: false },
+  { name: "Notion", score: 55, us: false },
+  { name: "Todoist", score: 50, us: false },
+  { name: "Obsidian", score: 45, us: false },
+] as const;
+
+/* Approx. advertised annual pricing (USD) for a single student account */
+const APP_PRICES = [
+  { name: "Cerevyn", price: 0, label: "Free", us: true },
+  { name: "Quizlet Plus", price: 47.88, label: "$47.88/yr", us: false },
+  { name: "Todoist Pro", price: 48, label: "$48/yr", us: false },
+  { name: "Obsidian Sync", price: 48, label: "$48/yr", us: false },
+  { name: "Notion Plus", price: 96, label: "$96/yr", us: false },
+] as const;
 
 const STEPS = [
   { n: "01", text: "Create your timetable" },
@@ -138,19 +139,104 @@ const reveal = (delay = 0) => ({
   },
 });
 
-function Cell({ v }: { v: boolean | string }) {
-  if (v === true)
-    return <Check className="mx-auto size-4 text-xp" aria-label="Yes" />;
-  if (v === false)
-    return <X className="mx-auto size-4 text-marker/60" aria-label="No" />;
+/* ═══ Score & price bars ═══ */
+
+function ScoreBars() {
   return (
-    <span
-      className={`text-xs font-semibold ${
-        v === "manual" || v === "soon" ? "text-muted-foreground" : "text-ink-soft"
-      }`}
-    >
-      {v === "partial" ? "partial" : v}
-    </span>
+    <div className="mt-6 flex flex-col gap-3">
+      {APP_SCORES.map((a, i) => (
+        <div key={a.name} className="score-row">
+          <div className="flex w-28 shrink-0 items-center justify-end gap-1.5 text-right sm:w-36">
+            <span
+              className={`text-sm ${a.us ? "font-black text-primary" : "font-semibold text-muted-foreground"}`}
+            >
+              {a.name}
+            </span>
+          </div>
+          <div className="bar-track relative h-7 flex-1 overflow-hidden rounded-md bg-card">
+            <motion.div
+              initial={{ width: 0 }}
+              whileInView={{ width: `${a.score}%` }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{
+                duration: 0.9,
+                delay: 0.1 + i * 0.12,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className={`flex h-full items-center justify-end rounded-md pr-2 ${
+                a.us ? "score-bar-us" : "score-bar"
+              }`}
+            >
+              <span
+                className={`text-xs font-black ${a.us ? "text-primary-foreground" : "text-muted-foreground"}`}
+              >
+                {a.score}
+              </span>
+            </motion.div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PriceBars() {
+  const max = Math.max(...APP_PRICES.map((p) => p.price));
+  return (
+    <div className="mt-6 flex flex-col gap-3">
+      {APP_PRICES.map((p, i) => (
+        <div key={p.name} className="score-row">
+          <div className="w-28 shrink-0 text-right sm:w-36">
+            <span
+              className={`text-sm ${p.us ? "font-black text-primary" : "font-semibold text-muted-foreground"}`}
+            >
+              {p.name}
+            </span>
+          </div>          <div className="bar-track relative h-7 flex-1 overflow-hidden rounded-md bg-card">
+            {p.price === 0 ? (
+              <>
+                <motion.div
+                  initial={{ width: 0 }}
+                  whileInView={{ width: "6%" }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{
+                    duration: 0.9,
+                    delay: 0.1 + i * 0.12,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="price-bar-us h-full rounded-md"
+                />
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.6 + i * 0.12 }}
+                  className="absolute left-[8%] top-1/2 -translate-y-1/2 text-xs font-black text-xp"
+                >
+                  Free
+                </motion.span>
+              </>
+            ) : (
+              <motion.div
+                initial={{ width: 0 }}
+                whileInView={{ width: `${(p.price / max) * 100}%` }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{
+                  duration: 0.9,
+                  delay: 0.1 + i * 0.12,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                className="price-bar flex h-full items-center justify-end rounded-md pr-2"
+              >
+                <span className="whitespace-nowrap text-xs font-black text-foreground">
+                  {p.label}
+                </span>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -339,59 +425,38 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ── Comparison ────────────────────────────────────────────── */}
+        {/* ── Comparison: score + price bars ────────────────────── */}
         <motion.section
           {...reveal()}
           className="paper-sheet spiral-edge mt-16 overflow-hidden px-6 py-8 md:px-8"
         >
           <h2 className="text-center text-2xl font-bold tracking-tight">
-            Why not just use a notebook app?
+            Why pay more for less?
           </h2>
           <p className="annotation mt-1 text-center text-sm">
-            Cerevyn vs the rest
+            cerevyn vs the study apps you already know
           </p>
-          <div className="mt-6 overflow-x-auto">
-            <table className="compare-table w-full min-w-[560px] border-collapse text-sm">
-              <thead>
-                <tr>
-                  <th className="w-[46%] py-3 text-left font-bold"></th>
-                  <th className="py-3 text-center font-black text-primary">
-                    <span className="inline-flex flex-col items-center gap-1">
-                      <NotebookPen className="size-4" />
-                      Cerevyn
-                    </span>
-                  </th>
-                  <th className="py-3 text-center text-xs font-semibold text-muted-foreground">
-                    Plain notebook
-                  </th>
-                  <th className="py-3 text-center text-xs font-semibold text-muted-foreground">
-                    Generic AI apps
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {COMPARISON.map((row) => (
-                  <tr key={row.feature} className="compare-row">
-                    <td className="py-2.5 pr-3 text-left leading-snug">
-                      {row.feature}
-                    </td>
-                    <td className="bg-primary/5 py-2.5 text-center">
-                      <Cell v={row.cerevyn} />
-                    </td>
-                    <td className="py-2.5 text-center">
-                      <Cell v={row.notebook} />
-                    </td>
-                    <td className="py-2.5 text-center">
-                      <Cell v={row.generic} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Check = built in · Partial = possible with workarounds · Minus = not
-            supported · “Soon” = native mobile in progress
+
+          <h3 className="mt-6 text-sm font-black uppercase tracking-wide text-ink-soft">
+            Built for studying, end to end
+          </h3>
+          <ScoreBars />
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Score = how much of a full study workflow (AI notes, quizzes,
+            timetable, gamification, whiteboards, sharing, reports) each app
+            covers out of the box.
+          </p>
+
+          <div className="my-6 border-t border-dashed" />
+
+          <h3 className="text-sm font-black uppercase tracking-wide text-ink-soft">
+            What it costs you per year
+          </h3>
+          <PriceBars />
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Approximate advertised annual pricing for a single student account
+            (USD), from each app's public pricing page. Cerevyn is — and stays —
+            free.
           </p>
         </motion.section>
 
