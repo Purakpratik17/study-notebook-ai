@@ -158,7 +158,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }}
     >
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur md:flex">
+      <aside className="sidebar-premium fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur-xl md:flex">
         <Link to="/dashboard" className="flex items-center gap-2.5 px-5 py-5">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
             <NotebookPen className="size-5" />
@@ -274,7 +274,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile top bar — branding + profile; navigation lives in the
           bottom nav below (native-app pattern). */}
-      <header style={{ paddingTop: "env(safe-area-inset-top, 0px)" }} className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/85 px-4 py-2.5 backdrop-blur md:hidden">
+      <header style={{ paddingTop: "env(safe-area-inset-top, 0px)" }} className="header-glass sticky top-0 z-40 flex items-center justify-between border-b bg-background/85 px-4 py-2.5 backdrop-blur-xl md:hidden">
         <Link to="/dashboard" className="flex items-center gap-2">
           <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
             <NotebookPen className="size-4" />

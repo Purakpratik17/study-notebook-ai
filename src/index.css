@@ -1245,3 +1245,212 @@ nav .nav-elevated {
     gap: 0.5rem;
   }
 }
+
+/* ═════════════════════════════════════════════════════════════════════
+   APP-WIDE PREMIUM POLISH — depth, glass, shine, motion discipline.
+   Uses only existing theme tokens; everything decorative freezes under
+   prefers-reduced-motion and [data-animations="off"].
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* 1 — Ambient page wash: soft emerald/gold light pooling on the desk.
+   Sits behind everything, adapts to dark mode automatically. */
+body {
+  background-image:
+    radial-gradient(
+      ellipse 90% 55% at 50% -10%,
+      color-mix(in oklab, var(--primary) 6%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      circle 40% at 100% 100%,
+      color-mix(in oklab, var(--highlight) 5%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      circle 35% at 0% 80%,
+      color-mix(in oklab, var(--marker) 4%, transparent),
+      transparent 70%
+    );
+  background-attachment: fixed;
+}
+
+/* 2 — Themed scrollbar (WebKit + thin Firefox) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--ink) 18%, transparent);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--primary) 40%, transparent);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--ink) 18%, transparent) transparent;
+}
+
+/* 3 — Glass chrome: header bars & sidebars get a soft top light-catch
+   and a slightly deeper blur. Applies on top of existing backdrop-blur. */
+.header-glass {
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--card) 55%, transparent),
+      transparent 140%
+    ),
+    color-mix(in oklab, var(--background) 85%, transparent) !important;
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--card) 60%, transparent) inset,
+    0 6px 20px -14px color-mix(in oklab, var(--ink) 30%, transparent);
+}
+.sidebar-premium {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--primary) 4%, transparent) 0%,
+      transparent 30%
+    ),
+    color-mix(in oklab, var(--sidebar) 88%, transparent) !important;
+  box-shadow: 1px 0 0 color-mix(in oklab, var(--card) 55%, transparent) inset;
+}
+
+/* 4 — Active nav pill: emerald gradient + left indicator dot */
+nav a[data-active="true"],
+nav .nav-elevated {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--primary) 14%, transparent),
+      color-mix(in oklab, var(--primary) 6%, transparent)
+    ) !important;
+  position: relative;
+}
+nav .nav-elevated::before,
+nav a[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--primary);
+  opacity: 0.85;
+}
+
+/* 5 — Section headers: small emerald tick before uppercase titles.
+   Opt-in via .sec-h so nothing changes unintentionally. */
+.sec-h {
+  position: relative;
+  padding-left: 0.85rem;
+}
+.sec-h::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 0.9em;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    var(--primary),
+    color-mix(in oklab, var(--primary) 55%, var(--xp))
+  );
+}
+
+/* 6 — Progress bars: gradient + traveling light sheen.
+   Opt-in via .bar-shine on the fill element. */
+.bar-shine {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklab, currentColor 65%, transparent),
+    currentColor
+  );
+}
+.bar-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.45),
+    transparent
+  );
+  animation: bar-sheen 2.6s ease-in-out infinite;
+}
+@keyframes bar-sheen {
+  60%, 100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar-shine::after { animation: none !important; }
+}
+[data-animations="off"] .bar-shine::after { animation: none !important; }
+
+/* 7 — Blur-in entrance utility (mirrors the landing reveal). */
+@keyframes blur-in-soft {
+  from { opacity: 0; transform: translateY(10px); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.blur-in {
+  animation: blur-in-soft 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.blur-in-1 { animation-delay: 0.05s; }
+.blur-in-2 { animation-delay: 0.1s; }
+.blur-in-3 { animation-delay: 0.15s; }
+.blur-in-4 { animation-delay: 0.2s; }
+@media (prefers-reduced-motion: reduce) {
+  .blur-in { animation: none !important; }
+}
+[data-animations="off"] .blur-in { animation: none !important; }
+
+/* 8 — Focus-visible: glowing emerald ring for keyboard users */
+:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--primary) 70%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 9 — Links: smooth color transition everywhere */
+a {
+  transition: color 0.15s ease;
+}
+
+/* 10 — Paper sheets get a faint top light-catch so they read as
+   slightly raised paper on the desk. */
+.paper-sheet {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.05),
+    0 8px 24px -12px rgb(0 0 0 / 0.12),
+    inset 0 1px 0 color-mix(in oklab, var(--card) 70%, transparent);
+}
+
+/* 11 — Inputs: soft inner depth so fields feel pressed into paper */
+input,
+textarea,
+select {
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--primary) 12%, transparent),
+    inset 0 1px 2px color-mix(in oklab, var(--ink) 5%, transparent);
+}

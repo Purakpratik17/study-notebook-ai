@@ -340,7 +340,7 @@ export default function Dashboard() {
                 )}
               >
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-highlight to-[oklch(0.9_0.12_95)] transition-all duration-700"
+                  className="h-full rounded-full bg-gradient-to-r from-highlight to-[oklch(0.9_0.12_95)] bar-shine text-primary transition-all duration-700"
                   style={{ width: `${Math.round(stats.progress * 100)}%` }}
                 />
               </div>
@@ -419,7 +419,7 @@ export default function Dashboard() {
             key={a.to}
             to={a.to}
             onClick={sounds.click}
-            className="paper-sheet group flex flex-col items-center gap-1.5 px-2 py-3 transition-transform hover:-translate-y-0.5"
+            className="paper-sheet card-3d group flex flex-col items-center gap-1.5 px-2 py-3 transition-transform hover:-translate-y-1"
           >
             <span
               className={cn(
@@ -437,7 +437,7 @@ export default function Dashboard() {
       {/* Focus timer + log session */}
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card-3d paper-sheet spiral-edge px-5 py-5 md:px-7">
-          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+          <h2 className="sec-h flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
             <Timer className="size-4" /> Focus session
           </h2>
           <div className="mt-3 flex items-baseline gap-2">
@@ -490,7 +490,7 @@ export default function Dashboard() {
         </section>
 
         <section className="card-3d paper-sheet px-5 py-5 md:px-7">
-          <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+          <h2 className="sec-h flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
             <Target className="size-4" /> Today's progress
           </h2>
           {summary === undefined ? (
@@ -508,7 +508,7 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-paper-deep">
                   <div
-                    className="h-full rounded-full bg-primary transition-all duration-700"
+                  className="bar-shine h-full rounded-full bg-primary text-primary-foreground transition-all duration-700"
                     style={{ width: `${summary.completionPercent}%` }}
                   />
                 </div>
@@ -550,7 +550,7 @@ export default function Dashboard() {
         {/* Upcoming timetable */}
         <section className="paper-sheet paper-margin px-5 py-5 pl-12 md:pl-18">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
+            <h2 className="sec-h flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-ink-soft">
               <CalendarCheck2 className="size-4" /> Today's timetable
             </h2>
             {summary && summary.tasksTotal > 0 && (
@@ -805,7 +805,7 @@ export default function Dashboard() {
         <Link
           to="/revision"
           onClick={sounds.click}
-          className="paper-sheet flex items-center justify-between px-5 py-4 transition-transform hover:-translate-y-0.5"
+          className="paper-sheet card-3d flex items-center justify-between px-5 py-4"
         >
           <div>
             <p className="text-sm font-bold">
@@ -915,7 +915,7 @@ function WeeklyReportCard() {
   return (
     <Link
       to="/weekly-report"
-      className="paper-sheet flex items-center justify-between gap-3 px-5 py-4 transition-transform hover:-translate-y-0.5"
+      className="paper-sheet card-3d flex items-center justify-between gap-3 px-5 py-4"
     >
       <div className="min-w-0">
         <p className="text-sm font-bold">📊 Your Week in Review</p>
