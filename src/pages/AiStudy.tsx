@@ -20,6 +20,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useSettings, useSounds } from "@/hooks/use-settings";
 import { AiProgressCard } from "@/components/loading";
+import { MindMap } from "@/components/MindMap";
 import { TranslateButton } from "@/components/TranslateButton";
 import { maybeShowInterstitial } from "@/lib/ads";
 
@@ -257,35 +258,49 @@ function NoteView({ noteId }: { noteId: string }) {
   ].join("\n\n");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <ImportantQuestions topic={notes.topic} />
-      <article className="card-3d paper-sheet paper-margin px-5 py-6 pl-14 md:px-8 md:pl-20">
+
+      {/* Mind map first — see the whole topic at a glance */}
+      <MindMap
+        data={{
+          topic: notes.topic,
+          sections: notes.sections.map((s) => ({
+            heading: s.heading,
+            bullets: s.bullets,
+          })),
+        }}
+      />
+
+      <article className="card-3d paper-sheet paper-margin px-4 py-5 pl-12 md:px-7 md:pl-16">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="annotation text-sm">topic notes</p>
-            <h2 className="mt-1 text-2xl font-bold tracking-tight">
+            <p className="annotation text-xs">topic notes</p>
+            <h2 className="mt-0.5 text-xl font-bold tracking-tight">
               {notes.topic}
             </h2>
           </div>
           <TranslateButton content={notesPlain} />
         </div>
-        <p className="mt-3 leading-relaxed text-foreground/90">{notes.intro}</p>
+        <p className="mt-2 text-xs leading-relaxed text-foreground/90">
+          {notes.intro}
+        </p>
 
         {notes.sections.map((s, i) => (
-          <section key={i} className="mt-6">
-            <h3 className="flex items-baseline gap-2 text-lg font-bold">
-              <span className="text-sm text-marker">{i + 1}.</span> {s.heading}
+          <section key={i} className="mt-5">
+            <h3 className="flex items-baseline gap-2 text-sm font-bold">
+              <span className="text-xs text-marker">{i + 1}.</span> {s.heading}
             </h3>
-            <ul className="mt-2 flex flex-col gap-1.5">
+            <ul className="mt-1.5 flex flex-col gap-1">
               {s.bullets.map((b, j) => (
-                <li key={j} className="flex gap-2 text-sm leading-relaxed">
-                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-ink-faint" />
+                <li key={j} className="flex gap-2 text-xs leading-relaxed">
+                  <span className="mt-1.5 size-1 shrink-0 rounded-full bg-ink-faint" />
                   <span>{b}</span>
                 </li>
               ))}
             </ul>
             {s.highlight && (
-              <p className="mt-3 inline-block rounded bg-highlight-soft px-2 py-1 text-sm font-medium">
+              <p className="mt-2 inline-block rounded bg-highlight-soft px-2 py-0.5 text-xs font-medium">
                 ★ {s.highlight}
               </p>
             )}
@@ -293,13 +308,13 @@ function NoteView({ noteId }: { noteId: string }) {
         ))}
 
         {notes.keyPoints.length > 0 && (
-          <section className="mt-7">
-            <h3 className="flex items-center gap-2 text-lg font-bold">
-              <Star className="size-4 text-highlight" /> Key exam points
+          <section className="mt-6">
+            <h3 className="flex items-center gap-2 text-sm font-bold">
+              <Star className="size-3.5 text-highlight" /> Key exam points
             </h3>
-            <ul className="ruled-list mt-2 flex flex-col">
+            <ul className="ruled-list mt-1.5 flex flex-col">
               {notes.keyPoints.map((k, i) => (
-                <li key={i} className="py-1.5 text-sm leading-relaxed">
+                <li key={i} className="py-1 text-xs leading-relaxed">
                   ✓ {k}
                 </li>
               ))}
@@ -308,15 +323,15 @@ function NoteView({ noteId }: { noteId: string }) {
         )}
 
         {notes.formulas.length > 0 && (
-          <section className="mt-6">
-            <h3 className="flex items-center gap-2 text-lg font-bold">
-              <Sigma className="size-4 text-primary" /> Formulas
+          <section className="mt-5">
+            <h3 className="flex items-center gap-2 text-sm font-bold">
+              <Sigma className="size-3.5 text-primary" /> Formulas
             </h3>
-            <div className="mt-2 flex flex-col gap-2">
+            <div className="mt-1.5 flex flex-col gap-1.5">
               {notes.formulas.map((f, i) => (
                 <code
                   key={i}
-                  className="rounded-md border bg-paper-deep px-3 py-2 text-sm font-medium"
+                  className="rounded-md border bg-paper-deep px-2.5 py-1.5 text-xs font-medium"
                 >
                   {f}
                 </code>
@@ -326,13 +341,13 @@ function NoteView({ noteId }: { noteId: string }) {
         )}
 
         {notes.examTips.length > 0 && (
-          <section className="mt-6">
-            <h3 className="flex items-center gap-2 text-lg font-bold">
-              <Lightbulb className="size-4 text-marker" /> Exam tips
+          <section className="mt-5">
+            <h3 className="flex items-center gap-2 text-sm font-bold">
+              <Lightbulb className="size-3.5 text-marker" /> Exam tips
             </h3>
-            <ul className="mt-2 flex flex-col gap-1.5">
+            <ul className="mt-1.5 flex flex-col gap-1">
               {notes.examTips.map((t, i) => (
-                <li key={i} className="text-sm leading-relaxed">
+                <li key={i} className="text-xs leading-relaxed">
                   💡 {t}
                 </li>
               ))}
@@ -341,11 +356,11 @@ function NoteView({ noteId }: { noteId: string }) {
         )}
 
         {notes.summary && (
-          <section className="mt-7 rounded-lg border-l-4 border-highlight bg-highlight-soft/50 px-4 py-3">
-            <h3 className="text-sm font-bold uppercase tracking-wide">
+          <section className="mt-6 rounded-lg border-l-4 border-highlight bg-highlight-soft/50 px-3.5 py-2.5">
+            <h3 className="text-xs font-bold uppercase tracking-wide">
               Summary
             </h3>
-            <p className="mt-1 text-sm leading-relaxed">{notes.summary}</p>
+            <p className="mt-1 text-xs leading-relaxed">{notes.summary}</p>
           </section>
         )}
       </article>

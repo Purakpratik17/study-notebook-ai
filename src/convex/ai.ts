@@ -155,15 +155,19 @@ Return ONLY valid JSON (no markdown fences, no commentary) matching this TypeScr
 }
 
 Field rules:
-- "intro": 2-3 sentence clear explanation of the topic.
-- "sections": 3-4 sections covering the most important concepts. Each has 3-4 clear, easy-to-understand bullets. "highlight" is one key takeaway or definition worth remembering (may be an empty string).
-- "keyPoints": 4-6 exam-focused key points.
+- "intro": ONE sentence — a crisp, plain-language definition of the topic.
+- "sections": 3-4 sections, each named with a 2-4 word heading. Each has 3 bullets, each bullet ONE short sentence (max 14 words) — a fact, definition or example, never padding.
+- "highlight" per section: one key term or formula fragment (max 10 words) or an empty string.
+- "keyPoints": 4-5 exam-focused key points, each one short sentence (max 14 words).
 - "formulas": formulas applicable to the topic in plain text (empty array if none).
-- "examTips": 3 short exam-focused tips.
-- "summary": short summary of the whole topic (2-3 sentences).
+- "examTips": 3 short exam-focused tips (max 12 words each).
+- "summary": 2 sentences maximum.
 - "quiz": exactly 5 multiple-choice questions. Each has exactly 4 options, one correct (correctIndex 0-3), and a 1-sentence explanation of why the answer is correct.
 
-Content must be accurate, curriculum-appropriate, and easy for a student to understand. Be concise — short bullets, no filler.`;
+Style rules:
+- Headings and bullets must work as nodes on a mind map: short, concrete, scannable.
+- NEVER write paragraphs. NEVER exceed the word limits. No filler phrases like "it is important to note".
+- Content must be accurate, curriculum-appropriate, and easy for a student to understand.`;
 }
 
 /** Extract the first balanced JSON object from a model response. */
