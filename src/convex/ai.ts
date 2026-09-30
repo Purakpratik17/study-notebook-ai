@@ -5,11 +5,10 @@
 // bundled into the web/Android client.
 
 // NVIDIA NIM gateway — OpenAI-compatible chat completions endpoint.
-// deepseek-v4.1-flash verified live against GET /v1/models (it is the only
-// current-generation deepseek chat model served) and via probe: the retired
-// deepseek-v4-flash-0731 now returns 410 on this gateway.
+// Model list verified live against GET /v1/models (2026-09). Primary is
+// deepseek-v4.1-flash; openai/gpt-oss-20b is a verified-live fallback on
+// the same gateway & key (see chatCompletion docs).
 const AI_BASE_URL = "https://integrate.api.nvidia.com/v1";
-const AI_MODEL = "deepseek-ai/deepseek-v4.1-flash";
 
 type ChatContent =
   | string
@@ -20,13 +19,27 @@ type ChatContent =
 
 /**
  * Shared chat completion with latency safeguards:
- * • Ask the model to omit the <think>/reasoning preamble — DeepSeek-style
- *   reasoning models can otherwise burn thousands of tokens thinking
- *   before answering, which is the main cause of slow generation.
- * • Hard client-side timeout so a hung request fails fast with a clear
- *   error instead of leaving the user on a stalled progress bar.
+ * • Per-attempt timeout so a hung request is handled cleanly.
+ * • Limited retries (2) with exponential backoff for transient failures
+ *   (timeouts, network errors, 429/5xx). Never retried: 4xx auth/request
+ *   errors — those need a config fix, not a retry.
+ * • Provider fallback: NVIDIA's hosted deepseek-v4.1-flash endpoint can
+ *   hold requests open indefinitely under load (verified live: a trivial
+ *   "say ok" request hangs >120s while other models answer in <1s). If
+ *   it times out on every attempt we transparently retry the SAME request
+ *   against a verified-live fallback model served by the same gateway,
+ *   same key, same request shape — then re-raise so callers see a clean
+ *   user-friendly error.
+ * • Server-side diagnostics: duration and outcome are logged; keys and
+ *   message contents are never logged.
  */
-const AI_TIMEOUT_MS = 60_000;
+const AI_MODELS = [
+  "deepseek-ai/deepseek-v4.1-flash", // primary (same as before)
+  "openai/gpt-oss-20b", // fallback, verified live on the same gateway
+];
+const AI_TIMEOUT_MS = 45_000;
+const AI_RETRIES = 2; // per model: 1 initial + 2 retries
+const AI_BACKOFF_BASE_MS = 1_000;
 
 export async function chatCompletion(
   messages: Array<{ role: string; content: ChatContent }>,
@@ -39,6 +52,89 @@ export async function chatCompletion(
       "AI is not configured: NVIDIA_API_KEY is missing from the backend environment.",
     );
   }
+
+  let lastError: Error = new Error("AI request failed");
+
+  for (const model of AI_MODELS) {
+    for (let attempt = 0; attempt <= AI_RETRIES; attempt++) {
+      const started = Date.now();
+      try {
+        const content = await singleChatCompletion(
+          model,
+          messages,
+          temperature,
+          maxTokens,
+          apiKey,
+        );
+        console.log(
+          `[ai] ok model=${model} attempt=${attempt} ms=${Date.now() - started} tokens<=${maxTokens}`,
+        );
+        return content;
+      } catch (err) {
+        const e =
+          err instanceof Error ? err : new Error("Unknown AI error");
+        lastError = e;
+        const retryable = isRetryable(e);
+        console.error(
+          `[ai] fail model=${model} attempt=${attempt} ms=${Date.now() - started} retryable=${retryable} kind=${errorKind(e)}`,
+        );
+        if (!retryable || attempt === AI_RETRIES) break;
+        await sleep(AI_BACKOFF_BASE_MS * 2 ** attempt); // 1s, 2s
+      }
+    }
+  }
+
+  // Every model & attempt exhausted — clean, user-friendly message.
+  if (lastError.message.includes("took too long")) {
+    throw new Error(
+      "The AI service is busy right now and couldn't finish in time. Please try again in a minute.",
+    );
+  }
+  if (
+    lastError.message.includes("rejected the API key") ||
+    lastError.message.includes("not configured")
+  ) {
+    throw lastError; // config problems should surface as-is
+  }
+  throw new Error(
+    "The AI service couldn't complete your request just now. Please try again.",
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Transient failures worth retrying: timeouts, network errors, 429/5xx. */
+function isRetryable(e: Error): boolean {
+  if (e.name === "AbortError" || e.message.includes("took too long")) return true;
+  if (e.message.includes("provider error")) {
+    const m = /provider error \((\d{3})\)/.exec(e.message);
+    if (m) {
+      const status = Number(m[1]);
+      return status === 429 || status >= 500;
+    }
+    return true; // unknown provider error shape — likely transient
+  }
+  return e.message.includes("fetch failed") || e.message.includes("network");
+}
+
+/** Short diagnostic bucket for logs — never includes key or content. */
+function errorKind(e: Error): string {
+  if (e.name === "AbortError" || e.message.includes("took too long")) return "timeout";
+  const m = /provider error \((\d{3})\)/.exec(e.message);
+  if (m) return `http_${m[1]}`;
+  if (e.message.includes("not configured")) return "config";
+  return "network_or_unknown";
+}
+
+async function singleChatCompletion(
+  model: string,
+  messages: Array<{ role: string; content: ChatContent }>,
+  temperature: number,
+  maxTokens: number,
+  apiKey: string,
+): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
   try {
@@ -51,13 +147,14 @@ export async function chatCompletion(
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: AI_MODEL,
+        model,
         messages,
         temperature,
         top_p: 1,
         max_tokens: maxTokens,
         stream: false,
         // Suppress chain-of-thought preamble on reasoning-capable models.
+        // (Only understood by some models — harmless for the rest.)
         chat_template_kwargs: { thinking: false },
       }),
     });
@@ -80,9 +177,7 @@ export async function chatCompletion(
     return data.choices?.[0]?.message?.content ?? "";
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      throw new Error(
-        "The AI took too long to respond. Please try again — it is usually faster on a second attempt.",
-      );
+      throw new Error("The AI took too long to respond.");
     }
     throw err;
   } finally {
