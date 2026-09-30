@@ -78,7 +78,7 @@ export const generate = action({
 
     const { title, content } = await generateEssayText(
       essayPrompt({ ...args, topic, instruction: "" }),
-      4000,
+      3200,
     );
     const wordCount = content.split(/\s+/).filter(Boolean).length;
 
@@ -126,7 +126,7 @@ Original essay:
 """
 ${args.current.slice(0, 8000)}
 """`,
-      4000,
+      3200,
     );
     const finalTitle = args.mode === "regenerate" ? title : args.title;
     return {

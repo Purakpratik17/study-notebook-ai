@@ -18,6 +18,16 @@ type ChatContent =
       | { type: "image_url"; image_url: { url: string } }
     >;
 
+/**
+ * Shared chat completion with latency safeguards:
+ * • Ask the model to omit the <think>/reasoning preamble — DeepSeek-style
+ *   reasoning models can otherwise burn thousands of tokens thinking
+ *   before answering, which is the main cause of slow generation.
+ * • Hard client-side timeout so a hung request fails fast with a clear
+ *   error instead of leaving the user on a stalled progress bar.
+ */
+const AI_TIMEOUT_MS = 60_000;
+
 export async function chatCompletion(
   messages: Array<{ role: string; content: ChatContent }>,
   temperature: number,
@@ -29,39 +39,55 @@ export async function chatCompletion(
       "AI is not configured: NVIDIA_API_KEY is missing from the backend environment.",
     );
   }
-  const res = await fetch(`${AI_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      messages,
-      temperature,
-      top_p: 1,
-      max_tokens: maxTokens,
-      stream: false,
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    if (res.status === 401 || res.status === 403) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${AI_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: AI_MODEL,
+        messages,
+        temperature,
+        top_p: 1,
+        max_tokens: maxTokens,
+        stream: false,
+        // Suppress chain-of-thought preamble on reasoning-capable models.
+        chat_template_kwargs: { thinking: false },
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(
+          "AI provider rejected the API key (HTTP " +
+            res.status +
+            "). Check that NVIDIA_API_KEY in the Convex environment is a valid, non-revoked key.",
+        );
+      }
       throw new Error(
-        "AI provider rejected the API key (HTTP " +
-          res.status +
-          "). Check that NVIDIA_API_KEY in the Convex environment is a valid, non-revoked key.",
+        `AI provider error (${res.status}): ${body.slice(0, 200) || res.statusText}`,
       );
     }
-    throw new Error(
-      `AI provider error (${res.status}): ${body.slice(0, 200) || res.statusText}`,
-    );
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    return data.choices?.[0]?.message?.content ?? "";
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(
+        "The AI took too long to respond. Please try again — it is usually faster on a second attempt.",
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
   }
-  const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  return data.choices?.[0]?.message?.content ?? "";
 }
 import { v } from "convex/values";
 import { action } from "./_generated/server";
@@ -130,14 +156,14 @@ Return ONLY valid JSON (no markdown fences, no commentary) matching this TypeScr
 
 Field rules:
 - "intro": 2-3 sentence clear explanation of the topic.
-- "sections": 4-6 sections covering the important concepts. Each has 3-6 clear, easy-to-understand bullets (include definitions and concrete examples where useful). "highlight" is one key takeaway or definition worth remembering (may be an empty string).
-- "keyPoints": 5-8 exam-focused key points.
+- "sections": 3-4 sections covering the most important concepts. Each has 3-4 clear, easy-to-understand bullets. "highlight" is one key takeaway or definition worth remembering (may be an empty string).
+- "keyPoints": 4-6 exam-focused key points.
 - "formulas": formulas applicable to the topic in plain text (empty array if none).
-- "examTips": 3-5 short exam-focused tips.
-- "summary": short summary of the whole topic (3-5 sentences).
-- "quiz": exactly 5 multiple-choice questions. Each has exactly 4 options, one correct (correctIndex 0-3), and a 1-2 sentence explanation of why the answer is correct. Mix difficulty levels.
+- "examTips": 3 short exam-focused tips.
+- "summary": short summary of the whole topic (2-3 sentences).
+- "quiz": exactly 5 multiple-choice questions. Each has exactly 4 options, one correct (correctIndex 0-3), and a 1-sentence explanation of why the answer is correct.
 
-Content must be accurate, curriculum-appropriate, and easy for a student to understand.`;
+Content must be accurate, curriculum-appropriate, and easy for a student to understand. Be concise — short bullets, no filler.`;
 }
 
 /** Extract the first balanced JSON object from a model response. */
@@ -194,7 +220,7 @@ export const generate = action({
         { role: "user", content: buildPrompt(topic) },
       ],
       0.4,
-      3000,
+      2400,
     );
 
     const parsed = extractJson(content) as Partial<StudyNotes> & {

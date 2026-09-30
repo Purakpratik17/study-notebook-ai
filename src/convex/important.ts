@@ -39,13 +39,13 @@ Return ONLY valid JSON matching this TypeScript type:
 
 Rules:
 - Exactly 8 questions that are most likely to appear in exams for this topic.
-- "answer": a complete model answer or worked solution (2-6 sentences; show working for numerical problems).
+- "answer": a model answer or worked solution (2-4 sentences; show working for numerical problems).
 - Spread difficulties: roughly 3 easy, 3 medium, 2 hard.
-- Questions must be self-contained and curriculum-appropriate.`,
+- Questions must be self-contained and curriculum-appropriate. Be concise.`,
         },
       ],
       0.4,
-      3000,
+      2400,
     );
 
     const parsed = extractJson(content) as { questions?: unknown };

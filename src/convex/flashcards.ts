@@ -42,14 +42,14 @@ Return ONLY valid JSON matching this TypeScript type:
 }
 
 Rules:
-- "front": a short question, term or prompt (max 140 chars).
-- "back": the clear, complete answer (max 400 chars).
-- Cover the most examinable ideas; include definitions, formulas and examples.
-- No duplicates.`,
+- "front": a short question, term or prompt (max 120 chars).
+- "back": the clear, complete answer (max 300 chars).
+- Cover the most examinable ideas; include definitions and formulas.
+- No duplicates. Be concise.`,
         },
       ],
       0.4,
-      2000,
+      1600,
     );
 
     const parsed = extractJson(content) as { cards?: unknown };

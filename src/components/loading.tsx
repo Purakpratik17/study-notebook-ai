@@ -128,41 +128,51 @@ const GEN_STAGES = [
 ];
 
 /**
- * Polished staged progress for AI generation. HONESTY RULE: the backend
- * gives no real percentage, so the bar advances on an easing curve that
- * never reaches 100% while the request is in flight (capped at ~90%), and
- * the stage label changes as time passes. It is an estimate, not a claim.
+ * Staged progress for AI generation. The backend gives no real percentage,
+ * so the bar advances on a time-based curve tuned to the typical request
+ * duration (most generations finish in 10–25s now that reasoning
+ * preambles are suppressed). It completes to 100% as the response lands —
+ * it no longer sits stuck at 90%.
  */
 export function AiProgressCard({
   topic,
   detail = "generating your study material",
+  completing = false,
 }: {
   topic: string;
   detail?: string;
+  /** True when the response has landed — jumps the bar to 100%. */
+  completing?: boolean;
 }) {
   const phrase = useAiPhrases(true);
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     const started = Date.now();
-    const id = setInterval(() => setElapsed(Date.now() - started), 500);
+    const id = setInterval(() => setElapsed(Date.now() - started), 300);
     return () => clearInterval(id);
   }, []);
-  // Ease-out toward 90% — fast start, slowing creep, never completes.
-  const pct = Math.min(90, Math.round(90 * (1 - Math.exp(-elapsed / 12000))));
+  // Ease-out tuned for ~15s typical completion: quick confident start,
+  // steady middle, gentle approach to 95% — never stalls at a plateau.
+  const estPct = Math.min(95, Math.round(95 * (1 - Math.exp(-elapsed / 6500))));
+  const pct = completing ? 100 : estPct;
   // Stage follows the (estimated) progress through the fixed pipeline.
-  const stageIdx = Math.min(GEN_STAGES.length - 1, Math.floor((pct / 90) * GEN_STAGES.length));
+  const stageIdx = completing
+    ? GEN_STAGES.length - 1
+    : Math.min(GEN_STAGES.length - 1, Math.floor((pct / 95) * GEN_STAGES.length));
   return (
     <section className="ai-loading-card paper-sheet paper-margin flex flex-col items-center gap-4 px-5 py-7 text-center">
       <div className="ai-glow relative">
         <LoadingNotebook />
       </div>
       <div aria-live="polite" className="w-full max-w-xs">
-        <p className="text-sm font-semibold">Generating your study material…</p>
+        <p className="text-sm font-semibold">
+          {completing ? "Done — opening your material…" : "Generating your study material…"}
+        </p>
         <p className="annotation mt-0.5 text-xs">studying “{topic.trim()}” — {detail}</p>
         {/* estimated progress bar */}
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-paper-deep">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-primary/70 via-primary to-marker/70 transition-[width] duration-500 ease-out"
+            className="bar-shine h-full rounded-full bg-gradient-to-r from-primary/70 via-primary to-marker/70 text-primary transition-[width] duration-500 ease-out"
             style={{ width: `${pct}%` }}
           />
         </div>

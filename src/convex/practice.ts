@@ -9,11 +9,11 @@ import { chatCompletion, extractJson } from "./ai";
 
 const MAX_QUESTIONS = 30;
 
-/** Difficulty → token budget so hard topics still fit complete questions. */
+/** Difficulty → token budget (tight: explanations are 1 sentence). */
 const TOKENS: Record<"easy" | "medium" | "hard", number> = {
-  easy: 2600,
-  medium: 3400,
-  hard: 4200,
+  easy: 1800,
+  medium: 2400,
+  hard: 3000,
 };
 
 function buildPrompt(
@@ -46,9 +46,9 @@ Return ONLY valid JSON (no markdown fences, no commentary) matching this TypeScr
 Field rules:
 - Exactly ${count} questions. Each has exactly 4 options, exactly one correct (correctIndex 0-3).
 - Questions must be self-contained (no "from the passage above"), factually accurate, and curriculum-appropriate for ${subject}.
-- "explanation": 1-2 sentences explaining why the correct answer is right.
+- "explanation": one sentence explaining why the correct answer is right.
 - Vary which option is correct across questions.
-- No numbering in the "question" text.`;
+- No numbering in the "question" text. Keep questions and options terse — no filler.`;
 }
 
 /** ─── Generate + persist a practice session ─────────────────────────────── */
