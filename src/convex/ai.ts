@@ -23,23 +23,97 @@ type ChatContent =
  * • Limited retries (2) with exponential backoff for transient failures
  *   (timeouts, network errors, 429/5xx). Never retried: 4xx auth/request
  *   errors — those need a config fix, not a retry.
- * • Provider fallback: NVIDIA's hosted deepseek-v4.1-flash endpoint can
- *   hold requests open indefinitely under load (verified live: a trivial
- *   "say ok" request hangs >120s while other models answer in <1s). If
- *   it times out on every attempt we transparently retry the SAME request
- *   against a verified-live fallback model served by the same gateway,
- *   same key, same request shape — then re-raise so callers see a clean
- *   user-friendly error.
+ * • Auto-routing: candidate models are probed with a trivial request and
+ *   ranked by live latency (cached ~5 min, shared across concurrent calls).
+ *   Real requests go to the fastest healthy model; if a routed model fails
+ *   all attempts the cached ranking is invalidated so the next call re-probes
+ *   and routes elsewhere automatically.
  * • Server-side diagnostics: duration and outcome are logged; keys and
  *   message contents are never logged.
  */
 const AI_MODELS = [
-  "deepseek-ai/deepseek-v4.1-flash", // primary (same as before)
-  "openai/gpt-oss-20b", // fallback, verified live on the same gateway
+  "openai/gpt-oss-20b", // verified fast & working on this gateway
+  "deepseek-ai/deepseek-v4.1-flash",
+  "z-ai/glm-5.3-flash",
 ];
 const AI_TIMEOUT_MS = 45_000;
 const AI_RETRIES = 2; // per model: 1 initial + 2 retries
 const AI_BACKOFF_BASE_MS = 1_000;
+
+// ---- Auto-routing: probe candidate models, cache the fastest healthy one ----
+
+const ROUTE_CACHE_TTL_MS = 5 * 60_000;
+const PROBE_TIMEOUT_MS = 8_000;
+
+type RouteCache = { ranked: string[]; ts: number } | null;
+let routeCache: RouteCache = null;
+let routePromise: Promise<string[]> | null = null;
+
+/**
+ * Race tiny (max_tokens=1) probe requests against every candidate model and
+ * rank winners by measured latency. Cheap (one trivial token per model) and
+ * cached for ROUTE_CACHE_TTL_MS so real requests are only ever routed to a
+ * model that answered *right now*. An in-flight probe is shared by concurrent
+ * callers.
+ */
+async function getRankedModels(apiKey: string): Promise<string[]> {
+  if (routeCache && Date.now() - routeCache.ts < ROUTE_CACHE_TTL_MS) {
+    return routeCache.ranked;
+  }
+  if (routePromise) return routePromise;
+
+  routePromise = (async () => {
+    const probes = AI_MODELS.map(async (model) => {
+      const started = Date.now();
+      try {
+        await singleChatCompletion(
+          model,
+          [{ role: "user", content: "ok" }],
+          0,
+          1,
+          apiKey,
+          PROBE_TIMEOUT_MS,
+        );
+        return { model, ms: Date.now() - started };
+      } catch (err) {
+        console.error(
+          `[ai] probe fail model=${model} ms=${Date.now() - started} kind=${errorKind(err instanceof Error ? err : new Error("unknown"))}`,
+        );
+        return null; // unhealthy model — not routed to
+      }
+    });
+
+    const results = (await Promise.all(probes)).filter(
+      (r): r is { model: string; ms: number } => r !== null,
+    );
+    results.sort((a, b) => a.ms - b.ms);
+    const ranked = results.map((r) => r.model);
+
+    if (ranked.length === 0) {
+      // Everything failed to probe — fall back to the static order rather
+      // than hard-failing; the real request path still has its own retries.
+      console.error("[ai] probe: all candidates unhealthy, using static order");
+      return AI_MODELS;
+    }
+    console.log(`[ai] route ranked=${ranked.join(",")} probe_ms=${results.map((r) => r.ms).join(",")}`);
+    routeCache = { ranked, ts: Date.now() };
+    return ranked;
+  })();
+
+  try {
+    return await routePromise;
+  } finally {
+    routePromise = null;
+  }
+}
+
+/** A real request failing on the routed model invalidates the cached ranking. */
+function invalidateRouteCache(model: string) {
+  if (routeCache && routeCache.ranked[0] === model) {
+    routeCache = null;
+    console.error(`[ai] route invalidated model=${model}`);
+  }
+}
 
 export async function chatCompletion(
   messages: Array<{ role: string; content: ChatContent }>,
@@ -55,7 +129,11 @@ export async function chatCompletion(
 
   let lastError: Error = new Error("AI request failed");
 
-  for (const model of AI_MODELS) {
+  // Auto-route: probe candidates (cached), then run the real request on the
+  // fastest healthy model, falling back to the next-fastest on failure.
+  const models = await getRankedModels(apiKey);
+
+  for (const model of models) {
     for (let attempt = 0; attempt <= AI_RETRIES; attempt++) {
       const started = Date.now();
       try {
@@ -78,7 +156,11 @@ export async function chatCompletion(
         console.error(
           `[ai] fail model=${model} attempt=${attempt} ms=${Date.now() - started} retryable=${retryable} kind=${errorKind(e)}`,
         );
-        if (!retryable || attempt === AI_RETRIES) break;
+        if (attempt === AI_RETRIES) {
+          invalidateRouteCache(model); // this model just proved unhealthy
+          break;
+        }
+        if (!retryable) break;
         await sleep(AI_BACKOFF_BASE_MS * 2 ** attempt); // 1s, 2s
       }
     }
@@ -134,9 +216,10 @@ async function singleChatCompletion(
   temperature: number,
   maxTokens: number,
   apiKey: string,
+  timeoutMs: number = AI_TIMEOUT_MS,
 ): Promise<string> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`${AI_BASE_URL}/chat/completions`, {
       method: "POST",
