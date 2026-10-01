@@ -13,6 +13,9 @@ import { LANGUAGES } from "@/lib/languages";
 import { cn } from "@/lib/utils";
 import { useChatPlus } from "@/hooks/use-chat-plus";
 import { ChatPlusSheet } from "@/components/ChatPlusSheet";
+import { useMutation } from "convex/react";
+import { api } from "../convex/_generated/api";
+import { FileText, Link2, Scale, Trash2 } from "lucide-react";
 import {
   Bell,
   BellOff,
@@ -34,6 +37,7 @@ import {
   Globe,
 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router";
 import { toast } from "sonner";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -50,6 +54,8 @@ export default function Settings() {
   const { name, email } = useAuth();
   const signOut = useClerkSignOut();
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const deleteMyAccount = useMutation(api.deletion.deleteMyAccount);
 
   const toggleSound = (on: boolean) => {
     update("soundEffects", on);
@@ -312,11 +318,46 @@ export default function Settings() {
         </div>
       </SettingsCard>
 
+      {/* ── Privacy & Legal ─────────────────────────────────── */}
+      <SettingsCard
+        icon={Scale}
+        title="⚖️ Privacy & Legal"
+        hint="Policies, your data, and how to reach us."
+      >
+        <LegalLink
+          to="/privacy"
+          icon={ShieldAlert}
+          title="Privacy Policy"
+          desc="What data Cerevyn processes, and why."
+        />
+        <LegalLink
+          to="/terms"
+          icon={FileText}
+          title="Terms of Service"
+          desc="The rules for using Cerevyn."
+        />
+        <LegalLink
+          to="/refund-policy"
+          icon={Link2}
+          title="Refund & Cancellation Policy"
+          desc="How Chat+ billing, cancellation and refunds work."
+        />
+        <LegalLink
+          to="/tracking"
+          icon={Link2}
+          title="Cookies & Tracking"
+          desc="What's stored on this device (and what isn't)."
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          No marketing emails, no analytics trackers, no data selling — ever.
+        </p>
+      </SettingsCard>
+
       {/* ── Account ────────────────────────────────────────────── */}
       <SettingsCard
         icon={ShieldAlert}
         title="👤 Account"
-        hint="Local study session — account features coming soon."
+        hint="Your account, session and deletion controls."
       >
         <div className="flex items-center justify-between gap-3 rounded-lg border bg-card/70 px-4 py-3">
           <div className="min-w-0">
@@ -347,17 +388,19 @@ export default function Settings() {
           </Button>
         </div>
 
-        {/* Account deletion — warning + typed confirmation, no destructive
-            action wired until account management returns. */}
+        {/* Account deletion — typed confirmation, real server-side deletion.
+            Only the caller's own rows are touched (see src/convex/deletion.ts). */}
         <details className="mt-2 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
           <summary className="cursor-pointer text-sm font-semibold text-destructive">
             Delete account
           </summary>
           <p className="mt-2 text-xs text-muted-foreground">
-            Deleting your account is <strong>permanent</strong>. All of your
-            notes, XP, rank progress, quests, timetable and arcade records will
-            be erased and cannot be recovered. Type <code>DELETE</code> below to
-            confirm — deletion is handled securely through our support flow.
+            Deleting your account is <strong>permanent and immediate</strong>.
+            All of your notes, whiteboards, XP, rank progress, quests,
+            timetable, flashcards, chats, media and Chat+ records will be
+            erased and cannot be recovered. Messages other people sent to you
+            in group chats are kept (they are that person's data). Type{" "}
+            <code>DELETE</code> below to confirm.
           </p>
           <Input
             value={deleteConfirm}
@@ -369,15 +412,26 @@ export default function Settings() {
           <Button
             variant="destructive"
             className="mt-2"
-            disabled={deleteConfirm !== "DELETE"}
-            onClick={() => {
-              toast.error(
-                "Account deletion is temporarily unavailable while account features are being upgraded.",
-              );
-              setDeleteConfirm("");
+            disabled={deleteConfirm !== "DELETE" || deleting}
+            onClick={async () => {
+              setDeleting(true);
+              try {
+                await deleteMyAccount({ confirm: deleteConfirm });
+                toast.success("Account deleted. Goodbye 👋");
+                setTimeout(() => signOut(), 800);
+              } catch (err) {
+                toast.error(
+                  err instanceof Error
+                    ? err.message
+                    : "Could not delete account. Try again.",
+                );
+              } finally {
+                setDeleting(false);
+              }
             }}
           >
-            <BellOff className="size-4" /> Request account deletion
+            <Trash2 className="size-4" />
+            {deleting ? "Deleting…" : "Permanently delete my account"}
           </Button>
         </details>
       </SettingsCard>
@@ -448,6 +502,36 @@ function LanguageSection() {
         with the 🌐 Translate button — the original is always kept.
       </p>
     </SettingsCard>
+  );
+}
+
+/* ─── Privacy & Legal links ─────────────────────────────────────── */
+
+function LegalLink({
+  to,
+  icon: Icon,
+  title,
+  desc,
+}: {
+  to: string;
+  icon: typeof FileText;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center gap-3 rounded-lg border bg-card/70 px-4 py-3 transition hover:bg-accent"
+    >
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">{title}</span>
+        <span className="block text-xs text-muted-foreground">{desc}</span>
+      </span>
+      <span className="text-muted-foreground">›</span>
+    </Link>
   );
 }
 

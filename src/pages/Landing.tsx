@@ -86,17 +86,9 @@ const EXTRA_FEATURES = [
   },
 ] as const;
 
-/* Study-app scorecard (out of 100) — across AI packs, gamification,
-   timetable, whiteboards, sharing & reports */
-const APP_SCORES = [
-  { name: "Cerevyn", score: 95, us: true },
-  { name: "Quizlet", score: 60, us: false },
-  { name: "Notion", score: 55, us: false },
-  { name: "Todoist", score: 50, us: false },
-  { name: "Obsidian", score: 45, us: false },
-] as const;
-
-/* Approx. advertised annual pricing (USD) for a single student account */
+/* Real, verifiable differentiators — no invented "score" numbers.
+   (An earlier version showed made-up 0–100 scores for Cerevyn and
+   competitors; that was an unsupported claim and has been removed.) */
 const APP_PRICES = [
   { name: "Cerevyn", price: 0, label: "Free", us: true },
   { name: "Quizlet Plus", price: 47.88, label: "$47.88/yr", us: false },
@@ -138,46 +130,7 @@ const reveal = (delay = 0) => ({
   },
 });
 
-/* ═══ Score & price bars ═══ */
-
-function ScoreBars() {
-  return (
-    <div className="mt-6 flex flex-col gap-3">
-      {APP_SCORES.map((a, i) => (
-        <div key={a.name} className="score-row">
-          <div className="flex w-28 shrink-0 items-center justify-end gap-1.5 text-right sm:w-36">
-            <span
-              className={`text-sm ${a.us ? "font-black text-primary" : "font-semibold text-muted-foreground"}`}
-            >
-              {a.name}
-            </span>
-          </div>
-          <div className="bar-track relative h-7 flex-1 overflow-hidden rounded-md bg-card">
-            <motion.div
-              initial={{ width: 0 }}
-              whileInView={{ width: `${a.score}%` }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{
-                duration: 0.9,
-                delay: 0.1 + i * 0.12,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              className={`flex h-full items-center justify-end rounded-md pr-2 ${
-                a.us ? "score-bar-us" : "score-bar"
-              }`}
-            >
-              <span
-                className={`text-xs font-black ${a.us ? "text-primary-foreground" : "text-muted-foreground"}`}
-              >
-                {a.score}
-              </span>
-            </motion.div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+/* ═══ Price bars ═══ */
 
 function PriceBars() {
   const max = Math.max(...APP_PRICES.map((p) => p.price));
@@ -431,18 +384,6 @@ export default function Landing() {
             cerevyn vs the study apps you already know
           </p>
 
-          <h3 className="mt-6 text-sm font-black uppercase tracking-wide text-ink-soft">
-            Built for studying, end to end
-          </h3>
-          <ScoreBars />
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Score = how much of a full study workflow (AI notes, quizzes,
-            timetable, gamification, whiteboards, sharing, reports) each app
-            covers out of the box.
-          </p>
-
-          <div className="my-6 border-t border-dashed" />
-
           <h3 className="text-sm font-black uppercase tracking-wide text-ink-soft">
             What it costs you per year
           </h3>
@@ -546,7 +487,21 @@ export default function Landing() {
       </main>
 
       <footer className="relative z-10 border-t bg-card/60 py-6 text-center text-xs text-muted-foreground">
-        Cerevyn — study smart, level up daily.
+        <p>Cerevyn — study smart, level up daily.</p>
+        <p className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+          <Link to="/privacy" className="underline hover:text-foreground">
+            Privacy Policy
+          </Link>
+          <Link to="/terms" className="underline hover:text-foreground">
+            Terms of Service
+          </Link>
+          <Link to="/refund-policy" className="underline hover:text-foreground">
+            Refund &amp; Cancellation
+          </Link>
+          <Link to="/tracking" className="underline hover:text-foreground">
+            Cookies &amp; Tracking
+          </Link>
+        </p>
       </footer>
     </motion.div>
   );

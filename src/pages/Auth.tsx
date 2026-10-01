@@ -80,6 +80,18 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               <a href="/">← Back to landing page</a>
             </Button>
           </div>
+
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            By continuing you agree to our{" "}
+            <a href="/terms" className="underline hover:text-foreground">
+              Terms of Service
+            </a>{" "}
+            and acknowledge our{" "}
+            <a href="/privacy" className="underline hover:text-foreground">
+              Privacy Policy
+            </a>
+            .
+          </p>
         </div>
       </div>
       <footer className="pb-6 text-center text-xs text-muted-foreground">

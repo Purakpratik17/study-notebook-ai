@@ -162,6 +162,10 @@ export default function AiStudy() {
             )}
             {loading ? "Writing your notes…" : "Generate Curated Notes"}
           </button>
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">
+            AI-generated content may contain mistakes — always double-check
+            important facts against your textbook or teacher.
+          </p>
         </div>
         <div className="mt-5">
           <p className="annotation mb-2 text-xs">or try one of these:</p>

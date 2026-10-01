@@ -46,6 +46,11 @@ const AdBannerController = lazy(() =>
     default: m.AdBannerController,
   })),
 );
+// Public legal pages (no auth — linked from sign-up, Settings, footer)
+const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy.tsx"));
+const TermsOfService = lazy(() => import("./pages/legal/TermsOfService.tsx"));
+const RefundPolicy = lazy(() => import("./pages/legal/RefundPolicy.tsx"));
+const TrackingPolicy = lazy(() => import("./pages/legal/TrackingPolicy.tsx"));
 
 // Route chunk loading — branded notebook, no layout jump
 function RouteLoading() {
@@ -180,6 +185,10 @@ function AuthRoot() {
             <Suspense fallback={<RouteLoading />}>
               <Routes>
                 <Route path="/" element={<Landing />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/refund-policy" element={<RefundPolicy />} />
+                <Route path="/tracking" element={<TrackingPolicy />} />
                 <Route path="/library" element={<RequireAuth><Library /></RequireAuth>} />
                 <Route path="/my-notes" element={<RequireAuth><MyNotesPage /></RequireAuth>} />
                 <Route path="/ai-notes/:noteId" element={<RequireAuth><AiNoteEditorPage /></RequireAuth>} />
