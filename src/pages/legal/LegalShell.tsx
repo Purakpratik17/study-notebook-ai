@@ -58,34 +58,41 @@ export function LegalShell({
 
 /** Renders a contact line only when real info exists; never invents one. */
 export function ContactBlock() {
-  if (!hasContactInfo()) {
-    return (
-      <p className="rounded-lg border border-dashed bg-card/60 px-4 py-3 text-xs text-muted-foreground">
-        {PLACEHOLDER_NOTICE}
-      </p>
-    );
-  }
   return (
-    <p>
-      Contact:{" "}
-      {LEGAL.CONTACT_EMAIL && (
-        <a
-          className="font-semibold underline"
-          href={`mailto:${LEGAL.CONTACT_EMAIL}`}
-        >
-          {LEGAL.CONTACT_EMAIL}
-        </a>
+    <div className="flex flex-col gap-1">
+      {LEGAL.OPERATOR_NAME && (
+        <p>
+          {LEGAL.APP_NAME} is operated by <strong>{LEGAL.OPERATOR_NAME}</strong>
+          {LEGAL.LEGAL_ENTITY ? ` (${LEGAL.LEGAL_ENTITY})` : ""}.
+        </p>
       )}
-      {LEGAL.CONTACT_EMAIL && LEGAL.SUPPORT_EMAIL ? " · " : ""}
-      {LEGAL.SUPPORT_EMAIL && (
-        <a
-          className="font-semibold underline"
-          href={`mailto:${LEGAL.SUPPORT_EMAIL}`}
-        >
-          {LEGAL.SUPPORT_EMAIL}
-        </a>
+      {hasContactInfo() ? (
+        <p>
+          Contact:{" "}
+          {LEGAL.CONTACT_EMAIL && (
+            <a
+              className="font-semibold underline"
+              href={`mailto:${LEGAL.CONTACT_EMAIL}`}
+            >
+              {LEGAL.CONTACT_EMAIL}
+            </a>
+          )}
+          {LEGAL.CONTACT_EMAIL && LEGAL.SUPPORT_EMAIL ? " · " : ""}
+          {LEGAL.SUPPORT_EMAIL && (
+            <a
+              className="font-semibold underline"
+              href={`mailto:${LEGAL.SUPPORT_EMAIL}`}
+            >
+              {LEGAL.SUPPORT_EMAIL}
+            </a>
+          )}
+        </p>
+      ) : (
+        <p className="rounded-lg border border-dashed bg-card/60 px-4 py-3 text-xs text-muted-foreground">
+          {PLACEHOLDER_NOTICE}
+        </p>
       )}
-    </p>
+    </div>
   );
 }
 

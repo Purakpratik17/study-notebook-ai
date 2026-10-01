@@ -95,7 +95,8 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
         </div>
       </div>
       <footer className="pb-6 text-center text-xs text-muted-foreground">
-        Secured by Clerk · email sign-in
+        Secured by Clerk · email sign-in · You must be at least 13 years old to
+        create an account.
       </footer>
     </div>
   );

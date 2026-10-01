@@ -23,23 +23,21 @@ export const LEGAL = {
   LAST_UPDATED: "October 2026",
 
   /** Operator/brand name shown as the responsible party. */
-  OPERATOR_NAME: null as string | null,
+  OPERATOR_NAME: "Purak Pratik",
   /** Registered legal entity, if Cerevyn is run by one (else null). */
-  LEGAL_ENTITY: null as string | null,
+  LEGAL_ENTITY: null,
   /** Primary contact email (privacy + legal questions). */
-  CONTACT_EMAIL: null as string | null,
+  CONTACT_EMAIL: "Nothingmeto@gmail.com",
   /** Support email shown in Settings → Contact Support. */
-  SUPPORT_EMAIL: null as string | null,
+  SUPPORT_EMAIL: "Nothingmeto@gmail.com",
   /** Formal privacy contact / DPO, if one exists. */
-  PRIVACY_CONTACT: null as string | null,
+  PRIVACY_CONTACT: null,
   /** Country (+ state/province) the operator is based in. */
-  JURISDICTION: null as string | null,
+  JURISDICTION: null,
   /** Postal address — only include if legally required for the operator. */
-  ADDRESS: null as string | null,
-  /** Minimum age policy. null = not yet decided by the owner. Common
-   *  choices: 13 (US COPPA baseline), 14/16 (some GDPR jurisdictions).
-   *  The sign-in flow renders an age notice once this is set. */
-  MINIMUM_AGE: null as number | null,
+  ADDRESS: null,
+  /** Minimum age policy. Owner-confirmed: 13. */
+  MINIMUM_AGE: 13,
 
   /** How purchases are billed — matches the actual implementation. */
   BILLING_PROVIDER: "Google Play Billing" as string,
