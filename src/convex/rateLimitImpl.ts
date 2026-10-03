@@ -12,8 +12,9 @@ export const record = internalMutation({
     key: v.string(),
     limit: v.number(),
     windowMs: v.number(),
+    message: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await enforceRateLimit(ctx, args.key, args.limit, args.windowMs);
+    await enforceRateLimit(ctx, args.key, args.limit, args.windowMs, args.message);
   },
 });

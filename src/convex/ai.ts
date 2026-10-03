@@ -115,7 +115,31 @@ function invalidateRouteCache(model: string) {
   }
 }
 
+/**
+ * Public chat completion with an optional per-user concurrency cap. All real
+ * (user-facing) call sites pass the authenticated user id; probes don't.
+ * The concurrency slot is acquired/released around the whole call, so a
+ * timeout or error always frees it (plus a TTL failsafe) — never a lock.
+ */
 export async function chatCompletion(
+  messages: Array<{ role: string; content: ChatContent }>,
+  temperature: number,
+  maxTokens: number,
+  userKey?: string,
+): Promise<string> {
+  if (userKey && !acquireSlot(userKey)) {
+    throw new Error(
+      "That generation is still running. Please wait for it to finish before starting another.",
+    );
+  }
+  try {
+    return await chatCompletionCore(messages, temperature, maxTokens);
+  } finally {
+    if (userKey) releaseSlot(userKey);
+  }
+}
+
+async function chatCompletionCore(
   messages: Array<{ role: string; content: ChatContent }>,
   temperature: number,
   maxTokens: number,
@@ -271,7 +295,7 @@ import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { requireUserId } from "./identity";
 import { api, internal } from "./_generated/api";
-import { RATE_LIMITS } from "./rateLimit";
+import { RATE_LIMITS, AI_RATE_MESSAGE } from "./rateLimit";
 
 export type GenerateResult = {
   noteId: string;
@@ -386,16 +410,74 @@ function asStringArray(v: unknown): string[] {
     : [];
 }
 
+/* ─── Per-user AI rate limit + concurrency guard ──────────────────────────
+ * All AI entrypoints call aiRateGuard BEFORE contacting NVIDIA:
+ * • Sliding-window rate limit (shared `rateLimits` table — survives tabs,
+ *   refreshes and direct Convex calls; keyed by the authenticated user).
+ * • Best-effort in-process concurrency cap (3 simultaneous generations per
+ *   user per Node instance) with TTL cleanup — a timeout or crash always
+ *   releases the slot in `finally`, so it can never become a permanent lock.
+ * ──────────────────────────────────────────────────────────────────────── */
+const CONCURRENCY_CAP = 3;
+const CONCURRENCY_TTL_MS = 90_000; // hard safety expiry per slot
+type Inflight = { n: number; last: number };
+const inflight = new Map<string, Inflight>();
+
+function acquireSlot(userKey: string): boolean {
+  const now = Date.now();
+  for (const [k, v] of inflight) {
+    if (now - v.last > CONCURRENCY_TTL_MS) inflight.delete(k); // stale cleanup
+  }
+  const cur = inflight.get(userKey);
+  if (!cur) {
+    inflight.set(userKey, { n: 1, last: now });
+    return true;
+  }
+  if (cur.n >= CONCURRENCY_CAP) return false;
+  cur.n += 1;
+  cur.last = now;
+  return true;
+}
+
+function releaseSlot(userKey: string) {
+  const cur = inflight.get(userKey);
+  if (cur) {
+    cur.n -= 1;
+    cur.last = Date.now();
+    if (cur.n <= 0) inflight.delete(userKey);
+  }
+}
+
+/**
+ * Enforce the AI budget for one authenticated user. Call at the very top of
+ * every AI action, before any external request. `kind` picks the budget:
+ * generation (5 / 10 min, all AI features share it) or tutor chat (30 / 10 min).
+ */
+type GuardCtx = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  runMutation: (ref: any, args?: any) => Promise<any>;
+};
+
+export async function aiRateGuard(
+  ctx: GuardCtx,
+  userId: string,
+  kind: "generate" | "chat" = "generate",
+): Promise<void> {
+  const limits = kind === "chat" ? RATE_LIMITS.aiChat : RATE_LIMITS.ai;
+  await ctx.runMutation(internal.rateLimitImpl.record, {
+    key: `ai:${userId}`,
+    limit: limits.limit,
+    windowMs: limits.windowMs,
+    message: AI_RATE_MESSAGE,
+  });
+}
+
 export const generate = action({
   args: { topic: v.string() },
   handler: async (ctx, args) => {
     const me = await requireUserId(ctx);
-    // Server-side abuse protection: cap AI generation frequency.
-    await ctx.runMutation(internal.rateLimitImpl.record, {
-      key: `ai:${me}`,
-      limit: RATE_LIMITS.ai.limit,
-      windowMs: RATE_LIMITS.ai.windowMs,
-    });
+    // Server-side abuse protection: cap AI generation frequency & concurrency.
+    await aiRateGuard(ctx, me, "generate");
     const topic = args.topic.trim().slice(0, 120);
     if (topic.length < 2) throw new Error("Please enter a topic to study");
 

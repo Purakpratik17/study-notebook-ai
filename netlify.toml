@@ -14,9 +14,9 @@
     # CSP notes:
     # - Clerk: *.clerk.accounts.dev (frontend API + scripts), clerk.telemetry
     # - Convex: *.convex.cloud (WS + fetch), *.convex.site (http actions)
-    # - Fonts: Google Fonts (style + font)
+    # - Fonts are self-hosted (public/fonts) — no font CDN origins needed.
     # - AI calls go server-side (Convex backend → NVIDIA), so no browser AI
     #   origins are needed.
     # - 'unsafe-inline' / 'unsafe-eval' are required by the Vite bundle +
     #   Clerk's runtime; removing them breaks the app. Documented risk.
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://clerk.telemetry.dev; frame-src https://*.clerk.accounts.dev; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://clerk.telemetry.dev; frame-src https://*.clerk.accounts.dev; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"

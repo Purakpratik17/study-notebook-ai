@@ -34,6 +34,7 @@ export async function enforceRateLimit(
   key: string,
   limit: number,
   windowMs: number,
+  friendlyMessage?: string,
 ): Promise<void> {
   const now = Date.now();
   const cutoff = now - windowMs;
@@ -47,7 +48,8 @@ export async function enforceRateLimit(
   if (recent.length >= limit) {
     const retryIn = Math.ceil((recent[0].at + windowMs - now) / 1000);
     throw new Error(
-      `You're doing that a bit too fast — please wait ${Math.max(retryIn, 1)}s and try again.`,
+      friendlyMessage ??
+        `You're doing that a bit too fast — please wait ${Math.max(retryIn, 1)}s and try again.`,
     );
   }
   // Opportunistic cleanup of this key's expired rows (cheap, amortized).
@@ -59,9 +61,13 @@ export async function enforceRateLimit(
 
 /** Common limits used by callers. */
 export const RATE_LIMITS = {
-  ai: { limit: 20, windowMs: 5 * 60_000 }, // 20 AI generations / 5 min
+  ai: { limit: 5, windowMs: 10 * 60_000 }, // 5 AI generations / 10 min
+  aiChat: { limit: 30, windowMs: 10 * 60_000 }, // 30 tutor chat AI calls / 10 min
   chat: { limit: 60, windowMs: 60_000 }, // 60 chat msgs / minute
   friendRequest: { limit: 15, windowMs: 10 * 60_000 }, // 15 requests / 10 min
   upload: { limit: 40, windowMs: 5 * 60_000 }, // 40 media uploads / 5 min
   deletion: { limit: 3, windowMs: 60 * 60_000 }, // 3 delete attempts / hour
 } as const;
+
+export const AI_RATE_MESSAGE =
+  "You're generating a lot of content right now. Please wait a little before generating again.";

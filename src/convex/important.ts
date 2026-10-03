@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { api } from "./_generated/api";
 import { requireUserId } from "./identity";
-import { chatCompletion, extractJson } from "./ai";
+import { chatCompletion, extractJson, aiRateGuard } from "./ai";
 
 /** ─── Important Questions: AI generates exam-style questions for a topic ─── */
 export const generate = action({
@@ -14,7 +14,8 @@ export const generate = action({
     id: string;
     questions: Array<{ question: string; answer: string; difficulty: string }>;
   }> => {
-    await requireUserId(ctx);
+    const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "generate");
     const subject = args.subject.trim().slice(0, 60) || "General";
     const topic = args.topic.trim().slice(0, 120);
     if (topic.length < 2) throw new Error("Enter a topic first.");
@@ -46,6 +47,7 @@ Rules:
       ],
       0.4,
       2400,
+      userId,
     );
 
     const parsed = extractJson(content) as { questions?: unknown };

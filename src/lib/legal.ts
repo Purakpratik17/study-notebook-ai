@@ -26,10 +26,10 @@ export const LEGAL = {
   OPERATOR_NAME: "Purak Pratik",
   /** Registered legal entity, if Cerevyn is run by one (else null). */
   LEGAL_ENTITY: null,
-  /** Primary contact email (privacy + legal questions). */
-  CONTACT_EMAIL: "Nothingmeto@gmail.com",
-  /** Support email shown in Settings → Contact Support. */
-  SUPPORT_EMAIL: "Nothingmeto@gmail.com",
+  /** Primary contact email (privacy + legal questions). Owner-confirmed. */
+  CONTACT_EMAIL: "purakpratik.cerevyn@gmail.com",
+  /** Support email shown in Settings → Contact Support. Owner-confirmed. */
+  SUPPORT_EMAIL: "purakpratik.cerevyn@gmail.com",
   /** Formal privacy contact / DPO, if one exists. */
   PRIVACY_CONTACT: null,
   /** Country (+ state/province) the operator is based in. */

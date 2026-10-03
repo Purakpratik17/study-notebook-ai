@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { api } from "./_generated/api";
 import { requireUserId } from "./identity";
-import { chatCompletion } from "./ai";
+import { chatCompletion, aiRateGuard } from "./ai";
 
 const MAX_IMAGE_CHARS = 900_000; // ~650KB binary → base64 ≈ 870KB
 
@@ -21,7 +21,8 @@ export const solve = action({
     topic: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<{ sessionId: string }> => {
-    await requireUserId(ctx);
+    const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "chat");
     const hasImage = !!args.image;
     const hasText = !!args.questionText && args.questionText.trim().length > 1;
     if (!hasImage && !hasText) {
@@ -51,6 +52,7 @@ export const solve = action({
       ],
       0.3,
       2200,
+      userId,
     );
     if (!content.trim()) throw new Error("The AI could not read that. Try a clearer photo.");
 
@@ -72,7 +74,8 @@ export const followUp = action({
     message: v.string(),
   },
   handler: async (ctx, args): Promise<string> => {
-    await requireUserId(ctx);
+    const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "chat");
     const text = args.message.trim().slice(0, 2000);
     if (!text) throw new Error("Type a question first.");
 
@@ -104,7 +107,7 @@ export const followUp = action({
       { role: "user" as const, content: text },
     ];
 
-    const reply = await chatCompletion(conversation as never, 0.4, 1600);
+    const reply = await chatCompletion(conversation as never, 0.4, 1600, userId);
     if (!reply.trim()) throw new Error("The tutor could not respond. Try again.");
 
     await ctx.runMutation(api.tutor.appendMessage, {

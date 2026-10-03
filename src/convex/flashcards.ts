@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { requireUserId } from "./identity";
-import { chatCompletion, extractJson } from "./ai";
+import { chatCompletion, extractJson, aiRateGuard } from "./ai";
 import { grantXp } from "./stats";
 import { progressQuests, settleQuests } from "./quests";
 import { XP_REWARDS } from "./data";
@@ -15,6 +15,7 @@ export const generateFromNote = action({
   args: { noteId: v.id("notes") },
   handler: async (ctx, args): Promise<{ created: number }> => {
     const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "generate");
     const note = await ctx.runQuery(api.notes.get, { noteId: args.noteId });
     if (!note) throw new Error("Note not found.");
 
@@ -50,6 +51,7 @@ Rules:
       ],
       0.4,
       1600,
+      userId,
     );
 
     const parsed = extractJson(content) as { cards?: unknown };

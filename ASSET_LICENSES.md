@@ -8,7 +8,9 @@ is added. Nothing here asserts a legal conclusion — it records evidence.
 
 | Asset | Source | License | Evidence |
 |---|---|---|---|
-| Inter (weights 400–800) | Google Fonts (`fonts.googleapis.com`, loaded in `index.html`) | SIL Open Font License 1.1 | OFL is Google Fonts' standard license for Inter |
+| Inter (variable, latin + latin-ext) | Self-hosted in `public/fonts/` (files obtained from Google Fonts' official font files for Inter v20) | SIL Open Font License 1.1 | OFL permits redistribution; original Google Fonts source URL for Inter v20 |
+
+Note: the app loads fonts **only** from `public/fonts/` via `@font-face` in `src/index.css`. There are no runtime requests to `fonts.googleapis.com` or `fonts.gstatic.com` (verified against source and build output).
 
 ## Icons
 
@@ -48,6 +50,6 @@ None — all fonts in use are listed above.
 | NVIDIA NIM (AI gateway) | Notes/quiz/tutor generation | Prompt text and snapped photos sent for a request |
 | Google AdMob (Android only) | Advertising | Device identifiers and ad interaction data (per Google's policies) |
 | Google Play Billing (Android only) | Chat+ subscription | Purchase token, order id (server-verified) |
-| Google Fonts | Inter font | Standard CDN request (IP, user agent) |
+| (none) | Fonts are self-hosted — no font CDN receives requests | — |
 
 No analytics, tracking, or marketing SDKs are present.

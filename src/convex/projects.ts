@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { requireUserId } from "./identity";
-import { chatCompletion } from "./ai";
+import { chatCompletion, aiRateGuard } from "./ai";
 import { api } from "./_generated/api";
 
 export type ProjectSection = {
@@ -23,7 +23,7 @@ export type ProjectMeta = {
   instructions?: string;
 };
 
-async function sectionText(prompt: string, maxTokens: number): Promise<string> {
+async function sectionText(prompt: string, maxTokens: number, userKey: string): Promise<string> {
   return await chatCompletion(
     [
       {
@@ -35,6 +35,7 @@ async function sectionText(prompt: string, maxTokens: number): Promise<string> {
     ],
     0.5,
     maxTokens,
+    userKey,
   );
 }
 
@@ -84,7 +85,8 @@ export const generate = action({
     ctx,
     args,
   ): Promise<{ projectId: string; title: string; sections: ProjectSection[] }> => {
-    await requireUserId(ctx);
+    const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "generate");
     const topic = args.topic.trim().slice(0, 150);
     if (topic.length < 3) throw new Error("Please enter a project topic");
     const pages = Math.max(3, Math.min(30, Math.floor(args.pages)));
@@ -96,6 +98,7 @@ export const generate = action({
       const body = await sectionText(
         buildSectionPrompt(meta, s.heading, s.kind),
         s.kind === "front" || s.kind === "index" ? 800 : 2200,
+        userId,
       );
       sections.push({
         id: s.id,
@@ -145,7 +148,8 @@ export const regenerateSection = action({
     ctx,
     args,
   ): Promise<{ heading: string; body: string }> => {
-    await requireUserId(ctx);
+    const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "generate");
     const project = await ctx.runQuery(api.projects.getProject, {
       projectId: args.projectId,
     });
@@ -156,6 +160,7 @@ export const regenerateSection = action({
     const body = await sectionText(
       buildSectionPrompt(meta, section.heading, section.kind),
       2200,
+      userId,
     );
     await ctx.runMutation(api.projects.updateSection, {
       projectId: args.projectId,

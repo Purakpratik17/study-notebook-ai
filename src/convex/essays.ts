@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { requireUserId } from "./identity";
+import { aiRateGuard } from "./ai";
 import { api } from "./_generated/api";
 
 /**
@@ -43,7 +44,7 @@ Requirements:
 - Meet the required length as closely as possible.`;
 }
 
-async function generateEssayText(prompt: string, maxTokens: number): Promise<{ title: string; content: string }> {
+async function generateEssayText(prompt: string, maxTokens: number, userKey: string): Promise<{ title: string; content: string }> {
   const raw = await chatCompletion(
     [
       {
@@ -55,6 +56,7 @@ async function generateEssayText(prompt: string, maxTokens: number): Promise<{ t
     ],
     0.6,
     maxTokens,
+    userKey,
   );
   const lines = raw.trim().split("\n");
   const title = (lines[0] ?? "Untitled Essay").replace(/^#+\s*/, "").slice(0, 120);
@@ -72,13 +74,15 @@ export const generate = action({
     keyPoints: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<EssayResult> => {
-    await requireUserId(ctx);
+    const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "generate");
     const topic = args.topic.trim().slice(0, 150);
     if (topic.length < 3) throw new Error("Please enter an essay topic");
 
     const { title, content } = await generateEssayText(
       essayPrompt({ ...args, topic, instruction: "" }),
       3200,
+      userId,
     );
     const wordCount = content.split(/\s+/).filter(Boolean).length;
 
@@ -110,7 +114,8 @@ export const revise = action({
     current: v.string(),
   },
   handler: async (ctx, args): Promise<{ title: string; content: string; wordCount: number }> => {
-    await requireUserId(ctx);
+    const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "generate");
     const modeText = {
       expand: "Expand this essay with more detail, examples and depth. Keep the same structure.",
       shorten: "Shorten this essay to about half its length while keeping the key arguments.",
@@ -127,6 +132,7 @@ Original essay:
 ${args.current.slice(0, 8000)}
 """`,
       3200,
+      userId,
     );
     const finalTitle = args.mode === "regenerate" ? title : args.title;
     return {

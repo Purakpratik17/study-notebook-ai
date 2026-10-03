@@ -5,7 +5,7 @@ import { requireUserId } from "./identity";
 import { XP_REWARDS } from "./data";
 import { grantXp } from "./stats";
 import { progressQuests, settleQuests } from "./quests";
-import { chatCompletion, extractJson } from "./ai";
+import { chatCompletion, extractJson, aiRateGuard } from "./ai";
 
 const MAX_QUESTIONS = 30;
 
@@ -64,7 +64,8 @@ export const start = action({
     count: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireUserId(ctx);
+    const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "generate");
     const topic = args.topic.trim().slice(0, 120);
     const subject = args.subject.trim().slice(0, 60) || "General";
     const count = Math.min(Math.max(Math.round(args.count), 1), MAX_QUESTIONS);
@@ -84,6 +85,7 @@ export const start = action({
       ],
       0.5,
       TOKENS[args.difficulty],
+      userId,
     );
 
     const parsed = extractJson(content) as { questions?: unknown };

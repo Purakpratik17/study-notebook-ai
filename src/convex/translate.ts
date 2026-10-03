@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { requireUserId } from "./identity";
-import { chatCompletion } from "./ai";
+import { chatCompletion, aiRateGuard } from "./ai";
 
 /**
  * On-demand study-content translation through the existing server-side AI.
@@ -15,7 +15,8 @@ export const translate = action({
     sourceLanguage: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<{ translated: string }> => {
-    await requireUserId(ctx);
+    const userId = await requireUserId(ctx);
+    await aiRateGuard(ctx, userId, "generate");
 
     const text = args.text.slice(0, 12_000);
     if (!text.trim()) return { translated: text };
@@ -51,6 +52,7 @@ ${text}
       ],
       0.2,
       4000,
+      userId,
     );
 
     const translated = content.trim();
