@@ -270,7 +270,8 @@ async function singleChatCompletion(
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { requireUserId } from "./identity";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
+import { RATE_LIMITS } from "./rateLimit";
 
 export type GenerateResult = {
   noteId: string;
@@ -388,7 +389,13 @@ function asStringArray(v: unknown): string[] {
 export const generate = action({
   args: { topic: v.string() },
   handler: async (ctx, args) => {
-    await requireUserId(ctx);
+    const me = await requireUserId(ctx);
+    // Server-side abuse protection: cap AI generation frequency.
+    await ctx.runMutation(internal.rateLimitImpl.record, {
+      key: `ai:${me}`,
+      limit: RATE_LIMITS.ai.limit,
+      windowMs: RATE_LIMITS.ai.windowMs,
+    });
     const topic = args.topic.trim().slice(0, 120);
     if (topic.length < 2) throw new Error("Please enter a topic to study");
 

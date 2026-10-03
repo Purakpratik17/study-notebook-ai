@@ -16,6 +16,15 @@ export const emailOtp = Email({
     return generateRandomString(random, alphabet, 6);
   },
   async sendVerificationRequest({ identifier: email, token }) {
+    // SECURITY: the email-delivery API key now lives in the Convex env var
+    // OTP_EMAIL_API_KEY (server-side only). A previous version hardcoded it
+    // here — it is committed to git history and MUST be rotated.
+    const apiKey = process.env.OTP_EMAIL_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        "OTP_EMAIL_API_KEY is missing from the Convex environment — email sign-in cannot send codes.",
+      );
+    }
     try {
       await axios.post(
         "https://auth.freebuff.app/send_otp",
@@ -26,7 +35,7 @@ export const emailOtp = Email({
         },
         {
           headers: {
-            "x-api-key": "fb_email_2crN1hqIArZP2bEfvjp5Qik4",
+            "x-api-key": apiKey,
           },
         },
       );

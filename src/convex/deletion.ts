@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { requireUserId } from "./identity";
+import { enforceRateLimit, RATE_LIMITS } from "./rateLimit";
 
 /* ═══════════════════════════════════════════════════════════════════════
    ACCOUNT DELETION — permanent, self-service, server-side only.
@@ -66,6 +67,13 @@ export const deleteMyAccount = mutation({
   args: { confirm: v.string() },
   handler: async (ctx, args) => {
     const me = await requireUserId(ctx);
+    // Guard against scripted/accidental repeated deletion attempts.
+    await enforceRateLimit(
+      ctx,
+      `deletion:${me}`,
+      RATE_LIMITS.deletion.limit,
+      RATE_LIMITS.deletion.windowMs,
+    );
     if (args.confirm !== "DELETE") {
       throw new Error(
         "Confirmation text did not match. Type DELETE to confirm.",

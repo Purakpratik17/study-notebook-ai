@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./identity";
+import { enforceRateLimit, RATE_LIMITS } from "./rateLimit";
 import { isChatPlus, MEDIA_LIMITS } from "./chatPlus";
 import type { Id } from "./_generated/dataModel";
 
@@ -106,6 +107,8 @@ export const send = mutation({
     const me = await requireUserId(ctx);
     const g = await ctx.db.get(args.groupId);
     if (!g || !g.members.includes(me)) return "not_member";
+    // Spam protection (server-side).
+    await enforceRateLimit(ctx, `chat:${me}`, RATE_LIMITS.chat.limit, RATE_LIMITS.chat.windowMs);
     const body = args.body.trim().slice(0, 1000);
     const hasMedia = !!args.kind && !!args.storageId;
     if (!body && !hasMedia) throw new Error("Message is empty.");
@@ -268,7 +271,8 @@ export const getMediaUrl = query({
 export const generateMediaUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    await requireUserId(ctx);
+    const me = await requireUserId(ctx);
+    await enforceRateLimit(ctx, `upload:${me}`, RATE_LIMITS.upload.limit, RATE_LIMITS.upload.windowMs);
     return await ctx.storage.generateUploadUrl();
   },
 });

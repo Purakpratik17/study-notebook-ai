@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./identity";
 import { isChatPlus, MEDIA_LIMITS } from "./chatPlus";
+import { enforceRateLimit, RATE_LIMITS } from "./rateLimit";
 
 /* ─── Private 1:1 chat over accepted friendships ─────────────────────────── */
 
@@ -134,6 +135,8 @@ export const send = mutation({
   },
   handler: async (ctx, args): Promise<"sent" | "not_friends" | "blocked"> => {
     const me = await requireUserId(ctx);
+    // Spam protection (server-side).
+    await enforceRateLimit(ctx, `chat:${me}`, RATE_LIMITS.chat.limit, RATE_LIMITS.chat.windowMs);
     const body = args.body.trim().slice(0, 1000);
     const hasMedia = !!args.kind && !!args.storageId;
     if (!body && !hasMedia) throw new Error("Message is empty.");
@@ -198,7 +201,8 @@ export const send = mutation({
       storageId: hasMedia ? args.storageId : undefined,
       mediaType: hasMedia ? args.mediaType : undefined,
       durationSec: kind === "video" ? args.durationSec : undefined,
-      fileName: args.kind === "file" ? args.fileName : undefined,
+      fileName:
+        args.kind === "file" ? sanitizeFileName(args.fileName) : undefined,
       fileSize: args.kind === "file" ? args.fileSize : undefined,
       shareId: args.shareId,
       createdAt: Date.now(),
@@ -223,14 +227,31 @@ export const getMediaUrl = query({
   },
 });
 
-/** Upload URL for chat attachments (image or ≤3-min video). */
+/** Upload URL for chat attachments (image or ≤3-min video). Rate-limited. */
 export const generateMediaUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    await requireUserId(ctx);
+    const me = await requireUserId(ctx);
+    await enforceRateLimit(ctx, `upload:${me}`, RATE_LIMITS.upload.limit, RATE_LIMITS.upload.windowMs);
     return await ctx.storage.generateUploadUrl();
   },
 });
+
+/**
+ * Sanitize a client-provided file name: strip path-lookalike separators
+ * and control characters, cap length. Purely cosmetic — actual content
+ * access is storage-id based, never filename based, so there is no
+ * traversal risk.
+ */
+function sanitizeFileName(name: string | undefined): string | undefined {
+  if (!name) return undefined;
+  const cleaned = name
+    .replace(/[\\/]/g, "_")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .slice(0, 120);
+  // eslint-disable-next-line no-control-regex -- intentional: stripping control chars
+  return cleaned || undefined;
+}
 
 /** Mute or unmute a conversation (only affects your own notifications). */
 export const setMuted = mutation({

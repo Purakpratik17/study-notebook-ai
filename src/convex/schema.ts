@@ -557,6 +557,13 @@ const schema = defineSchema(
     })
       .index("by_user", ["userId"])
       .index("by_user_updated", ["userId", "updatedAt"]),
+
+    // ─── Rate limiting (server-side abuse protection) ────────────
+    // One row per rate-limited event; keyed "<action>:<userId>".
+    rateLimits: defineTable({
+      key: v.string(),
+      at: v.number(),
+    }).index("by_key", ["key"]),
   },
   {
     schemaValidation: false,

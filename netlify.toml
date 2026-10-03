@@ -1,0 +1,22 @@
+# Cerevyn — production web deployment config.
+#
+# HTTPS: Netlify terminates TLS and redirects HTTP→HTTPS by default for
+# production domains ("Force HTTPS" is on by default on all Netlify sites),
+# so no custom redirect rules are needed here.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "SAMEORIGIN"
+    Permissions-Policy = "camera=(self), microphone=(), geolocation=(), payment=()"
+    # CSP notes:
+    # - Clerk: *.clerk.accounts.dev (frontend API + scripts), clerk.telemetry
+    # - Convex: *.convex.cloud (WS + fetch), *.convex.site (http actions)
+    # - Fonts: Google Fonts (style + font)
+    # - AI calls go server-side (Convex backend → NVIDIA), so no browser AI
+    #   origins are needed.
+    # - 'unsafe-inline' / 'unsafe-eval' are required by the Vite bundle +
+    #   Clerk's runtime; removing them breaks the app. Documented risk.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.clerk.accounts.dev wss://*.clerk.accounts.dev https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://clerk.telemetry.dev; frame-src https://*.clerk.accounts.dev; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"

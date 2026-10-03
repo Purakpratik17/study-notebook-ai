@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import { requireUserId } from "./identity";
+import { enforceRateLimit, RATE_LIMITS } from "./rateLimit";
 
 /* ─── Public user info (no emails / private data) ────────────────────────── */
 
@@ -200,6 +201,13 @@ export const sendRequest = mutation({
     args,
   ): Promise<"sent" | "already_friends" | "already_pending" | "self"> => {
     const me = await requireUserId(ctx);
+    // Anti-spam: cap outgoing friend requests (server-side).
+    await enforceRateLimit(
+      ctx,
+      `friendRequest:${me}`,
+      RATE_LIMITS.friendRequest.limit,
+      RATE_LIMITS.friendRequest.windowMs,
+    );
     if (args.toId === me) return "self";
 
     // Existing friendship? (normalized pair lookup)
