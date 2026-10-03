@@ -247,9 +247,9 @@ function sanitizeFileName(name: string | undefined): string | undefined {
   if (!name) return undefined;
   const cleaned = name
     .replace(/[\\/]/g, "_")
+    // eslint-disable-next-line no-control-regex -- intentional: stripping control chars
     .replace(/[\u0000-\u001f\u007f]/g, "")
     .slice(0, 120);
-  // eslint-disable-next-line no-control-regex -- intentional: stripping control chars
   return cleaned || undefined;
 }
 
